@@ -48,6 +48,7 @@ from pathlib import Path
 def make_PSA_index_files(MD_path):
     os.chdir(MD_path)
     for padded_num in (f"{i:03}" for i in range(1, 869)): #not abstract yet, not necessary
+        print(padded_num)
         pdb_file = MD_path / padded_num / f'{padded_num}_prod.pdb'
         ndx_file = MD_path / padded_num / f'index_PSA_{padded_num}.ndx'
         combined_path = MD_path / padded_num
@@ -80,6 +81,7 @@ def run_gmx_psa_sasa(MD_path, output_path):
     output_path.mkdir(parents=True, exist_ok=True)
     # create the path for the xvg file to be stored
     for padded_num in (f"{i:03}" for i in range(1, 869)):
+        print(padded_num)
         combined_path = MD_path / padded_num
         if combined_path.exists() and combined_path.is_dir():
             os.chdir(MD_path / f'{padded_num}')
@@ -154,6 +156,7 @@ def run_gmx_dipoles(MD_path, output_path_TDM, output_path_epsilon):
     output_path_epsilon.mkdir(parents=True, exist_ok=True)
     # Loop over the molecules (using padded numbers)
     for padded_num in (f"{i:03}" for i in range(1, 869)):
+        print(padded_num)
         combined_path = MD_path / padded_num
         if combined_path.exists() and combined_path.is_dir():
             os.chdir(MD_path / f'{padded_num}')
@@ -283,6 +286,7 @@ def run_gmx_gyrate(MD_path, output_path):
 
     # Loop over the molecules (using padded numbers)
     for padded_num in (f"{i:03}" for i in range(1, 869)):
+        print(padded_num)
         combined_path = MD_path / padded_num
         if combined_path.exists() and combined_path.is_dir():
             os.chdir(MD_path / f'{padded_num}')
@@ -772,6 +776,7 @@ def run_gmx_rms(MD_path, output_path):
     # create the path for the xvg file to be stored
     for padded_num in (f"{i:03}" for i in range(1, 869)):
         combined_path = MD_path / padded_num
+        print(padded_num)
         if combined_path.exists() and combined_path.is_dir():
             os.chdir(MD_path / f'{padded_num}')
             rmsd_file = output_path / f'{padded_num}.xvg'
@@ -979,7 +984,8 @@ def main():
 
     #use this for 
     # calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path) #1 #nope dont use that
-    calculate_hbond_dataframe_trajectory2(MD_path=MDsimulations_path) #1 #use this one i guess. make sure export is okay
+
+    # calculate_hbond_dataframe_trajectory2(MD_path=MDsimulations_path) #1 #use this one i guess. make sure export is okay
     
     #all can be removed i think:
     ############################
@@ -997,8 +1003,8 @@ def main():
     energyfolder_path = public_variables.energyfolder_path_
 
     outputdir = public_variables.energyfolder_path_ / 'SASA'
-    run_gmx_sasa(MDsimulations_path, outputdir) #NOTE: done
-    sasa_xvg_files_to_csvfiles(energyfolder_path, outputdir) #2
+    # run_gmx_sasa(MDsimulations_path, outputdir) #NOTE: done
+    # sasa_xvg_files_to_csvfiles(energyfolder_path, outputdir) #2
 
     outputdir = public_variables.energyfolder_path_ / 'RMSD'
     run_gmx_rms(MDsimulations_path, outputdir)

@@ -283,7 +283,7 @@ if __name__ == "__main__":
 
     # main(public_variables.dfs_reduced_path_)
     # main(public_variables.dfs_reduced_and_MD_path_)
-    main(public_variables.dfs_reduced_path_)
+    # main(public_variables.dfs_reduced_path_)
     main(public_variables.dfs_descriptors_only_path_)
 
     
