@@ -281,9 +281,11 @@ if __name__ == "__main__":
     # # main(dataframes_master_ / 'reduced_t0.85_MD')
     # main(dataframes_master_ / 'MD only')
 
+    # main(public_variables.dfs_descriptors_only_path_)
     # main(public_variables.dfs_reduced_path_)
-    # main(public_variables.dfs_reduced_and_MD_path_)
-    # main(public_variables.dfs_reduced_path_)
-    main(public_variables.dfs_descriptors_only_path_)
+    print(public_variables.dfs_reduced_and_MD_path_)
+    main(public_variables.dfs_reduced_and_MD_path_)
+    main(public_variables.dfs_MD_only_path_)
+    
 
     

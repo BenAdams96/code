@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 from global_files import public_variables
 from collections import defaultdict
 import math
-
+from scipy.stats import gaussian_kde
+from matplotlib.collections import PolyCollection
 
 def display_dataframe_summary(dataframes_nested_dict):
     """
@@ -470,6 +471,7 @@ def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_fol
             box_colors.append(color)
             widths.append(box_width)
         base_position = base_position + ((num_rows * (box_width + group_gap) - group_gap) + group_spacing)
+
     boxplot_dict = plt.boxplot(box_data, positions=positions, patch_artist=True,
                                 widths=widths,  # Set box widths
                                 medianprops=dict(color='red'))
@@ -483,50 +485,6 @@ def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_fol
 
     # Round max_value up to the nearest number with 1 decimal place
     max_value = math.ceil(max_value * 10) / 10
-    # # Add individual data points
-    # for pos, split_scores in zip(positions, box_data):
-    #     plt.scatter([pos] * len(split_scores), split_scores, color='black', alpha=0.8, s=10, zorder=3)  # Smaller, darker dots
-
-    # # Draw lines connecting individual scores within the same subgroup across different groups
-    # for subgroup_idx in range(len(all_subgroups)):
-    #     # Get scores for the current subgroup from all groups
-    #     scores_per_group = []
-    #     x_positions = []
-        
-    #     for group_idx in range(len(filtered_colors)):
-    #         group_name = list(filtered_colors.keys())[group_idx]
-    #         subgroup_name = all_subgroups[subgroup_idx]
-    #         scores = modelresults_dict[group_name][subgroup_name]
-    #         scores_per_group.append(scores)
-    #         x_pos = positions[group_idx * len(all_subgroups) + subgroup_idx]
-    #         x_positions.append(x_pos)
-
-    #         # Check if the number of scores is consistent across groups
-    #         if len(scores) != len(scores_per_group[0]):
-    #             print(f"Warning: Inconsistent number of scores for subgroup '{subgroup_name}' in group '{group_name}'")
-
-    #     # Draw lines connecting each pair of scores for this subgroup
-    #     for i in range(len(scores_per_group[0])):  # Assuming scores_per_group has same length
-    #         y_values = [scores_per_group[group_idx][i] for group_idx in range(len(filtered_colors))]
-    #         plt.plot(x_positions, y_values, color='black', alpha=0.5, zorder=2)
-    # print(all_subgroups)
-    # for group_idx, group_name in enumerate(filtered_colors.keys()):
-    #     print('group_idx')
-    #     print(group_idx)
-
-    #     y_values = []
-    #     x_positions = []
-
-    #     for subgroup_idx in range(len(all_subgroups)):
-    #         subgroup_name = all_subgroups[subgroup_idx]
-    #         scores = modelresults_dict[group_name][subgroup_name]
-    #         y_values.append(scores)
-    #         x_pos = positions[group_idx * len(all_subgroups) + subgroup_idx]
-    #         x_positions.append(x_pos)
-
-    #     # Draw lines connecting each pair of scores for this subgroup within all groups
-    #     for i in range(len(y_values[0])):  # Assuming all y_values have the same length
-    #         plt.plot(x_positions, [y[i] for y in y_values], color='black', alpha=0.5, zorder=2)
 
     # Add a legend
     handles = [plt.Line2D([0], [0], color=color, lw=4) for color in filtered_colors.values()]
@@ -547,7 +505,280 @@ def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_fol
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
     # Save the plot
-    plot_file_path = save_plot_folder / f'boxplot_ko10_ki5_r2_{public_variables.Descriptor_}_{datasets}_len{row_idx+1}.png' #row_idx is number of subgroups-1
+    plot_file_path = save_plot_folder / f'boxplot_ko10_ki5_r2_{public_variables.Descriptor_}_{datasets}_len{row_idx+1}_groups{group_idx+1}.png' #row_idx is number of subgroups-1
+    plt.tight_layout()
+    plt.savefig(plot_file_path)
+    plt.close()
+    return
+
+def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_folder, csv_filename, modelresults_dict): #
+    """
+    """
+    plt.figure()
+    plt.figure(figsize=(12, 6))
+    # Create a folder to save plots if it doesn't exist
+    # save_plot_folder = master_folder / Path('boxplots_compare_groups')
+    save_plot_folder = save_path / Path('boxplots_compare_groups')
+    save_plot_folder.mkdir(parents=True, exist_ok=True)
+    
+    # Define colors and labels for different subfolders
+    colors = {
+        public_variables.dfs_descriptors_only_path_.name: 'lightblue',
+        public_variables.dfs_reduced_path_.name: 'lightgreen',
+        public_variables.dfs_reduced_and_MD_path_.name: 'lightcoral',
+        public_variables.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
+        "PCA":"salmon",
+        "2D":'goldenrod',
+        'descriptors only scaled mw': 'salmon',
+        "reduced_t0.9": 'teal',
+        "reduced_t0.75": 'goldenrod',
+        "custom_dataframes": 'mediumorchid'
+    }
+
+    labels = {
+        "2D":"2D fingerprint",
+        public_variables.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
+        public_variables.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
+        public_variables.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
+        public_variables.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
+        "PCA":"PCA",
+        'descriptors only scaled mw': 'salmon',
+        "reduced_t0.9": 'teal',
+        "reduced_t0.75": 'goldenrod',
+        "custom_dataframes": 'x features'
+    }
+
+    filtered_colors = {key: colors[key] for key in modelresults_dict.keys() if key in colors}
+    filtered_labels = {key: labels[key] for key in modelresults_dict.keys() if key in labels}
+    
+    # Define parameters
+    box_width = 3
+    group_gap = 1
+    group_spacing = 5  # Increased spacing to separate different subgroups clearly
+    border = 2
+
+    # Get the group with the most values directly
+    group_with_most_values = max(modelresults_dict, key=lambda k: len(modelresults_dict[k]))
+
+    # Get all subgroups from that group
+    all_subgroups = list(modelresults_dict[group_with_most_values].keys())
+    
+    positions = []
+    box_data = []
+    box_colors = []
+    widths = []
+    base_position = 0
+
+    min_value = float('inf')  # Set to positive infinity
+    max_value = float('-inf')  # Set to negative infinity
+
+    for group_idx, (group_name, color) in enumerate(filtered_colors.items()):
+        print(group_idx)
+        print(group_name)
+        print(color)
+        num_rows = len(modelresults_dict[group_name].values())
+        
+        for row_idx, subgroup in enumerate(modelresults_dict[group_name].keys()):
+
+            split_scores = modelresults_dict[group_name][subgroup]
+            
+            min_value = min(min_value, min(split_scores))
+            max_value = max(max_value, max(split_scores))
+
+            #using group_idx/num_rows will make it assume that all groups have same length!
+
+            pos = base_position + row_idx * (box_width + group_gap)
+
+            positions.append(pos)
+            box_data.append(split_scores)
+            box_colors.append(color)
+            widths.append(box_width)
+        base_position = base_position + ((num_rows * (box_width + group_gap) - group_gap) + group_spacing)
+
+    boxplot_dict = plt.boxplot(box_data, positions=positions, patch_artist=True,
+                                widths=widths,  # Set box widths
+                                medianprops=dict(color='red'))
+    
+    # Apply colors to each box
+    for patch, color in zip(boxplot_dict['boxes'], box_colors):
+        patch.set_facecolor(color)
+    
+    # Round min_value down to the nearest number with 1 decimal place
+    min_value = math.floor(min_value * 10) / 10
+
+    # Round max_value up to the nearest number with 1 decimal place
+    max_value = math.ceil(max_value * 10) / 10
+
+    # Add a legend
+    handles = [plt.Line2D([0], [0], color=color, lw=4) for color in filtered_colors.values()]
+    plt.legend(handles=handles, labels=filtered_labels.values(), loc='best')
+
+    plt.title(f"{public_variables.MLmodel_} Boxplot results for Kfold=10 using {public_variables.Descriptor_} 3D descriptors") #
+    plt.xlabel("conformations group")
+    plt.ylabel("R²-score")
+    
+    # Adjust x-axis limits
+    plt.xlim(-(box_width/2) - border, positions[-1] + (box_width/2) + border)
+    # Set y-axis limits between 0.4 and 0.9
+    plt.ylim(min_value, max_value)
+    # Set xticks and labels
+    xtick_labels = [subgroup for group in modelresults_dict.values() for subgroup in group.keys()]
+
+    plt.xticks(ticks=positions, labels=xtick_labels, rotation=45, ha='right')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+    # Save the plot
+    plot_file_path = save_plot_folder / f'boxplot_ko10_ki5_r2_{public_variables.Descriptor_}_{datasets}_len{row_idx+1}_groups{group_idx+1}.png' #row_idx is number of subgroups-1
+    plt.tight_layout()
+    plt.savefig(plot_file_path)
+    plt.close()
+    return
+
+
+def density_plots_compare_groups(modelresults_dict, save_path, datasets): #master_folder, csv_filename, modelresults_dict): #
+    """
+    """
+    plt.figure()
+    plt.figure(figsize=(12, 6))
+    # Create a folder to save plots if it doesn't exist
+    # save_plot_folder = master_folder / Path('boxplots_compare_groups')
+    save_plot_folder = save_path / Path('boxplots_compare_groups')
+    save_plot_folder.mkdir(parents=True, exist_ok=True)
+    
+    # Define colors and labels for different subfolders
+    colors = {
+        public_variables.dfs_descriptors_only_path_.name: 'lightblue',
+        public_variables.dfs_reduced_path_.name: 'lightgreen',
+        public_variables.dfs_reduced_and_MD_path_.name: 'lightcoral',
+        public_variables.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
+        "PCA":"salmon",
+        "2D":'goldenrod',
+        'descriptors only scaled mw': 'salmon',
+        "reduced_t0.9": 'teal',
+        "reduced_t0.75": 'goldenrod',
+        "custom_dataframes": 'mediumorchid'
+    }
+
+    labels = {
+        "2D":"2D fingerprint",
+        public_variables.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
+        public_variables.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
+        public_variables.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
+        public_variables.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
+        "PCA":"PCA",
+        'descriptors only scaled mw': 'salmon',
+        "reduced_t0.9": 'teal',
+        "reduced_t0.75": 'goldenrod',
+        "custom_dataframes": 'x features'
+    }
+
+    filtered_colors = {key: colors[key] for key in modelresults_dict.keys() if key in colors}
+    filtered_labels = {key: labels[key] for key in modelresults_dict.keys() if key in labels}
+    
+    # Define parameters
+    box_width = 3
+    group_gap = 1
+    group_spacing = 5  # Increased spacing to separate different subgroups clearly
+    border = 2
+
+    # Get the group with the most values directly
+    group_with_most_values = max(modelresults_dict, key=lambda k: len(modelresults_dict[k]))
+
+    # Get all subgroups from that group
+    all_subgroups = list(modelresults_dict[group_with_most_values].keys())
+    
+    positions = []
+    box_data = []
+    box_colors = []
+    widths = []
+    base_position = 0
+
+    min_value = float('inf')  # Set to positive infinity
+    max_value = float('-inf')  # Set to negative infinity
+
+    for group_idx, (group_name, color) in enumerate(filtered_colors.items()):
+        print(group_idx)
+        print(group_name)
+        print(color)
+        num_rows = len(modelresults_dict[group_name].values())
+        
+        for row_idx, subgroup in enumerate(modelresults_dict[group_name].keys()):
+
+            split_scores = modelresults_dict[group_name][subgroup]
+            
+            min_value = min(min_value, min(split_scores))
+            max_value = max(max_value, max(split_scores))
+
+            #using group_idx/num_rows will make it assume that all groups have same length!
+
+            pos = base_position + row_idx * (box_width + group_gap)
+
+            positions.append(pos)
+            box_data.append(split_scores)
+            box_colors.append(color)
+            widths.append(box_width)
+        base_position = base_position + ((num_rows * (box_width + group_gap) - group_gap) + group_spacing)
+
+    # boxplot_dict = plt.boxplot(box_data, positions=positions, patch_artist=True,
+    #                             widths=widths,  # Set box widths
+    #                             medianprops=dict(color='red'))
+    
+    # # Apply colors to each box
+    # for patch, color in zip(boxplot_dict['boxes'], box_colors):
+    #     patch.set_facecolor(color)
+    # Create a single violin plot
+    fig, ax = plt.subplots(figsize=(8, 6))
+    plt.figure(figsize=(12, 6))
+    violin_parts = plt.violinplot(box_data, positions=positions, widths=widths, showmeans=False, showextrema=False, showmedians=True)
+
+    # Customize the appearance
+    # colors = ['green', 'pink', 'cyan']  # Colors for each violin
+    
+    # print(dir(violin_parts))
+    # print(type(violin_parts['bodies']))
+    # print(dir(violin_parts['bodies']))
+
+    for i, pc in enumerate(violin_parts['bodies']):
+        print(type(pc))
+        if isinstance(pc, PolyCollection):
+            print("true")
+            pc.set_facecolor(box_colors[i])  # Set the facecolor to the desired color
+        # pc.color(colors[i])  # Set fill color
+        # pc.set_edgecolor('black')    # Set edge color
+        # pc.set_alpha(0.7)            # Transparency
+    # for i, pc in enumerate(violin_parts['bodies']):
+    #     if isinstance(pc, Polygon):
+    #         pc.set_face
+    # Add medians (red dots)
+    medians = [np.median(data) for data in box_data]
+    for i, pos in enumerate(positions):
+        ax.scatter(pos, medians[i], color='red', zorder=3, label='Median' if i == 0 else "")
+    # Round min_value down to the nearest number with 1 decimal place
+    min_value = math.floor(min_value * 10) / 10
+
+    # Round max_value up to the nearest number with 1 decimal place
+    max_value = math.ceil(max_value * 10) / 10
+
+    # # Add a legend
+    # handles = [plt.Line2D([0], [0], color=color, lw=4) for color in filtered_colors.values()]
+    # plt.legend(handles=handles, labels=filtered_labels.values(), loc='best')
+
+    plt.title(f"{public_variables.MLmodel_} Boxplot results for Kfold=10 using {public_variables.Descriptor_} 3D descriptors") #
+    plt.xlabel("conformations group")
+    plt.ylabel("R²-score")
+    
+    # Adjust x-axis limits
+    plt.xlim(-(box_width/2) - border, positions[-1] + (box_width/2) + border)
+    # Set y-axis limits between 0.4 and 0.9
+    plt.ylim(min_value, max_value)
+    # Set xticks and labels
+    xtick_labels = [subgroup for group in modelresults_dict.values() for subgroup in group.keys()]
+
+    plt.xticks(ticks=positions, labels=xtick_labels, rotation=45, ha='right')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+    # Save the plot
+    plot_file_path = save_plot_folder / f'densityboxplot_ko10_ki5_r2_{public_variables.Descriptor_}_{datasets}_len{row_idx+1}_groups{group_idx+1}.png' #row_idx is number of subgroups-1
     plt.tight_layout()
     plt.savefig(plot_file_path)
     plt.close()
@@ -575,19 +806,20 @@ def main(dfs_paths = [public_variables.dfs_descriptors_only_path_]):
 
     files_to_include = ['minimized_conformation','0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20', 'minimized_conformations_10']
     
-    datasets = ['JAK1', 'GSK3'] #, 'pparD']
-    descriptor_groups = ['descriptors only', f'reduced_t{public_variables.correlation_threshold_}']#,f'reduced_t{public_variables.correlation_threshold_}_MD', 'MD only']
+    datasets_protein = ['JAK1', 'GSK3', 'pparD']
+    descriptor_groups = ['descriptors only', f'reduced_t{public_variables.correlation_threshold_}',f'reduced_t{public_variables.correlation_threshold_}_MD', 'MD only']
 
     group_results_dic = {}
 
     for descriptor_group in descriptor_groups:
         print(descriptor_group)
         combined_df = None
-        for dataset in datasets:
-            
-            df  = pd.read_csv(public_variables.dataframes_master_ / descriptor_group / f'ModelResults_{public_variables.MLmodel_}' / 'results_Ko10_Ki5_r2_WHIM.csv')
+        for dataset in datasets_protein:
+            df_path = public_variables.base_path_ / f'dataframes_{dataset}_{public_variables.Descriptor_}' / descriptor_group  /  f'ModelResults_{public_variables.MLmodel_}' / 'results_Ko10_Ki5_r2_WHIM.csv'
+            df  = pd.read_csv(df_path)
             # Filter only rows where mol_id is in mol_id_list
             df = df[df['mol_id'].isin(files_to_include)]
+            
             
             # Filter only 'mol_id' and 'split*' columns
             df = df[['mol_id'] + [col for col in df.columns if col.startswith('split')]]
@@ -595,19 +827,20 @@ def main(dfs_paths = [public_variables.dfs_descriptors_only_path_]):
             df = df.reset_index(drop=True)
             # Rename 'split*' columns to include the dataset name
             df = df.rename(columns={col: f"{col}_{dataset}" for col in df.columns if col != 'mol_id'})
-            
+
             combined_df = combined_df.merge(df, on='mol_id', how='inner') if combined_df is not None else df
 
             
         print(combined_df)
-        save_csv_path = save_combined_df(combined_df, descriptor_group, datasets)
+        save_csv_path = save_combined_df(combined_df, descriptor_group, datasets_protein)
         print(save_csv_path)
         group_result_dic = modelresults_to_dict(combined_df, idlist_exclude_files=[]) #{'minimized_conformation': [20 values], '0ns': [20 values], etc}
 
         group_results_dic[descriptor_group] = group_result_dic
     
-    boxplots_compare_groups(group_results_dic, save_csv_path, datasets)
-    
+    # boxplots_compare_groups(group_results_dic, save_csv_path, datasets_protein)
+    density_plots_compare_groups(group_results_dic, save_csv_path, datasets_protein)
+
     # for csvfile_name, modelresults_dict in outer_dict.items(): #loop over k10_r2 etc.
     #     # boxplots_compare_individuals(master_folder, csvfile_name, modelresults_dict)
     #     # print('ja')

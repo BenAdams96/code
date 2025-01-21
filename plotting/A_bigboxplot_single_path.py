@@ -6,7 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from global_files import public_variables
 from collections import defaultdict
-
+import math
 
 def display_dataframe_summary(dataframes_nested_dict):
     """
@@ -443,6 +443,9 @@ def boxplots_compare_groups(master_folder, csv_filename, modelresults_dict):
     widths = []
     base_position = 0
 
+    min_value = float('inf')  # Set to positive infinity
+    max_value = float('-inf')  # Set to negative infinity
+
     for group_idx, (group_name, color) in enumerate(filtered_colors.items()):
         num_rows = len(modelresults_dict[group_name].values())
         
@@ -451,6 +454,8 @@ def boxplots_compare_groups(master_folder, csv_filename, modelresults_dict):
             split_scores = modelresults_dict[group_name][subgroup]
             
              #using group_idx/num_rows will make it assume that all groups have same length!
+            min_value = min(min_value, min(split_scores))
+            max_value = max(max_value, max(split_scores))
 
             pos = base_position + row_idx * (box_width + group_gap)
 
@@ -467,6 +472,12 @@ def boxplots_compare_groups(master_folder, csv_filename, modelresults_dict):
     for patch, color in zip(boxplot_dict['boxes'], box_colors):
         patch.set_facecolor(color)
     
+
+    # Round min_value down to the nearest number with 1 decimal place
+    min_value = math.floor(min_value * 10) / 10
+
+    # Round max_value up to the nearest number with 1 decimal place
+    max_value = math.ceil(max_value * 10) / 10
     # # Add individual data points
     # for pos, split_scores in zip(positions, box_data):
     #     plt.scatter([pos] * len(split_scores), split_scores, color='black', alpha=0.8, s=10, zorder=3)  # Smaller, darker dots
@@ -523,7 +534,8 @@ def boxplots_compare_groups(master_folder, csv_filename, modelresults_dict):
     # Adjust x-axis limits
     plt.xlim(-(box_width/2) - border, positions[-1] + (box_width/2) + border)
     # Set y-axis limits between 0.4 and 0.9
-    plt.ylim(0.45, 0.9)
+    plt.ylim(min_value, max_value)
+    
     # Set xticks and labels
     xtick_labels = [subgroup for group in modelresults_dict.values() for subgroup in group.keys()]
 

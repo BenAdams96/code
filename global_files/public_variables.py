@@ -7,7 +7,9 @@ print(base_path_)
 #dataset related variable names
 MLmodel_ = 'RF'
 Descriptor_ = 'WHIM' #choose between 'WHIM' and 'GETAWAY' #VARIABLE
-dataset_protein_ = 'pparD'   #VARIABLE 'JAK1' or 'GSK3'
+list_dataset_proteins_ = ["JAK1","GSK3","pparD"]
+list_Descriptors_ = ['WHIM', 'GETAWAY']
+dataset_protein_ = 'JAK1'   #VARIABLE 'JAK1' or 'GSK3'
 dataset_filename_ = dataset_protein_ + '_dataset.csv'
 dataset_path_ = base_path_ / dataset_filename_
 
@@ -38,6 +40,15 @@ dfs_MD_only_path_ = dataframes_master_ / 'MD only'
 Modelresults_folder_ = f'ModelResults_{MLmodel_}' #not a path because can be in different paths
 Modelresults_combined_folder_ = f'ModelResults_combined_{MLmodel_}'
 
+list_dfs_paths_ = [dfs_descriptors_only_path_, dfs_reduced_path_, dfs_reduced_and_MD_path_, dfs_MD_only_path_]
+
+def get_paths(dataset_protein, descriptor):
+    dataframes_master_ = base_path_ / Path(f'dataframes_{dataset_protein}_{descriptor}')
+    dfs_descriptors_only_path_ =  dataframes_master_ / 'descriptors only'
+    dfs_reduced_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}'
+    dfs_reduced_and_MD_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}_MD'
+    dfs_MD_only_path_ = dataframes_master_ / 'MD only'
+    return [dfs_descriptors_only_path_, dfs_reduced_path_, dfs_reduced_and_MD_path_, dfs_MD_only_path_]
 # dataframes_folder_red_ = f'dataframes_{dataset_protein_}_{descriptors_}_i{timeinterval_snapshots}_t{correlation_threshold_}'
 # dataframes_folder_red_MD = f'dataframes_{dataset_protein_}_{descriptors_}_i{timeinterval_snapshots}_t{correlation_threshold_}_MD'
 # Modelresults_ = f'ModelResults_{model_}_{dataset_protein_}_{descriptors_}_i{timeinterval_snapshots}'

@@ -3,9 +3,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
-from global_files import csv_to_dataframes
-
-from Models.RF.RF_Class import RandomForestModel
 from global_files import public_variables
 from Models.RF.BaseModel_Classes import RandomForestModel2, XGBoostModel2, SVRModel2
 
@@ -19,7 +16,7 @@ import pickle
 from typing import List
 from typing import Dict
 import numpy as np
-from pathlib import Path
+
 
 import pandas as pd
 import math
@@ -57,6 +54,8 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5):
     """
     print("Nested Cross Validation")
 
+    fold_assignments = pd.DataFrame({"mol_id": df["mol_id"]})
+
     target_column = 'PKI'
     X = df.drop(columns=[target_column, 'mol_id', 'conformations (ns)'], axis=1, errors='ignore')
     
@@ -65,29 +64,40 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5):
     # Stratified outer loop
     bins, binned_y = bin_pki_values(y, num_bins=5)  # Bin pKi values for stratification, still a dataframe: all molecules with an index of which bin they are in
     unique, counts = np.unique(binned_y, return_counts=True)
-    print(bins)
-    print(counts)
-    # Group by mol_id
+    print(f"{bins=}")
+    print(f"{counts=}")
+    # Group by mol_id (reduces dataframe to the amount of molecules)
     grouped_df = df.groupby('mol_id').first()  # One row per molecule, so group by mol_id
     # bins2, grouped_binned_y = bin_pki_values(grouped_df[target_column], num_bins=5)
+
+    #have 5 bins of equal lengths, and bin the molecule based on pki in the correct group
+    #series with index:mol_id and value the bin index (ranging from 0 to 4)
     grouped_binned_y = bin_pki_values(grouped_df[target_column], num_bins=5)[1]
-    groups_molid = grouped_df.index  # Index([1,2,3,4,6]) array of all mol_id
-    
+
+    groups_molid = grouped_df.index  # Index([1,2,3,4,6,...,615]) array of all mol_id
+    print(grouped_df)
+    print(grouped_binned_y)
+    print(groups_molid)
     fold_results = []
     custom_outer_splits = []
     all_true_pki_series = pd.Series(dtype=float)
     all_predicted_pki_series = pd.Series(dtype=float)
     outer_cv = StratifiedGroupKFold(n_splits=outer_folds,shuffle=True, random_state=10)
+    print(outer_cv)
 
     for outer_fold, (train_idx, test_idx) in enumerate(outer_cv.split(grouped_df, grouped_binned_y, groups=groups_molid)):
         print(f'Outer fold: {outer_fold}')
-        
+        outer_col = f"outer_{outer_fold}"
+
+        fold_assignments[outer_col] = None
         # Map fold indices back to the original dataframe
-        train_mols = grouped_df.iloc[train_idx].index  # Train molecule IDs
-        test_mols = grouped_df.iloc[test_idx].index  # Test molecule IDs
+        train_mol_ids = grouped_df.iloc[train_idx].index  # Train molecule IDs
+        test_mol_ids = grouped_df.iloc[test_idx].index  # Test molecule IDs
+        fold_assignments.loc[fold_assignments["mol_id"].isin(train_mol_ids), outer_col] = "train"
+        fold_assignments.loc[fold_assignments["mol_id"].isin(test_mol_ids), outer_col] = "test"
+        train_idx_full = df[df['mol_id'].isin(train_mol_ids)].index  # All rows for train molecules
+        test_idx_full = df[df['mol_id'].isin(test_mol_ids)].index  # All rows for test molecules
         
-        train_idx_full = df[df['mol_id'].isin(train_mols)].index  # All rows for train molecules
-        test_idx_full = df[df['mol_id'].isin(test_mols)].index  # All rows for test molecules
         custom_outer_splits.append((train_idx_full, test_idx_full))
         
         unique, counts = np.unique(binned_y.iloc[test_idx_full], return_counts=True)
@@ -118,15 +128,19 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5):
         grouped_binned_y_train = binned_y_train.groupby(groups_train).first()  # Match grouping
         for inner_fold, (inner_train_idx, inner_val_idx) in enumerate(inner_cv.split(grouped_X_train, grouped_binned_y_train, groups=grouped_X_train.index)):
             # print(f'  Inner fold: {inner_fold}')
-            
+            inner_col = f"outer_{outer_fold}_inner_{inner_fold}"
+            fold_assignments[inner_col] = None
             # Map fold indices back to the original molecule IDs
-            inner_train_mols = grouped_X_train.iloc[inner_train_idx].index
-            inner_val_mols = grouped_X_train.iloc[inner_val_idx].index
+            inner_train_mol_ids = grouped_X_train.iloc[inner_train_idx].index
+            inner_val_mol_ids = grouped_X_train.iloc[inner_val_idx].index
 
             # Expand molecule IDs to full conformations in `X_train`
-            inner_train_idx_full = df[df['mol_id'].isin(inner_train_mols)].index.intersection(X_train.index)
-            inner_val_idx_full = df[df['mol_id'].isin(inner_val_mols)].index.intersection(X_train.index)
+            inner_train_idx_full = df[df['mol_id'].isin(inner_train_mol_ids)].index.intersection(X_train.index)
+            inner_val_idx_full = df[df['mol_id'].isin(inner_val_mol_ids)].index.intersection(X_train.index)
+            fold_assignments.loc[fold_assignments["mol_id"].isin(inner_train_mol_ids), inner_col] = "train"
+            fold_assignments.loc[fold_assignments["mol_id"].isin(inner_val_mol_ids), inner_col] = "val"
             unique, counts = np.unique(binned_y.iloc[inner_val_idx_full], return_counts=True)
+            print(inner_val_idx_full[0:20])
             # print(unique)
             # print(counts)
             # print(np.sum(counts))
@@ -134,7 +148,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5):
             # Split inner train/validation data
             X_train_inner, X_val = X_train.loc[inner_train_idx_full], X_train.loc[inner_val_idx_full]
             y_train_inner, y_val = y_train.loc[inner_train_idx_full], y_train.loc[inner_val_idx_full]
-
+        print(fold_assignments[0:20]) #fold_assignments does the whole dataframe, but since conformations_10 was in mol_id order, it didnt look like it af first
         rf_model = RandomForestRegressor(n_trees=100, max_depth=10, min_samples_split=5, max_features='sqrt', random_state=42)
 
         grid_search = rf_model.hyperparameter_tuning(X, y,public_variables.hyperparameter_grid_RF,cv=custom_inner_splits,scoring_='r2')
@@ -191,53 +205,21 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5):
     return fold_results
 
 
-def main(dfs_path = public_variables.dfs_descriptors_only_path_):
-    exclude_files_clusters = [
-    'clustering_target10.0%_cluster1.csv', 'clustering_target10.0%_cluster2.csv',
-    'clustering_target10.0%_cluster3.csv', 'clustering_target10.0%_cluster4.csv',
-    'clustering_target10.0%_cluster5.csv', 'clustering_target10.0%_cluster6.csv',
-    'clustering_target10.0%_cluster7.csv', 'clustering_target10.0%_cluster8.csv',
-    'clustering_target10.0%_cluster9.csv', 'clustering_target10.0%_cluster10.csv',
-    'clustering_target20.0%_cluster1.csv', 'clustering_target20.0%_cluster2.csv',
-    'clustering_target20.0%_cluster3.csv', 'clustering_target20.0%_cluster4.csv',
-    'clustering_target20.0%_cluster5.csv', 'clustering_target20.0%_cluster6.csv',
-    'clustering_target20.0%_cluster7.csv', 'clustering_target20.0%_cluster8.csv',
-    'clustering_target20.0%_cluster9.csv', 'clustering_target20.0%_cluster10.csv',
-    'clustering_target30.0%_cluster1.csv', 'clustering_target30.0%_cluster2.csv',
-    'clustering_target30.0%_cluster3.csv', 'clustering_target30.0%_cluster4.csv',
-    'clustering_target30.0%_cluster5.csv', 'clustering_target30.0%_cluster6.csv',
-    'clustering_target30.0%_cluster7.csv', 'clustering_target30.0%_cluster8.csv',
-    'clustering_target30.0%_cluster9.csv', 'clustering_target30.0%_cluster10.csv',
-    'clustering_target40.0%_cluster1.csv', 'clustering_target40.0%_cluster2.csv',
-    'clustering_target40.0%_cluster3.csv', 'clustering_target40.0%_cluster4.csv',
-    'clustering_target40.0%_cluster5.csv', 'clustering_target40.0%_cluster6.csv',
-    'clustering_target40.0%_cluster7.csv', 'clustering_target40.0%_cluster8.csv',
-    'clustering_target40.0%_cluster9.csv', 'clustering_target40.0%_cluster10.csv',
-    'clustering_target50.0%_cluster1.csv', 'clustering_target50.0%_cluster2.csv',
-    'clustering_target50.0%_cluster3.csv', 'clustering_target50.0%_cluster4.csv',
-    'clustering_target50.0%_cluster5.csv', 'clustering_target50.0%_cluster6.csv',
-    'clustering_target50.0%_cluster7.csv', 'clustering_target50.0%_cluster8.csv',
-    'clustering_target50.0%_cluster9.csv', 'clustering_target50.0%_cluster10.csv'
-    ]
+def main(dfs_path = public_variables.dfs_descriptors_only_path_, Descriptor = public_variables.Descriptor_,
+            MLmodel = public_variables.MLmodel_, dataset_protein = public_variables.dataset_protein_):
 
     #create folder for storing the models and results from them
-    model_ = 'RF'
-    Modelresults_path = dfs_path / f'ModelResults_{model_}' #CHECK: if 'RF' is in public_variables or something else perhaps
+    Modelresults_path = dfs_path / f'ModelResults_{MLmodel}' #CHECK: if 'RF' is in public_variables or something else perhaps
     Modelresults_path.mkdir(parents=True, exist_ok=True)
-    only_clusters = False
-    if only_clusters == True:
-        exclude_files = ['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_1000.csv','conformations_1000_molid.csv','conformations_500.csv','conformations_200.csv','conformations_100.csv','conformations_50.csv','initial_dataframe.csv','initial_dataframes_best.csv','MD_output.csv','conformations_10.csv','conformations_20.csv','minimized_conformations_10.csv','stable_conformations.csv'] #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary]
-    else:
-        exclude_files=['conformations_1000.csv','conformations_1000_molid.csv','conformations_500.csv','conformations_200.csv','conformations_100.csv','conformations_50.csv','initial_dataframe.csv','initial_dataframes_best.csv','MD_output.csv'] + exclude_files_clusters #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
-    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic(dfs_path, exclude_files=exclude_files)
+    
+    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic(dfs_path, exclude_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_1000.csv','conformations_10.csv','conformations_1000_molid.csv','conformations_500.csv','conformations_200.csv','conformations_100.csv','conformations_50.csv','initial_dataframe.csv','initial_dataframes_best.csv','MD_output.csv','conformations_20.csv','minimized_conformations_10.csv','stable_conformations.csv'])
     print(dfs_in_dic.keys())
     sorted_keys_list = csv_to_dictionary.get_sorted_columns(list(dfs_in_dic.keys())) #RDKIT first
     dfs_in_dic = {key: dfs_in_dic[key] for key in sorted_keys_list if key in dfs_in_dic} #order
     print(dfs_in_dic.keys())
-    first_four_keys = list(dfs_in_dic.keys())[-4:]
-    filtered_dict = {key: dfs_in_dic[key] for key in first_four_keys}
-    print(filtered_dict.keys())
-
+    # first_four_keys = list(dfs_in_dic.keys())[-4:]
+    # filtered_dict = {key: dfs_in_dic[key] for key in first_four_keys}
+    # print(filtered_dict.keys())
 
     ModelResults_ = []
 
@@ -255,20 +237,16 @@ def main(dfs_path = public_variables.dfs_descriptors_only_path_):
     # fold_results = nested_cross_validation('test', simplified_df, dfs_path,outer_folds, inner_folds)
     csv_filename = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables.Descriptor_}.csv'
     csv_filename_temp = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables.Descriptor_}_temp.csv'
-    csv_filename_cluster = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables.Descriptor_}_clusters.csv'
-    csv_filename_temp_cluster = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables.Descriptor_}_temp_clusters.csv' #if i break it early i still get some results
+    # csv_filename_cluster = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables.Descriptor_}_clusters.csv'
+    # csv_filename_temp_cluster = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables.Descriptor_}_temp_clusters.csv' #if i break it early i still get some results
     for name, df in dfs_in_dic.items():
         print(name)
         fold_results = nested_cross_validation(name, df, dfs_path, outer_folds, inner_folds)
         ModelResults_.append(fold_results)
-        if only_clusters == True:
-            pd.DataFrame(ModelResults_).to_csv(Modelresults_path / csv_filename_temp_cluster, index=False)
-        else:
-            pd.DataFrame(ModelResults_).to_csv(Modelresults_path / csv_filename_temp, index=False)
-    if only_clusters == True:
-        pd.DataFrame(ModelResults_).to_csv(Modelresults_path / csv_filename_cluster, index=False)
-    else:
-        pd.DataFrame(ModelResults_).to_csv(Modelresults_path / csv_filename, index=False)
+
+        pd.DataFrame(ModelResults_).to_csv(Modelresults_path / csv_filename_temp, index=False)
+
+    pd.DataFrame(ModelResults_).to_csv(Modelresults_path / csv_filename, index=False)
     return
 
 if __name__ == "__main__":
@@ -283,6 +261,8 @@ if __name__ == "__main__":
 
     # main(public_variables.dfs_reduced_path_)
     # main(public_variables.dfs_reduced_and_MD_path_)
-    main(public_variables.dfs_MD_only_path_)
+    main(public_variables.dfs_descriptors_only_path_)
+
+    #NOTE: do in main, if i want to use dfs_descriptors_only etc or like all combinations
 
     

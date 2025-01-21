@@ -242,7 +242,7 @@ def create_pred_true_plots(name, params, all_true_values, all_predictions, dfs_p
 
 def main(dfs_path = public_variables.dfs_descriptors_only_path_):
     descriptors = public_variables.Descriptor_
-
+    print(dfs_path)
     model_ = 'DNN'
     Modelresults_path = dfs_path / f'ModelResults_{model_}' #CHECK: if 'RF' is in public_variables or something else perhaps
     Modelresults_path.mkdir(parents=True, exist_ok=True)
@@ -251,7 +251,7 @@ def main(dfs_path = public_variables.dfs_descriptors_only_path_):
     sorted_keys_list = csv_to_dictionary.get_sorted_columns(list(dfs_in_dic.keys())) #RDKIT first
     dfs_in_dic = {key: dfs_in_dic[key] for key in sorted_keys_list if key in dfs_in_dic} #order
     print(dfs_in_dic.keys())
-    first_four_keys = list(dfs_in_dic.keys())[0:11] + [list(dfs_in_dic.keys())[14]] + [list(dfs_in_dic.keys())[16]] + [list(dfs_in_dic.keys())[17]] #+ list(dfs_in_dic.keys())[16] + list(dfs_in_dic.keys())[17]
+    first_four_keys = list(dfs_in_dic.keys())[0:11] #+ [list(dfs_in_dic.keys())[14]] + [list(dfs_in_dic.keys())[16]] + [list(dfs_in_dic.keys())[17]] #+ list(dfs_in_dic.keys())[16] + list(dfs_in_dic.keys())[17]
     print(first_four_keys)
     filtered_dict = {key: dfs_in_dic[key] for key in first_four_keys}
     print(filtered_dict.keys())
@@ -271,10 +271,19 @@ def main(dfs_path = public_variables.dfs_descriptors_only_path_):
     return
 
 if __name__ == "__main__":
-    main(public_variables.dfs_descriptors_only_path_)
-    main(public_variables.dfs_reduced_path_)
-    main(public_variables.dfs_reduced_and_MD_path_)
-    main(public_variables.dfs_MD_only_path_)
+
+
+    for dataset_protein_ in public_variables.all_dataset_protein_:
+        # Construct paths dynamically for each protein
+        dataframes_master_ = public_variables.base_path_ / f'dataframes_{dataset_protein_}_{public_variables.Descriptor_}'
+        dfs_descriptors_only_path_ = dataframes_master_ / 'descriptors only'
+        dfs_reduced_path_ = dataframes_master_ / f'reduced_t{public_variables.correlation_threshold_}'
+        dfs_reduced_and_MD_path_ = dataframes_master_ / f'reduced_t{public_variables.correlation_threshold_}_MD'
+        dfs_MD_only_path_ = dataframes_master_ / 'MD only'
+        main(dfs_descriptors_only_path_)
+        main(dfs_reduced_path_)
+        main(dfs_reduced_and_MD_path_)
+        main(dfs_MD_only_path_)
 
 
 

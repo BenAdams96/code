@@ -53,17 +53,17 @@ class BaseModel:
         return grid_search
 
 # Model classes
-class RandomForestModel(BaseModel):
+class RandomForestModel2(BaseModel):
     def __init__(self, random_state=42, **kwargs):
         rf_model = RandomForestRegressor()
         super().__init__(model=rf_model, random_state=random_state, **kwargs)
 
-class XGBoostModel(BaseModel):
+class XGBoostModel2(BaseModel):
     def __init__(self, random_state=42, **kwargs):
         xgb_model = XGBRegressor()
         super().__init__(model=xgb_model, random_state=random_state, **kwargs)
 
-class SVRModel(BaseModel):
+class SVRModel2(BaseModel):
     def __init__(self, random_state=42, **kwargs):
         svr_model = SVR()
         super().__init__(model=svr_model, random_state=random_state, **kwargs)
