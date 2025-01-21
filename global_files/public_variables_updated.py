@@ -1,60 +1,80 @@
 from pathlib import Path
-#basic paths
-base_path_ = Path(__file__).resolve().parent.parent.parent #should be folder 'Afstuderen' (1 above 'code')
-Afstuderen_path_ = Path(__file__).resolve().parent.parent.parent
-code_path_ = Path(__file__).resolve().parent.parent
+from global_files.enums import Descriptor, DatasetProtein
 
+# Initialize basic paths
+base_path_ = Path(__file__).resolve().parent.parent.parent  # 'Afstuderen' folder
+Afstuderen_path_ = base_path_
+code_path_ = Afstuderen_path_ / 'code'
 
-#dataset related variable names
-MLmodel_ = 'RF'
-Descriptor_ = 'WHIM' #choose between 'WHIM' and 'GETAWAY' #VARIABLE
-dataset_protein_ = 'JAK1'   #VARIABLE 'JAK1' or 'GSK3'
-
-dataset_filename_ = dataset_protein_ + '_dataset.csv'
-dataset_path_ = Afstuderen_path_ / 'dataZ' / 'datasets' / dataset_filename_
-
-# print(dataset_path_)
-
-timeinterval_snapshots = 1 #in ns #VARIABLE (smallest value possible =  0.01 ns which is equal to 10ps)
+# Initialize dataset-related variables
+ML_MODEL = 'RF'
+DESCRIPTOR = 'WHIM'
+DATASET_PROTEIN = 'JAK1'
 correlation_threshold_ = 0.85
 
-list_MLmodels_ = ['RF', 'XGB', 'SVM', 'DNN']
+# Static lists for options
 list_Descriptors_ = ['WHIM', 'GETAWAY']
-list_dataset_proteins_ = ["JAK1","GSK3","pparD"]
+list_dataset_proteins_ = ["JAK1", "GSK3", "pparD"]
 
-#MD simulations folder file
-MDsimulations_folder_ = f'MDsimulations_{dataset_protein_}'
-MDsimulations_path_ = base_path_.parents[0] / MDsimulations_folder_
+# Non-path variables that need initialization
+non_path_variables = [
+    ('dataset_filename_', f"{DATASET_PROTEIN}_dataset.csv"),
+    ('Modelresults_folder_', f'ModelResults_{ML_MODEL}'),  # Non-path
+    ('Modelresults_combined_folder_', f'ModelResults_combined_{ML_MODEL}'),  # Non-path
+    ('MDfeatures_allmol_csvfile', f'MD_features_{DATASET_PROTEIN}.csv')  # Non-path
+]
 
-#prepare_energy_files
-energyfolder_path_ = base_path_ / f'energyfolder_files_{dataset_protein_}'
-edrfolder_path_ = energyfolder_path_ / f'edr_files_{dataset_protein_}'
-xvgfolder_path_ = energyfolder_path_ / f'xvg_files_MD_features_{dataset_protein_}'
-# MDfeatures_allmol_csvfile = f'MDfeatures_for_all_molecules_{dataset_protein_}_{timeinterval_snapshots}ns.csv'
-MDfeatures_allmol_csvfile = f'MD_features_{dataset_protein_}.csv'
+# Function to update paths dynamically
+def update_paths():
+    global base_path_, DATASET_PROTEIN, DESCRIPTOR, Afstuderen_path_
+    
+    # Update non-path variables
+    for var_name, value in non_path_variables:
+        globals()[var_name] = value
+    
+    # Create paths dynamically using globals
+    dataframes_master_ = base_path_ / f'dataframes_{DATASET_PROTEIN}_{DESCRIPTOR}'
+    globals()['dfs_descriptors_only_path_'] = dataframes_master_ / 'descriptors only'
+    globals()['dfs_reduced_path_'] = dataframes_master_ / f'reduced_t{correlation_threshold_}'
+    globals()['dfs_reduced_and_MD_path_'] = dataframes_master_ / f'reduced_t{correlation_threshold_}_MD'
+    globals()['dfs_MD_only_path_'] = dataframes_master_ / 'MD only'
+    globals()['dataset_path_'] = Afstuderen_path_ / 'dataZ/datasets' / globals()['dataset_filename_']
 
-ligand_conformations_folder_ = f'ligand_conformations_{dataset_protein_}'
-ligand_conformations_path_ = base_path_ / ligand_conformations_folder_
+    # Add the new paths and filenames
+    globals()['ligand_conformations_folder_'] = f'ligand_conformations_{DATASET_PROTEIN}'
+    globals()['ligand_conformations_path_'] = base_path_ / globals()['ligand_conformations_folder_']
+    
+    globals()['energyfolder_path_'] = base_path_ / f'energyfolder_files_{DATASET_PROTEIN}'
+    globals()['edrfolder_path_'] = globals()['energyfolder_path_'] / f'edr_files_{DATASET_PROTEIN}'
+    globals()['xvgfolder_path_'] = globals()['energyfolder_path_'] / f'xvg_files_MD_features_{DATASET_PROTEIN}'
 
-dataframes_master_ = base_path_ / Path(f'dataframes_{dataset_protein_}_{Descriptor_}')
-initial_dataframe = dataframes_master_ / Path('initial_dataframe.csv')
-dfs_descriptors_only_path_ =  dataframes_master_ / 'descriptors only'
-dfs_reduced_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}'
-dfs_PCA_path =  dataframes_master_ / 'PCA'
-dfs_reduced_and_MD_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}_MD'
-dfs_MD_only_path_ = dataframes_master_ / 'MD only'
-Modelresults_folder_ = f'ModelResults_{MLmodel_}' #not a path because can be in different paths
-Modelresults_combined_folder_ = f'ModelResults_combined_{MLmodel_}'
+# Initial update of paths and variables
+update_paths()
 
-list_dfs_paths_ = [dfs_descriptors_only_path_, dfs_reduced_path_, dfs_reduced_and_MD_path_, dfs_MD_only_path_]
+# Function to update the configuration and paths
+def update_config(new_model=None, new_descriptor=None, new_dataset_protein: DatasetProtein = None):
+    global ML_MODEL, DESCRIPTOR, DATASET_PROTEIN
+    if new_model:
+        ML_MODEL = new_model
+    if new_descriptor:
+        DESCRIPTOR = new_descriptor
+    if new_dataset_protein:
+        DATASET_PROTEIN = new_dataset_protein
+    # Update paths and variables when configuration changes
+    update_paths()
 
-def get_paths(dataset_protein, descriptor):
-    dataframes_master_ = base_path_ / Path(f'dataframes_{dataset_protein}_{descriptor}')
-    dfs_descriptors_only_path_ =  dataframes_master_ / 'descriptors only'
-    dfs_reduced_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}'
-    dfs_reduced_and_MD_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}_MD'
-    dfs_MD_only_path_ = dataframes_master_ / 'MD only'
-    return [dfs_descriptors_only_path_, dfs_reduced_path_, dfs_reduced_and_MD_path_, dfs_MD_only_path_]
+# Function to return paths dynamically
+def get_paths():
+    # Ensure the paths are updated before returning
+    update_paths()
+    return [
+        globals()['dfs_descriptors_only_path_'],
+        globals()['dfs_reduced_path_'],
+        globals()['dfs_reduced_and_MD_path_'],
+        globals()['dfs_MD_only_path_']
+    ]
+
+
 # dataframes_folder_red_ = f'dataframes_{dataset_protein_}_{descriptors_}_i{timeinterval_snapshots}_t{correlation_threshold_}'
 # dataframes_folder_red_MD = f'dataframes_{dataset_protein_}_{descriptors_}_i{timeinterval_snapshots}_t{correlation_threshold_}_MD'
 # Modelresults_ = f'ModelResults_{model_}_{dataset_protein_}_{descriptors_}_i{timeinterval_snapshots}'
