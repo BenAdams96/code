@@ -1,58 +1,60 @@
 from pathlib import Path
+#basic paths
+base_path_ = Path(__file__).resolve().parent.parent.parent #should be folder 'Afstuderen' (1 above 'code')
+Afstuderen_path_ = Path(__file__).resolve().parent.parent.parent
+code_path_ = Path(__file__).resolve().parent.parent
 
-# public_variables.py
 
-from pathlib import Path
+#dataset related variable names
+MLmodel_ = 'RF'
+Descriptor_ = 'WHIM' #choose between 'WHIM' and 'GETAWAY' #VARIABLE
+dataset_protein_ = 'JAK1'   #VARIABLE 'JAK1' or 'GSK3'
 
-# Initialize basic paths
-base_path_ = Path(__file__).resolve().parent.parent.parent  # 'Afstuderen' folder
-Afstuderen_path_ = base_path_
-code_path_ = base_path_ / 'code'
+dataset_filename_ = dataset_protein_ + '_dataset.csv'
+dataset_path_ = Afstuderen_path_ / 'dataZ' / 'datasets' / dataset_filename_
 
-# Initialize dataset-related variables
-ML_MODEL = 'RF'
-DESCRIPTOR = 'WHIM'
-DATASET_PROTEIN = 'JAK1'
+# print(dataset_path_)
+
+timeinterval_snapshots = 1 #in ns #VARIABLE (smallest value possible =  0.01 ns which is equal to 10ps)
 correlation_threshold_ = 0.85
 
-# Function to update paths dynamically
-def update_paths():
-    global dfs_descriptors_only_path_, dfs_reduced_path_, dfs_reduced_and_MD_path_, \
-        dfs_MD_only_path_, dataset_path_, ligand_conformations_path_, edrfolder_path_, \
-            xvgfolder_path_
+list_MLmodels_ = ['RF', 'XGB', 'SVM', 'DNN']
+list_Descriptors_ = ['WHIM', 'GETAWAY']
+list_dataset_proteins_ = ["JAK1","GSK3","pparD"]
 
-    dataframes_master_ = base_path_ / f'dataframes_{DATASET_PROTEIN}_{DESCRIPTOR}'
+#MD simulations folder file
+MDsimulations_folder_ = f'MDsimulations_{dataset_protein_}'
+MDsimulations_path_ = base_path_.parents[0] / MDsimulations_folder_
 
-    # Dynamically update paths
-    dfs_descriptors_only_path_ = dataframes_master_ / 'descriptors only'
+#prepare_energy_files
+energyfolder_path_ = base_path_ / f'energyfolder_files_{dataset_protein_}'
+edrfolder_path_ = energyfolder_path_ / f'edr_files_{dataset_protein_}'
+xvgfolder_path_ = energyfolder_path_ / f'xvg_files_MD_features_{dataset_protein_}'
+# MDfeatures_allmol_csvfile = f'MDfeatures_for_all_molecules_{dataset_protein_}_{timeinterval_snapshots}ns.csv'
+MDfeatures_allmol_csvfile = f'MD_features_{dataset_protein_}.csv'
+
+ligand_conformations_folder_ = f'ligand_conformations_{dataset_protein_}'
+ligand_conformations_path_ = base_path_ / ligand_conformations_folder_
+
+dataframes_master_ = base_path_ / Path(f'dataframes_{dataset_protein_}_{Descriptor_}')
+initial_dataframe = dataframes_master_ / Path('initial_dataframe.csv')
+dfs_descriptors_only_path_ =  dataframes_master_ / 'descriptors only'
+dfs_reduced_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}'
+dfs_PCA_path =  dataframes_master_ / 'PCA'
+dfs_reduced_and_MD_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}_MD'
+dfs_MD_only_path_ = dataframes_master_ / 'MD only'
+Modelresults_folder_ = f'ModelResults_{MLmodel_}' #not a path because can be in different paths
+Modelresults_combined_folder_ = f'ModelResults_combined_{MLmodel_}'
+
+list_dfs_paths_ = [dfs_descriptors_only_path_, dfs_reduced_path_, dfs_reduced_and_MD_path_, dfs_MD_only_path_]
+
+def get_paths(dataset_protein, descriptor):
+    dataframes_master_ = base_path_ / Path(f'dataframes_{dataset_protein}_{descriptor}')
+    dfs_descriptors_only_path_ =  dataframes_master_ / 'descriptors only'
     dfs_reduced_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}'
     dfs_reduced_and_MD_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}_MD'
     dfs_MD_only_path_ = dataframes_master_ / 'MD only'
-    dataset_path_ = base_path_ / 'dataZ/datasets' / f"{DATASET_PROTEIN}_dataset.csv"
-
-    ligand_conformations_folder_ = f'ligand_conformations_{DATASET_PROTEIN}'
-    ligand_conformations_path_ = base_path_ / ligand_conformations_folder_
-
-    energyfolder_path_ = base_path_ / f'energyfolder_files_{DATASET_PROTEIN}'
-    edrfolder_path_ = energyfolder_path_ / f'edr_files_{DATASET_PROTEIN}'
-    xvgfolder_path_ = energyfolder_path_ / f'xvg_files_MD_features_{DATASET_PROTEIN}'
-
-# Call update_paths once to initialize the paths
-update_paths()
-
-# Config update function for dynamically changing variables
-def update_config(new_model=None, new_descriptor=None, new_dataset_protein=None):
-    global ML_MODEL, DESCRIPTOR, DATASET_PROTEIN
-    if new_model:
-        ML_MODEL = new_model
-    if new_descriptor:
-        DESCRIPTOR = new_descriptor
-    if new_dataset_protein:
-        DATASET_PROTEIN = new_dataset_protein
-    # Recalculate dependent paths when dataset or descriptor changes
-    update_paths()
-
-
+    return [dfs_descriptors_only_path_, dfs_reduced_path_, dfs_reduced_and_MD_path_, dfs_MD_only_path_]
 # dataframes_folder_red_ = f'dataframes_{dataset_protein_}_{descriptors_}_i{timeinterval_snapshots}_t{correlation_threshold_}'
 # dataframes_folder_red_MD = f'dataframes_{dataset_protein_}_{descriptors_}_i{timeinterval_snapshots}_t{correlation_threshold_}_MD'
 # Modelresults_ = f'ModelResults_{model_}_{dataset_protein_}_{descriptors_}_i{timeinterval_snapshots}'

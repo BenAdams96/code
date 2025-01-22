@@ -4,32 +4,36 @@ import os
 import MDAnalysis as mda
 from MDAnalysis.coordinates import PDB
 import rdkit
-from global_files import public_variables
+# Project-specific imports
+from global_files import csv_to_dictionary, public_variables as pv
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
+
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors3D
 from rdkit.Chem import rdMolDescriptors
-import trj_to_pdbfiles
+
 import pandas as pd
 from pathlib import Path
 import re
 import pathlib
 
-def save_dataframes(dic_with_dfs, save_path = public_variables.dfs_descriptors_only_path_):
+def save_dataframes(dic_with_dfs):
+    save_path = pv.dfs_descriptors_only_path_
     save_path.mkdir(parents=True, exist_ok=True)
-    timeinterval = public_variables.timeinterval_snapshots
     
     for name, df in dic_with_dfs.items():
         #print(f"name: {name}, i: {df.head(1)}")
         df.to_csv(save_path / f'{name}.csv', index=False)
 
 
-def create_dfs_dic(totaldf, timeinterval = public_variables.timeinterval_snapshots):
+def create_dfs_dic(totaldf, time_interval = 1):
 
     df_dict = {}
 
     # Loop over the range from range_start to range_end (inclusive)
-    for i in np.arange(0,10+timeinterval,timeinterval):
+    for i in np.arange(0,10+time_interval,time_interval):
         i = round(i, 2)
         if i.is_integer():
             i = int(i)
@@ -44,7 +48,7 @@ def create_dfs_dic(totaldf, timeinterval = public_variables.timeinterval_snapsho
 
     return df_dict
 
-def reduce_conformations(df, interval=1):
+def reduce_dataframe(df, interval=1):
     """
     Reduces the number of conformations per molecule in the dataframe
     by selecting only specific conformations at given intervals, excluding 0.
@@ -64,24 +68,20 @@ def reduce_conformations(df, interval=1):
     
     return reduced_df
 
-def main():
-    totaldf = pd.read_csv(public_variables.initial_dataframe)
+def main(time_interval = 1):
+    initial_df = pd.read_csv(pv.initial_dataframe_)
 
-    dfs_in_dict = create_dfs_dic(totaldf, timeinterval = 1)
-    save_dataframes(dfs_in_dict,public_variables.dfs_descriptors_only_path_)
+    dfs_in_dict = create_dfs_dic(initial_df, time_interval) #only single conformations
+    save_dataframes(dfs_in_dict) #automatically save in descriptors_only_folder
     
     timeinterval = [1,0.5,0.2,0.1]
-    initial_df = pd.read_csv(public_variables.initial_dataframe)
-    print(initial_df)
-
     for t in timeinterval:
         print(t)
-        reduced_dataframe = reduce_conformations(initial_df, interval=t)
-        reduced_dataframe.to_csv(public_variables.dfs_descriptors_only_path_ / f'conformations_{int(10/t)}.csv', index=False)
-
+        reduced_dataframe = reduce_dataframe(initial_df, interval=t)
+        reduced_dataframe.to_csv(pv.dfs_descriptors_only_path_ / f'conformations_{int(10/t)}.csv', index=False)
     return
 
 if __name__ == "__main__":
 
-    main()
+    main(time_interval = 1)
 

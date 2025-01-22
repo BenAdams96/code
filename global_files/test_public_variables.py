@@ -3,7 +3,10 @@ from pathlib import Path
 # from global_files.public_variables_updated_Class import PublicVariables
 
 # from global_files import public_variables
-from global_files import public_variables_copy
+from global_files import public_variables
+from global_files.public_variables import PROTEIN, DESCRIPTOR, update_config  # Import from public_variables
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
+
 # from global_files import public_variables_updated
 # from global_files.public_variables_updated import DATASET_PROTEIN, DatasetProtein
 # from global_files.public_variables_updated import DATASET_PROTEIN, DatasetProtein
@@ -53,6 +56,19 @@ from global_files import public_variables_copy
 # print(PublicVariables.xvgfolder_path_)
 
 
-print(public_variables_copy.xvgfolder_path_)
+print(public_variables.PROTEIN)
+print(public_variables.get_variables())
+public_variables.update_config(Model_classic.XGB)
+print(public_variables.get_variables()) 
+print(public_variables.PROTEIN.dataset_length)
+print(public_variables.DESCRIPTOR.descriptor_length)
+print(PROTEIN)
+PROTEIN = DatasetProtein.GSK3
+print(PROTEIN)
+print(PROTEIN.dataset_length)
+print(public_variables.PROTEIN)
+update_config(new_dataset_protein=DatasetProtein.pparD)
+print(public_variables.MDsimulations_path_)
+print(public_variables.PROTEIN)
 
 # %%

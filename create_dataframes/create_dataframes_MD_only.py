@@ -2,7 +2,10 @@
 
 from sklearn.preprocessing import StandardScaler
 
-from global_files import public_variables,csv_to_dictionary
+# Project-specific imports
+from global_files import csv_to_dictionary, public_variables as pv
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 import matplotlib.pyplot as plt
 import itertools
 import pickle
@@ -28,7 +31,7 @@ def extract_k_and_scoring(filename):
         return None, None
     
 def get_molecules_lists_temp(parent_path):
-    folder = public_variables.dfs_descriptors_only_path_
+    folder = pv.dfs_descriptors_only_path_
     csv_file = '0ns.csv'
     final_path = parent_path / folder / csv_file
     molecules_list = []
@@ -78,8 +81,8 @@ def concatenate_group(group):
     return concatenated
 
 def create_dataframes_MD_only():
-    reduced_MD_dataframes_folder = public_variables.dfs_reduced_and_MD_path_
-    MD_only_folder = public_variables.dfs_MD_only_path_
+    reduced_MD_dataframes_folder = pv.dfs_reduced_and_MD_path_
+    MD_only_folder = pv.dfs_MD_only_path_
 
     if MD_only_folder.exists():
         if MD_only_folder.is_dir():
@@ -87,7 +90,7 @@ def create_dataframes_MD_only():
             # Remove the existing destination folder
             shutil.rmtree(MD_only_folder)
 
-    os.makedirs(MD_only_folder, exist_ok=True)
+    MD_only_folder.mkdir(parents=True, exist_ok=True)
 
     dfs_in_dic = csv_to_dictionary.csvfiles_to_dic(reduced_MD_dataframes_folder, exclude_files=['concat_ver.csv', 'concat_hor.csv','rdkit_min.csv','MD_output.csv', 'conformations_1000.csv']) # , '0ns.csv', '1ns.csv', '2ns.csv', '3ns.csv', '4ns.csv', '5ns.csv', '6ns.csv', '7ns.csv', '8ns.csv', '9ns.csv', '10ns.csv'
     dfs_in_dic_concat = csv_to_dictionary.csvfiles_to_dic(reduced_MD_dataframes_folder, exclude_files=['rdkit_min', '0ns', '1ns', '2ns', '3ns', '4ns', '5ns', '6ns', '7ns', '8ns', '9ns', '10ns'])

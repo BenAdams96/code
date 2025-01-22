@@ -4,7 +4,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
 import random
-from global_files import public_variables, csv_to_dictionary
 from sklearn.preprocessing import StandardScaler
 from collections import Counter
 import pickle
@@ -13,6 +12,11 @@ import itertools
 from typing import List
 import numpy as np
 from pathlib import Path
+
+# Project-specific imports
+from global_files import csv_to_dictionary, public_variables as pv
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
 import pandas as pd
 import math
@@ -166,10 +170,10 @@ def save_dataframes_to_csv(dic_with_dfs,save_path):
         df.to_csv(save_path / f'{name}.csv', index=False)
 
 def save_reduced_dataframes(dfs, base_path):
-    dir = public_variables.dfs_reduced_path_
+    dir = pv.dfs_reduced_path_
     final_path = base_path / dir
     final_path.mkdir(parents=True, exist_ok=True)
-    timeinterval = public_variables.timeinterval_snapshots
+    timeinterval = pv.timeinterval_snapshots
 
     for i, x in enumerate(np.arange(0, len(dfs) * timeinterval, timeinterval)):
         if x.is_integer():
@@ -195,11 +199,11 @@ def remove_constant_columns_from_dfs(dfs_dictionary):
         cleaned_dfs[key] = non_constant_columns
     return cleaned_dfs
 
-def main(dfs_path = public_variables.dfs_descriptors_only_path_, correlation_threshold = public_variables.correlation_threshold_):
-    dfs_reduced_path = public_variables.dataframes_master_ / f'reduced_t{correlation_threshold}'  # e.g., 'dataframes_JAK1_WHIM
-    dfs_reduced_path.mkdir(parents=True, exist_ok=True)
+def main(threshold = pv.correlation_threshold_):
+    dfs_reduced_path = pv.dataframes_master_ / f'reduced_t{threshold}'  # e.g., 'dataframes_JAK1_WHIM
+    pv.dfs_reduced_path_.mkdir(parents=True, exist_ok=True)
 
-    dfs_dictionary = csv_to_dictionary.main(dfs_path,exclude_files=['concat_hor.csv','concat_ver.csv', 'big.csv','conformations_200.csv','conformations_500.csv','conformations_1000.csv','conformations_1000_molid.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
+    dfs_dictionary = csv_to_dictionary.main(pv.dfs_descriptors_only_path_,exclude_files=['concat_hor.csv','concat_ver.csv', 'big.csv','conformations_200.csv','conformations_500.csv','conformations_1000.csv','conformations_1000_molid.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
 
     print(dfs_dictionary.keys())
     dfs_dictionary = remove_constant_columns_from_dfs(dfs_dictionary)
@@ -207,13 +211,14 @@ def main(dfs_path = public_variables.dfs_descriptors_only_path_, correlation_thr
     standardized_dfs_dic, correlation_matrices_dic = compute_correlation_matrices_of_dictionary(dfs_dictionary)
     
     # Reduce the dataframes based on correlation
-    reduced_dfs_in_dic = get_reduced_features_for_dataframes_in_dic(correlation_matrices_dic, dfs_dictionary, threshold=correlation_threshold)
+    reduced_dfs_in_dic = get_reduced_features_for_dataframes_in_dic(correlation_matrices_dic, dfs_dictionary, threshold)
     #reduced dataframes including mol_ID and PKI. so for 0ns 1ns etc. 
     save_dataframes_to_csv(reduced_dfs_in_dic, save_path=dfs_reduced_path)
     return
 
 if __name__ == "__main__":
-    main(dfs_path = public_variables.dfs_descriptors_only_path_, correlation_threshold=0.85)
+    pv.update_config(model=Model_classic.RF, descriptor=Descriptor.WHIM, protein=DatasetProtein.JAK1)
+    main()
     
     # bigdf = pd.read_csv(public_variables.initial_dataframe)
     # dic = {}

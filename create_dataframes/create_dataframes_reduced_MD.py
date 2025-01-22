@@ -1,4 +1,7 @@
-from global_files import public_variables, csv_to_dictionary
+# Project-specific imports
+from global_files import csv_to_dictionary, public_variables as pv
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 from pathlib import Path
 import shutil
 import pandas as pd
@@ -16,7 +19,7 @@ def extract_k_and_scoring(filename):
         return None, None
     
 def get_molecules_lists_temp(parent_path):
-    folder = public_variables.dfs_descriptors_only_path_
+    folder = pv.dfs_descriptors_only_path_
     csv_file = '0ns.csv'
     final_path = parent_path / folder / csv_file
     molecules_list = []
@@ -33,11 +36,13 @@ def extract_number(filename):
     return int(filename.split('ns.csv')[0])
 
 def MD_features_implementation():
-    reduced_dataframes_folder = public_variables.dfs_reduced_path_
-    destination_folder = public_variables.dfs_reduced_and_MD_path_
-    csv_MDfeatures_file = public_variables.energyfolder_path_ / 'MD_output.csv' #csv file with all the succesfull molecules and their MD simulation features for every ns
+    reduced_dataframes_folder = pv.dfs_reduced_path_
+    destination_folder = pv.dfs_reduced_and_MD_path_
+    destination_folder.mkdir(parents=True, exist_ok=True)
     
-    df_MDfeatures = pd.read_csv(csv_MDfeatures_file)
+    MD_outputfile = pv.MD_outputfile_ #csv file with all the succesfull molecules and their MD simulation features for every ns
+    
+    df_MDfeatures = pd.read_csv(MD_outputfile)
     df_MDfeatures['picoseconds'] = df_MDfeatures['picoseconds'] / 1000 #go from picoseconds to ns
 
     # delete all csv files in the folder except for MD_output.csv
@@ -48,9 +53,9 @@ def MD_features_implementation():
 
     #copy_redfolder_only_csv_files(reduced_dataframes_folder, destination_folder)
     os.makedirs(destination_folder, exist_ok=True)
-    shutil.copy(csv_MDfeatures_file, destination_folder) #copy 'MD_output.csv' to
-    #NOTE: not sure if public_variables.inital_dataframe will work because its a full path
-    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic(reduced_dataframes_folder, exclude_files=['concat_ver.csv', 'concat_hor.csv','rdkit_min.csv','MD_output.csv', 'conformations_1000.csv', 'conformations_1000_molid.csv', 'conformations_1000_mol_id.csv', f'{public_variables.initial_dataframe}.csv', 'initial_dataframe_mol_id.csv','stable_conformations.csv']) # , '0ns.csv', '1ns.csv', '2ns.csv', '3ns.csv', '4ns.csv', '5ns.csv', '6ns.csv', '7ns.csv', '8ns.csv', '9ns.csv', '10ns.csv'
+    shutil.copy(MD_outputfile, destination_folder) #copy 'MD_output.csv' to
+    #NOTE: not sure if pv.inital_dataframe will work because its a full path
+    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic(reduced_dataframes_folder, exclude_files=['concat_ver.csv', 'concat_hor.csv','rdkit_min.csv','MD_output.csv', 'conformations_1000.csv', 'conformations_1000_molid.csv', 'conformations_1000_mol_id.csv', f'{pv.initial_dataframe_}.csv', 'initial_dataframe_mol_id.csv','stable_conformations.csv']) # , '0ns.csv', '1ns.csv', '2ns.csv', '3ns.csv', '4ns.csv', '5ns.csv', '6ns.csv', '7ns.csv', '8ns.csv', '9ns.csv', '10ns.csv'
     sorted_keys_list = csv_to_dictionary.get_sorted_columns(list(dfs_in_dic.keys()))
     print(sorted_keys_list)
     dfs_in_dic = {key: dfs_in_dic[key] for key in sorted_keys_list if key in dfs_in_dic}

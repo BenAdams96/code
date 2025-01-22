@@ -89,6 +89,7 @@ def trj_to_pdb(valid_molecules_list, frames_to_extract,base_path, MDsimulations_
 #NOTE: uses the MD simulations folder to create the folder 'ligand_conformations_for_every_snapshot'
 def main(MDsimulations_path = public_variables.MDsimulations_path_, output_folder = public_variables.ligand_conformations_folder_):
     base_path = public_variables.base_path_
+
     print(type(MDsimulations_path))
     print(MDsimulations_path)
     output_path = base_path / output_folder

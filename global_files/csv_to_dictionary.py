@@ -9,7 +9,6 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors3D
 from rdkit.Chem import rdMolDescriptors
-import trj_to_pdbfiles
 import pandas as pd
 from pathlib import Path
 import re
