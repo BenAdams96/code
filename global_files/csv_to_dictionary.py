@@ -28,10 +28,10 @@ def main(folder_name = public_variables.dfs_descriptors_only_path_, exclude_file
     base_path = public_variables.base_path_
     dfs_path = Path(base_path) / folder_name
     
-    dic = csvfiles_to_dic(dfs_path, exclude_files)
+    dic = csvfiles_to_dic_exclude(dfs_path, exclude_files)
     return dic
 
-def csvfiles_to_dic(dfs_path, exclude_files: list = []):
+def csvfiles_to_dic_exclude(dfs_path, exclude_files: list = []):
     '''The folder with CSV files 'dataframes_JAK1_WHIM' is the input and these CSV files will be
        put into a list of pandas DataFrames, also works with 0.5 1 1.5 formats.
     '''
@@ -40,6 +40,31 @@ def csvfiles_to_dic(dfs_path, exclude_files: list = []):
     dic = {}
     for csv_file in dfs_path.glob('*.csv'):
         if csv_file.name not in exclude_files:
+            dic[csv_file.stem] = pd.read_csv(csv_file)
+        else:
+            continue
+            # print(f'name {csv_file} is in exclude')
+    # Define the regex pattern to match filenames like '0ns.csv', '1ns.csv', '1.5ns.csv', etc.
+    # pattern = re.compile(r'^\d+(\.\d+)?ns\.csv$')
+
+    # for csv_file in sorted(dfs_path.glob('*.csv'), key=lambda x: extract_number(x.name)):
+    #     print(csv_file)
+    #     if pattern.match(csv_file.name):  # Check if the file name matches the pattern
+    #         print(f"Reading {csv_file}")
+    #         # Read CSV file into a DataFrame and append to the list
+    #         dfs.append(pd.read_csv(csv_file))
+    return dic
+
+
+def csvfiles_to_dic_include(dfs_path, include_files: list = []):
+    '''The folder with CSV files 'dataframes_JAK1_WHIM' is the input and these CSV files will be
+       put into a list of pandas DataFrames, also works with 0.5 1 1.5 formats.
+    '''
+    if include_files is None:
+        include_files = []
+    dic = {}
+    for csv_file in dfs_path.glob('*.csv'):
+        if csv_file.name in include_files:
             dic[csv_file.stem] = pd.read_csv(csv_file)
         else:
             continue

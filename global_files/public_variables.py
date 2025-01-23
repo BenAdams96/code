@@ -32,8 +32,8 @@ def update_paths():
     dfs_reduced_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}'
     dfs_reduced_and_MD_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}_MD'
     dfs_MD_only_path_ = dataframes_master_ / 'MD only'
-
     Modelresults_folder_ = f'ModelResults_{ML_MODEL}' #not a path because can be in different paths
+
     Modelresults_combined_folder_ = f'ModelResults_combined_{ML_MODEL}'
 
     #MD simulations folder file
@@ -54,18 +54,24 @@ def update_paths():
 update_paths()
 
 # Config update function for dynamically changing variables
-def update_config(model: Union[Model_classic, Model_deep]=None,
-                  descriptor: Descriptor=None,
-                  protein: DatasetProtein = None):
+def update_config(model_: Union[Model_classic, Model_deep]=None,
+                  descriptor_: Descriptor=None,
+                  protein_: DatasetProtein = None):
     global ML_MODEL, DESCRIPTOR, PROTEIN
-    if model:
-        ML_MODEL = model
-    if descriptor:
-        DESCRIPTOR = descriptor
-    if protein:
-        PROTEIN = protein
+    if model_:
+        ML_MODEL = model_
+    if descriptor_:
+        DESCRIPTOR = descriptor_
+    if protein_:
+        PROTEIN = protein_
     # Recalculate dependent paths when dataset or descriptor changes
     update_paths()
+
+def get_paths(model_: Union[Model_classic, Model_deep]=None,
+                  descriptor_: Descriptor=None,
+                  protein_: DatasetProtein = None):
+    update_config(model_=model_, descriptor_=descriptor_, protein_=protein_)
+    return [dfs_descriptors_only_path_, dfs_reduced_path_, dfs_reduced_and_MD_path_, dfs_MD_only_path_]
 
 def get_variables():
     return ML_MODEL, DESCRIPTOR, PROTEIN
@@ -147,7 +153,7 @@ hyperparameter_grid_ = {
 #     'max_features': ['sqrt']
 # }
 hyperparameter_grid_RF = {
-    'n_estimators': [100],
+    'n_estimators': [100,150],
     'max_depth': [5,8],
     'min_samples_split': [2,5],
     'min_samples_leaf': [2,5],

@@ -36,7 +36,7 @@ def main():
     return
 
 if __name__ == "__main__":
-    pv.update_config(model= Model_classic.RF, protein=DatasetProtein.GSK3)
+    pv.update_config(model_= Model_classic.RF, protein=DatasetProtein.GSK3)
     main()
 
     

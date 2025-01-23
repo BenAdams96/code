@@ -9,15 +9,15 @@ from create_dataframes import create_initial_dataframe,create_dataframes_descrip
 def main():
     print('create dataframe files')
 
-    # screate_initial_dataframe.main()
-    # create_dataframes_descriptors_only.main(time_interval= 1)
-    # create_dataframes_reduced.main(threshold=0.85)
-    # create_dataframes_reduced_MD.main()
+    create_initial_dataframe.main()
+    create_dataframes_descriptors_only.main(time_interval= 1)
+    create_dataframes_reduced.main(threshold=0.85)
+    create_dataframes_reduced_MD.main()
     create_dataframes_MD_only.main()
     
 if __name__ == "__main__":
     # Update public variables
-    pv.update_config(model=Model_classic.RF, descriptor=Descriptor.WHIM, protein=DatasetProtein.JAK1)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
 
     # Call main
     main()

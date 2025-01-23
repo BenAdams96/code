@@ -92,8 +92,8 @@ def create_dataframes_MD_only():
 
     MD_only_folder.mkdir(parents=True, exist_ok=True)
 
-    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic(reduced_MD_dataframes_folder, exclude_files=['concat_ver.csv', 'concat_hor.csv','rdkit_min.csv','MD_output.csv', 'conformations_1000.csv']) # , '0ns.csv', '1ns.csv', '2ns.csv', '3ns.csv', '4ns.csv', '5ns.csv', '6ns.csv', '7ns.csv', '8ns.csv', '9ns.csv', '10ns.csv'
-    dfs_in_dic_concat = csv_to_dictionary.csvfiles_to_dic(reduced_MD_dataframes_folder, exclude_files=['rdkit_min', '0ns', '1ns', '2ns', '3ns', '4ns', '5ns', '6ns', '7ns', '8ns', '9ns', '10ns'])
+    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic_exclude(reduced_MD_dataframes_folder, exclude_files=['concat_ver.csv', 'concat_hor.csv','rdkit_min.csv','MD_output.csv', 'conformations_1000.csv']) # , '0ns.csv', '1ns.csv', '2ns.csv', '3ns.csv', '4ns.csv', '5ns.csv', '6ns.csv', '7ns.csv', '8ns.csv', '9ns.csv', '10ns.csv'
+    dfs_in_dic_concat = csv_to_dictionary.csvfiles_to_dic_exclude(reduced_MD_dataframes_folder, exclude_files=['rdkit_min', '0ns', '1ns', '2ns', '3ns', '4ns', '5ns', '6ns', '7ns', '8ns', '9ns', '10ns'])
 
     sorted_keys_list = csv_to_dictionary.get_sorted_columns(list(dfs_in_dic.keys()))
     dfs_in_dic = {key: dfs_in_dic[key] for key in sorted_keys_list if key in dfs_in_dic}

@@ -217,7 +217,8 @@ def main(threshold = pv.correlation_threshold_):
     return
 
 if __name__ == "__main__":
-    pv.update_config(model=Model_classic.RF, descriptor=Descriptor.WHIM, protein=DatasetProtein.JAK1)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+
     main()
     
     # bigdf = pd.read_csv(public_variables.initial_dataframe)
