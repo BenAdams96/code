@@ -2,7 +2,7 @@ from sklearn.model_selection import GridSearchCV, KFold
 
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.metrics import mean_squared_error, r2_score
-
+from sklearn.tree import export_text
 from sklearn.ensemble import RandomForestRegressor
 
 from global_files import csv_to_dictionary, public_variables as pv
@@ -193,30 +193,38 @@ def nested_cross_validation(name, df,outer_folds=10, inner_folds=5):
         model = pv.ML_MODEL.model
         # grid_search = hyperparameter_tuning(model_instance, X, y, pv.ML_MODEL.hyperparameter_grid, cv=custom_inner_splits, scoring='r2')
         grid_search = hyperparameter_tuning(model, X, y, pv.hyperparameter_grid_RF, cv=custom_inner_splits, scoring='r2')
-        print(grid_search)
         df_results = pd.DataFrame(grid_search.cv_results_)
         print(df_results)
-        best_row = df_results[df_results["rank_test_score"] == 1]
-
-                
-        # Convert the row to a Series
-        best_series = best_row.squeeze()
-
-        # Print the Series
-        print(best_series)
+        for i in range(len(df_results)):
+            params = df_results.loc[i, 'params']  # Extract the hyperparameter set
+            print(f"Hyperparameters Set {i + 1}: {params}")
         best_model = grid_search.best_estimator_
 
-        print(type(best_model))
-        print(best_model)
         #build a "final" model for this train test split.
         best_model.fit(X_train, y_train)
-        ypred = best_model.predict(X_test)
-        r2_score_ = r2_score(y_test, ypred)
+        y_pred = best_model.predict(X_test)
+        r2_score_ = r2_score(y_test, y_pred)
+        tree = best_model.estimators_[0]
+        tree_rules = export_text(tree, feature_names=list(X.columns))  # X.columns if using a DataFrame
+        print(tree_rules)
         print(r2_score_)
+
+        grid_search2 = hyperparameter_tuning(model, X, y, pv.hyperparameter_grid_RF, cv=custom_inner_splits, scoring='neg_root_mean_squared_error')
+        df_results = pd.DataFrame(grid_search2.cv_results_)
+        print(df_results)
+        best_model = grid_search2.best_estimator_
+
+        #build a "final" model for this train test split.
+        best_model.fit(X_train, y_train)
+        y_pred = best_model.predict(X_test)
+        r2_score_ = r2_score(y_test, y_pred)
+        print(r2_score_)
+        print('stop')
 
     #     rf_model.model.random_state = 42
     #     rf_model.model.fit(X_train, y_train)
     #     y_pred = rf_model.predict(X_test)
+
     #     r2_score = rf_model.model.score(X_test, y_test)
     #     print(f'R2 score for outer fold {outer_fold}: {r2_score}')
     #     fold_results.append(r2_score) #append r2_score to the outer_fold scores
