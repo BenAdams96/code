@@ -1,9 +1,9 @@
-# %%
+
 from pathlib import Path
 # from global_files.public_variables_updated_Class import PublicVariables
 
 # from global_files import public_variables
-from global_files import public_variables
+from global_files import public_variables as pv
 from global_files.public_variables import PROTEIN, DESCRIPTOR, update_config  # Import from public_variables
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
@@ -56,19 +56,33 @@ from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetPro
 # print(PublicVariables.xvgfolder_path_)
 
 
-print(public_variables.PROTEIN)
-print(public_variables.get_variables())
-public_variables.update_config(Model_classic.XGB)
-print(public_variables.get_variables()) 
-print(public_variables.PROTEIN.dataset_length)
-print(public_variables.DESCRIPTOR.descriptor_length)
-print(PROTEIN)
-PROTEIN = DatasetProtein.GSK3
-print(PROTEIN)
-print(PROTEIN.dataset_length)
-print(public_variables.PROTEIN)
-update_config(new_dataset_protein=DatasetProtein.pparD)
-print(public_variables.MDsimulations_path_)
-print(public_variables.PROTEIN)
+# print(public_variables.PROTEIN)
+# print(public_variables.get_variables())
+# public_variables.update_config(Model_classic.XGB)
+# print(public_variables.get_variables()) 
+# print(public_variables.PROTEIN.dataset_length)
+# print(public_variables.DESCRIPTOR.descriptor_length)
+# print(PROTEIN)
+# PROTEIN = DatasetProtein.GSK3
+# print(PROTEIN)
+# print(PROTEIN.dataset_length)
+# print(public_variables.PROTEIN)
+# update_config(new_dataset_protein=DatasetProtein.pparD)
+# print(public_variables.MDsimulations_path_)
+# print(public_variables.PROTEIN)
 
-# %%
+pv.update_config(model_=Model_classic.XGB, descriptor_=Descriptor.GETAWAY, protein_=DatasetProtein.JAK1)
+print(pv.DESCRIPTOR)
+print(pv.DESCRIPTOR.name)
+print(pv.DESCRIPTOR.value)
+print(pv.DESCRIPTOR.descriptor_length)
+
+
+print(pv.ML_MODEL)
+print(pv.ML_MODEL.name)
+print(type(pv.ML_MODEL))
+print(type(pv.ML_MODEL.name))
+print(pv.ML_MODEL.model)
+print(pv.ML_MODEL.hyperparameter_grid)
+
+

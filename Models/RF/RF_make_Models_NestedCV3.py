@@ -7,7 +7,8 @@ from global_files import public_variables
 from Models.RF.BaseModel_Classes import RandomForestModel2, XGBoostModel2, SVRModel2
 
 from sklearn.preprocessing import StandardScaler
-
+from global_files import public_variables_usedthis
+from Models.RF.RF_Class import RandomForestModel
 from global_files import csv_to_dictionary
 from sklearn.model_selection import StratifiedKFold, KFold, StratifiedGroupKFold
 import matplotlib.pyplot as plt
@@ -149,9 +150,9 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5):
             X_train_inner, X_val = X_train.loc[inner_train_idx_full], X_train.loc[inner_val_idx_full]
             y_train_inner, y_val = y_train.loc[inner_train_idx_full], y_train.loc[inner_val_idx_full]
         print(fold_assignments[0:20]) #fold_assignments does the whole dataframe, but since conformations_10 was in mol_id order, it didnt look like it af first
-        rf_model = RandomForestRegressor(n_trees=100, max_depth=10, min_samples_split=5, max_features='sqrt', random_state=42)
+        rf_model = RandomForestRegressor(n_estimators=100, max_depth=10, min_samples_split=5, max_features='sqrt', random_state=42)
 
-        grid_search = rf_model.hyperparameter_tuning(X, y,public_variables.hyperparameter_grid_RF,cv=custom_inner_splits,scoring_='r2')
+        grid_search = rf_model.hyperparameter_tuning(X, y,public_variables_usedthis.hyperparameter_grid_RF,cv=custom_inner_splits,scoring_='r2')
         df_results = pd.DataFrame(grid_search.cv_results_)
         # print(df_results)
         #build a "final" model for this train test split.
@@ -205,14 +206,14 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5):
     return fold_results
 
 
-def main(dfs_path = public_variables.dfs_descriptors_only_path_, Descriptor = public_variables.Descriptor_,
-            MLmodel = public_variables.MLmodel_, dataset_protein = public_variables.dataset_protein_):
+def main(dfs_path = public_variables_usedthis.dfs_descriptors_only_path_, Descriptor = public_variables_usedthis.Descriptor_,
+            MLmodel = public_variables_usedthis.MLmodel_, dataset_protein = public_variables_usedthis.dataset_protein_):
 
     #create folder for storing the models and results from them
-    Modelresults_path = dfs_path / f'ModelResults_{MLmodel}' #CHECK: if 'RF' is in public_variables or something else perhaps
+    Modelresults_path = dfs_path / f'ModelResults_{MLmodel}' #CHECK: if 'RF' is in public_variables_usedthis or something else perhaps
     Modelresults_path.mkdir(parents=True, exist_ok=True)
     
-    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic(dfs_path, exclude_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_1000.csv','conformations_10.csv','conformations_1000_molid.csv','conformations_500.csv','conformations_200.csv','conformations_100.csv','conformations_50.csv','initial_dataframe.csv','initial_dataframes_best.csv','MD_output.csv','conformations_20.csv','minimized_conformations_10.csv','stable_conformations.csv'])
+    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic_exclude(dfs_path, exclude_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_1000.csv','conformations_10.csv','conformations_1000_molid.csv','conformations_500.csv','conformations_200.csv','conformations_100.csv','conformations_50.csv','initial_dataframe.csv','initial_dataframes_best.csv','MD_output.csv','conformations_20.csv','minimized_conformations_10.csv','stable_conformations.csv'])
     print(dfs_in_dic.keys())
     sorted_keys_list = csv_to_dictionary.get_sorted_columns(list(dfs_in_dic.keys())) #RDKIT first
     dfs_in_dic = {key: dfs_in_dic[key] for key in sorted_keys_list if key in dfs_in_dic} #order
@@ -235,10 +236,10 @@ def main(dfs_path = public_variables.dfs_descriptors_only_path_, Descriptor = pu
     # df['mol_id'] = df.index + 1
     
     # fold_results = nested_cross_validation('test', simplified_df, dfs_path,outer_folds, inner_folds)
-    csv_filename = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables.Descriptor_}.csv'
-    csv_filename_temp = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables.Descriptor_}_temp.csv'
-    # csv_filename_cluster = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables.Descriptor_}_clusters.csv'
-    # csv_filename_temp_cluster = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables.Descriptor_}_temp_clusters.csv' #if i break it early i still get some results
+    csv_filename = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables_usedthis.Descriptor_}.csv'
+    csv_filename_temp = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables_usedthis.Descriptor_}_temp.csv'
+    # csv_filename_cluster = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables_usedthis.Descriptor_}_clusters.csv'
+    # csv_filename_temp_cluster = f'results_Ko{outer_folds}_Ki{inner_folds}_{scoring}_{public_variables_usedthis.Descriptor_}_temp_clusters.csv' #if i break it early i still get some results
     for name, df in dfs_in_dic.items():
         print(name)
         fold_results = nested_cross_validation(name, df, dfs_path, outer_folds, inner_folds)
@@ -250,18 +251,18 @@ def main(dfs_path = public_variables.dfs_descriptors_only_path_, Descriptor = pu
     return
 
 if __name__ == "__main__":
-    # main(public_variables.dataframes_master_ / '2D')
-    # main(public_variables.dfs_descriptors_only_path_)
-    # main(public_variables.dfs_descriptors_only_path_)
-    # main(public_variables.dfs_PCA_path)
-    # dataframes_master_ = public_variables.base_path_ / Path(f'dataframes_GSK3_WHIM')
+    # main(public_variables_usedthis.dataframes_master_ / '2D')
+    # main(public_variables_usedthis.dfs_descriptors_only_path_)
+    # main(public_variables_usedthis.dfs_descriptors_only_path_)
+    # main(public_variables_usedthis.dfs_PCA_path)
+    # dataframes_master_ = public_variables_usedthis.base_path_ / Path(f'dataframes_GSK3_WHIM')
     # # main(dataframes_master_ / 'reduced_t0.85')
     # # main(dataframes_master_ / 'reduced_t0.85_MD')
     # main(dataframes_master_ / 'MD only')
 
-    # main(public_variables.dfs_reduced_path_)
-    # main(public_variables.dfs_reduced_and_MD_path_)
-    main(public_variables.dfs_descriptors_only_path_)
+    # main(public_variables_usedthis.dfs_reduced_path_)
+    # main(public_variables_usedthis.dfs_reduced_and_MD_path_)
+    main(public_variables_usedthis.dfs_descriptors_only_path_)
 
     #NOTE: do in main, if i want to use dfs_descriptors_only etc or like all combinations
 

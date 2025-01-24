@@ -1,14 +1,9 @@
 from sklearn.model_selection import GridSearchCV, KFold
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.svm import SVR
-from xgboost import XGBRegressor
-from sklearn.base import BaseEstimator
-from Models.RF.BaseModel_Classes import RandomForestModel2, XGBoostModel2, SVRModel2
 
-from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score
+
+from sklearn.ensemble import RandomForestRegressor
 
 from global_files import csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
@@ -60,7 +55,7 @@ def hyperparameter_tuning(model, X, y, param_grid, cv, scoring='r2'):
     grid_search.fit(X, y)
     return grid_search
 
-def nested_cross_validation(name, df, dfs_path, model ,outer_folds=10, inner_folds=5):
+def nested_cross_validation(name, df,outer_folds=10, inner_folds=5):
     """
     Perform nested cross-validation with stratified outer folds.
     Parameters:
@@ -76,7 +71,7 @@ def nested_cross_validation(name, df, dfs_path, model ,outer_folds=10, inner_fol
     target_column = 'PKI'
     X = df.drop(columns=[target_column, 'mol_id', 'conformations (ns)'], axis=1, errors='ignore')
     y = df[target_column]  # Target (pKi values)
-
+    
     # Stratified outer loop
     bins, binned_y = bin_pki_values(y, num_bins=5)  # Bin pKi values for stratification, still a dataframe: all molecules with an index of which bin they are in
     unique, counts = np.unique(binned_y, return_counts=True)
@@ -195,62 +190,74 @@ def nested_cross_validation(name, df, dfs_path, model ,outer_folds=10, inner_fol
             fold_assignments_df[inner_col] = None
 
         #TODO: custom_inner_splits is set up for the whole df and not the X_train so wrong indexing?
+        model = pv.ML_MODEL.model
+        # grid_search = hyperparameter_tuning(model_instance, X, y, pv.ML_MODEL.hyperparameter_grid, cv=custom_inner_splits, scoring='r2')
         grid_search = hyperparameter_tuning(model, X, y, pv.hyperparameter_grid_RF, cv=custom_inner_splits, scoring='r2')
+        print(grid_search)
         df_results = pd.DataFrame(grid_search.cv_results_)
         print(df_results)
+        best_row = df_results[df_results["rank_test_score"] == 1]
 
+                
+        # Convert the row to a Series
+        best_series = best_row.squeeze()
+
+        # Print the Series
+        print(best_series)
         best_model = grid_search.best_estimator_
+
         print(type(best_model))
         print(best_model)
         #build a "final" model for this train test split.
         best_model.fit(X_train, y_train)
-        r2_score = best_model.score(X_test, y_test)
-        print(r2_score)
+        ypred = best_model.predict(X_test)
+        r2_score_ = r2_score(y_test, ypred)
+        print(r2_score_)
 
-        rf_model.model.random_state = 42
-        rf_model.model.fit(X_train, y_train)
-        y_pred = rf_model.predict(X_test)
-        r2_score = rf_model.model.score(X_test, y_test)
-        print(f'R2 score for outer fold {outer_fold}: {r2_score}')
-        fold_results.append(r2_score) #append r2_score to the outer_fold scores
+    #     rf_model.model.random_state = 42
+    #     rf_model.model.fit(X_train, y_train)
+    #     y_pred = rf_model.predict(X_test)
+    #     r2_score = rf_model.model.score(X_test, y_test)
+    #     print(f'R2 score for outer fold {outer_fold}: {r2_score}')
+    #     fold_results.append(r2_score) #append r2_score to the outer_fold scores
        
-        all_true_pki_series = pd.concat([all_true_pki_series, y_test]).sort_index() #pd Series of all true pki values
-        all_predicted_pki_series = pd.concat([all_predicted_pki_series, pd.Series(y_pred, index=y_test.index)]).sort_index()
+    #     all_true_pki_series = pd.concat([all_true_pki_series, y_test]).sort_index() #pd Series of all true pki values
+    #     all_predicted_pki_series = pd.concat([all_predicted_pki_series, pd.Series(y_pred, index=y_test.index)]).sort_index()
 
-    #save the true and predicted values in a csv file for later analysis
-    mol_id_and_ns = df[['mol_id'] + (['conformations (ns)'] if 'conformations (ns)' in df else [])]
-    true_pred_pki_df = pd.DataFrame({
-        'mol_id': mol_id_and_ns['mol_id'],
-        'True_pKi': all_true_pki_series,
-        'Predicted_pKi': all_predicted_pki_series
-    })
+    # #save the true and predicted values in a csv file for later analysis
+    # mol_id_and_ns = df[['mol_id'] + (['conformations (ns)'] if 'conformations (ns)' in df else [])]
+    # true_pred_pki_df = pd.DataFrame({
+    #     'mol_id': mol_id_and_ns['mol_id'],
+    #     'True_pKi': all_true_pki_series,
+    #     'Predicted_pKi': all_predicted_pki_series
+    # })
 
-    # Add 'conformations (ns)' only if it exists in mol_id_and_ns
-    if 'conformations (ns)' in mol_id_and_ns:
-        true_pred_pki_df.insert(1, 'conformations (ns)', mol_id_and_ns['conformations (ns)'])
+    # # Add 'conformations (ns)' only if it exists in mol_id_and_ns
+    # if 'conformations (ns)' in mol_id_and_ns:
+    #     true_pred_pki_df.insert(1, 'conformations (ns)', mol_id_and_ns['conformations (ns)'])
 
-    #make sure the sorting is nice, for better viewing
-    sort_columns = ['mol_id'] + (['conformations (ns)'] if 'conformations (ns)' in true_pred_pki_df else [])
-    true_pred_pki_df = true_pred_pki_df.sort_values(by=sort_columns).reset_index(drop=True)
-    save_path = dfs_path / 'ModelResults_RF' / 'true_vs_prediction' / f'{name}.csv'
+    # #make sure the sorting is nice, for better viewing
+    # sort_columns = ['mol_id'] + (['conformations (ns)'] if 'conformations (ns)' in true_pred_pki_df else [])
+    # true_pred_pki_df = true_pred_pki_df.sort_values(by=sort_columns).reset_index(drop=True)
+    # save_path = dfs_path / 'ModelResults_RF' / 'true_vs_prediction' / f'{name}.csv'
 
-    # Ensure the parent directory exists
-    save_path.parent.mkdir(parents=True, exist_ok=True)
-    true_pred_pki_df.to_csv(save_path, index=False)
+    # # Ensure the parent directory exists
+    # save_path.parent.mkdir(parents=True, exist_ok=True)
+    # true_pred_pki_df.to_csv(save_path, index=False)
 
-    # Store the results for the fold
-    data = pd.Series(fold_results)
-    print(f'R2 score: {data.mean()}')
-    print(f'R2 std: {data.std()}')
-    fold_results = {
-        "mol_id": name,
-        "mean_test_score": data.mean(),
-        "std_test_score": data.std(),
-        "params": grid_search.best_params_,
-        **{f"split{split_idx}_test_score": fold_results[split_idx] for split_idx in range(outer_folds)},  # Loop to add splits
-    }
+    # # Store the results for the fold
+    # data = pd.Series(fold_results)
+    # print(f'R2 score: {data.mean()}')
+    # print(f'R2 std: {data.std()}')
+    # fold_results = {
+    #     "mol_id": name,
+    #     "mean_test_score": data.mean(),
+    #     "std_test_score": data.std(),
+    #     "params": grid_search.best_params_,
+    #     **{f"split{split_idx}_test_score": fold_results[split_idx] for split_idx in range(outer_folds)},  # Loop to add splits
+    # }
 
-    return fold_results
+    return #fold_results
 
 
 def main(dfs_path = pv.dfs_descriptors_only_path_):
@@ -283,7 +290,7 @@ def main(dfs_path = pv.dfs_descriptors_only_path_):
     
     for name, df in dfs_in_dic_sorted.items():
         model = RandomForestRegressor(random_state=42)
-        fold_results = nested_cross_validation(name, df, dfs_path, model, outer_folds, inner_folds)
+        fold_results = nested_cross_validation(name, df, outer_folds, inner_folds)
         ModelResults_.append(fold_results)
         pd.DataFrame(ModelResults_).to_csv(Modelresults_path / csv_filename_temp, index=False)
 
@@ -303,7 +310,8 @@ if __name__ == "__main__":
     # main(public_variables.dfs_reduced_path_)
     # main(public_variables.dfs_reduced_and_MD_path_)
 
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    print(pv.dfs_descriptors_only_path_)
     main(pv.dfs_descriptors_only_path_)
 
     #NOTE: do in main, if i want to use dfs_descriptors_only etc or like all combinations

@@ -153,7 +153,7 @@ hyperparameter_grid_ = {
 #     'max_features': ['sqrt']
 # }
 hyperparameter_grid_RF = {
-    'n_estimators': [100,150],
+    'n_estimators': [100],
     'max_depth': [5,8],
     'min_samples_split': [2,5],
     'min_samples_leaf': [2,5],
