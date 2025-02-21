@@ -14,13 +14,16 @@ ML_MODEL: Union[Model_classic, Model_deep] = Model_classic.RF
 DESCRIPTOR: Descriptor = Descriptor.WHIM
 PROTEIN: DatasetProtein = DatasetProtein.JAK1
 correlation_threshold_ = 0.85
+MDfeatures = ["Bond","U-B","Proper-Dih.","Coul-SR:Other-Other","LJ-SR:Other-Other","Coul-14:Other-Other","LJ-14:Other-Other","Coul-SR:Other-SOL","LJ-SR:Other-SOL"]
+# rerun_MD_features = ["Coul-SR:Other-Other","LJ-SR:Other-Other","Coul-14:Other-Other","LJ-14:Other-Other","Coul-SR:Other-SOL","LJ-SR:Other-SOL"]
 
 # Function to update paths dynamically
 def update_paths():
     global dataset_path_, dataframes_master_, initial_dataframe_, dfs_descriptors_only_path_, dfs_reduced_path_, dfs_reduced_and_MD_path_, \
-        dfs_MD_only_path_, Modelresults_folder_, Modelresults_combined_folder_, MDsimulations_folder_, \
-            MDsimulations_path_, ligand_conformations_folder_, ligand_conformations_path_, energyfolder_path_, \
-            edrfolder_path_, xvgfolder_path_, MD_outputfile_, MDfeatures_allmol_csvfile
+        dfs_MD_only_path_, Modelresults_folder_, Modelresults_combined_folder_, MDsimulations_folder_, true_predicted , ligand_conformations_system_path_,\
+            MDsimulations_path_, ligand_conformations_folder_, ligand_conformations_path_, energyfolder_path_, Modelresults_plots, \
+            edrfolder_path_, xvgfolder_path_, MD_outputfile_, MDfeatures_allmol_csvfile, Inner_train_Val_losses, Outer_train_Val_losses, \
+            dfs_reduced_PCA_path_, dfs_reduced_MD_PCA_path_, dfs_reduced_and_MD_combined_PCA_path_, dfs_all_PCA
 
     #Protein dataset
     dataset_path_ = base_path_ / 'dataZ/datasets' / f"{PROTEIN}_dataset.csv"
@@ -30,20 +33,31 @@ def update_paths():
     initial_dataframe_ = dataframes_master_ / Path('initial_dataframe.csv')
     dfs_descriptors_only_path_ = dataframes_master_ / 'descriptors only'
     dfs_reduced_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}'
+    dfs_reduced_PCA_path_ = dataframes_master_ / f'reduced_desc_PCA10'
+    dfs_reduced_MD_PCA_path_ = dataframes_master_ / f'reduced_MD_PCA10'
+    dfs_reduced_and_MD_combined_PCA_path_ = dataframes_master_ / f'combined_reduced_MD_PCA10'
+    dfs_all_PCA = dataframes_master_ / f'all_PCA'
     dfs_reduced_and_MD_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}_MD'
     dfs_MD_only_path_ = dataframes_master_ / 'MD only'
-    Modelresults_folder_ = f'ModelResults_{ML_MODEL}' #not a path because can be in different paths
 
+    Modelresults_folder_ = Path(f'ModelResults_{ML_MODEL}') #not a path because can be in different paths
     Modelresults_combined_folder_ = f'ModelResults_combined_{ML_MODEL}'
-
+    true_predicted = Modelresults_folder_ / 'true_predicted'
+    Inner_train_Val_losses =  Modelresults_folder_ / 'inner_train_val_losses'
+    Outer_train_Val_losses =  Modelresults_folder_ / 'outer_train_val_losses'
+    Modelresults_plots = Modelresults_folder_ / 'plots'
+    
     #MD simulations folder file
     MDsimulations_folder_ = f'MDsimulations_{PROTEIN}'
     MDsimulations_path_ = Afstuderen_path_ / "MDsimulations" / MDsimulations_folder_
 
     ligand_conformations_folder_ = f'ligand_conformations_{PROTEIN}'
+    ligand_conformations_system_folder_ = f'ligand_conformations_system_{PROTEIN}'
     ligand_conformations_path_ = Afstuderen_path_ / "dataZ/ligand_conformation_files" / ligand_conformations_folder_
+    ligand_conformations_system_path_ = Afstuderen_path_ / "dataZ/ligand_conformation_files" / ligand_conformations_system_folder_
 
-    energyfolder_path_ = Afstuderen_path_ / "dataZ/MD energy files" / f'energyfolder_files_{PROTEIN}'
+
+    energyfolder_path_ = Afstuderen_path_ / "dataZ/MD_energy_files" / f'energyfolder_files_{PROTEIN}'
     edrfolder_path_ = energyfolder_path_ / f'edr_files_{PROTEIN}'
     xvgfolder_path_ = energyfolder_path_ / f'xvg_files_MD_features_{PROTEIN}'
     MD_outputfile_ = energyfolder_path_ / 'MD_output.csv'

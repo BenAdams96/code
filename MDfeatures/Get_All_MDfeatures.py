@@ -5,7 +5,6 @@ import subprocess
 import pandas as pd
 from io import StringIO
 # import Afstuderen0.Afstuderen.removed.randomForest_add_MD_features as randomForest_add_MD_features
-from global_files import public_variables
 # import public_functions
 
 import os
@@ -16,667 +15,79 @@ import MDAnalysis as mda
 import numpy as np
 from pathlib import Path
 
-# def make_index_file2(path, pdb_filename):
-#     ''' create the 'xvg_files' folder to store the xvg files
-#         run the gmx energy command for every molecule
-#         !!! NEEDS TO BE RUN ON LINUX/BASH !!!
-#     '''
+from global_files import csv_to_dictionary, public_variables as pv
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
-#     # create the path for the xvg file to be stored
-#     xvg_file = xvgfolder_path / f'{molecule}.xvg'
-
-#     # If the file already exists, modify the filename to avoid overwriting
-#     if xvg_file.exists():
-#         # Generate a new folder for the xvg files with a suffix to avoid overwriting
-#         i = 1
-#         xvgfolder_path = xvgfolder_path / f'_{i}.xvg'
-#         while xvgfolder_path.exists():
-#             i += 1
-
-#     # Construct the command with the variable file prefix and output directory
-#     command = f"gmx energy -f {molecule}_prod.edr -o {xvg_file}"
-
-#     # specify the user input which are the features
-#     user_input = '\n'.join(features)
-
-#     if edrfolder_path.exists() and edrfolder_path.is_dir():
-#         os.chdir(edrfolder_path)
-
-#     #run the command which creates the xvg files
-#     subprocess.run(command, shell=True, input=user_input,capture_output=True, text=True)
-
-def make_PSA_index_files(MD_path):
-    os.chdir(MD_path)
-    for padded_num in (f"{i:03}" for i in range(1, 869)): #not abstract yet, not necessary
-        print(padded_num)
-        pdb_file = MD_path / padded_num / f'{padded_num}_prod.pdb'
-        ndx_file = MD_path / padded_num / f'index_PSA_{padded_num}.ndx'
-        combined_path = MD_path / padded_num
-        if combined_path.exists() and combined_path.is_dir():
-            os.chdir(MD_path / padded_num)
-            if pdb_file.exists():
-                # Construct the command and its arguments as a list
-                command = ["gmx", "make_ndx", "-f", str(pdb_file), "-o", str(ndx_file)]
-                
-                # Run the command using subprocess and provide inputs interactively
-                try:
-                    with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True) as proc:
-                        # Provide the inputs to the command
-                        proc.communicate(input='r 1 & a N* O* S*\nq\n')
-                    print(f"Index file created: {ndx_file}")
-                except subprocess.CalledProcessError as e:
-                    print(f"Error occurred while running the command: {e}")
-                except FileNotFoundError as e:
-                    print(f"Command not found: {e}")
-            else:
-                print(f'tpr not present in: {padded_num}')
-                continue
-    return
-
-def run_gmx_psa_sasa(MD_path, output_path):
-    ''' create the 'xvg_files' folder to store the xvg files
-        run the gmx energy command for every molecule
-        !!! NEEDS TO BE RUN ON LINUX/BASH !!!
-    '''
-    output_path.mkdir(parents=True, exist_ok=True)
-    # create the path for the xvg file to be stored
-    for padded_num in (f"{i:03}" for i in range(1, 869)):
-        print(padded_num)
-        combined_path = MD_path / padded_num
-        if combined_path.exists() and combined_path.is_dir():
-            os.chdir(MD_path / f'{padded_num}')
-            sasa_file = output_path / f'{padded_num}.xvg'
-            xtc_file = MD_path / padded_num / f'{padded_num}_prod.xtc'
-            tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
-            ndx_file = MD_path / padded_num / f'index_PSA_{padded_num}.ndx'
-            # If the file already exists, modify the filename to avoid overwriting
-            if tpr_file.exists():
-            # Generate a new folder for the xvg files with a suffix to avoid overwriting
-                command = f'gmx sasa -f {xtc_file} -s {tpr_file} -n {ndx_file} -o {sasa_file}'
-                user_input = '6'
-                #run the command which creates the xvg files
-                subprocess.run(command, shell=True, input=user_input,capture_output=True, text=True)
-            else:
-                continue
-    return
-
-def psa_xvg_files_to_csvfiles(energyfolder_path, sasa_xvgfolder_path): # for PSA
-    ''' go over all the xvg files in chronical order and create one big csv file which 
-    '''
-    all_data = pd.DataFrame()
-    
-    for xvg_file in sorted(sasa_xvgfolder_path.glob('*.xvg')):   #go over the xvg files/molecules in chronical order
-        print(xvg_file)
-        column_names = ['picoseconds']
-        # Read the file and filter out lines starting with '#' or '@', while extracting legends
-        with open(xvg_file, 'r') as file:
-            lines = file.readlines()
-            data_lines = []
-            for line in lines:
-                if line.startswith('#') or line.startswith('@'):
-                    if line.startswith('@ s'):
-                        # Extract the legend name
-                        column_name = "PSA"
-                        column_names.append(column_name)
-                else:
-                    data_lines.append(line)
-        
-        # Join the filtered lines into a single string
-        data_str = ''.join(data_lines) #this is the complete xvg file but without the first 30 lines/comments or so
-
-        # Use StringIO to read the string as if it were a file
-        data = pd.read_csv(StringIO(data_str), sep='\s+', header=None)
-
-        #NOTE: xvg file stays of equal length (independent of timeinterval_snapshot) so variable data as well
-        #NOTE: variable 'filtered_dataframe' only contains the dataline at the time intervals we are interested in
-        filtered_dataframe = data #data[data[0] % (public_variables.timeinterval_snapshots*1000) == 0]
-        # Rename the columns with the extracted legends
-        filtered_dataframe.columns = column_names
-        # add a column with the mol id
-        filtered_dataframe.insert(0, 'mol_id', xvg_file.name.rsplit('.', 1)[0])
-        
-        # Append the selected columns to the all_data DataFrame
-        all_data = pd.concat([all_data, filtered_dataframe], ignore_index=True)
-        
-    # concatenate the dataframes under eachother and save them in a csv file
-    #
-    
-    #MDfeatures_allmol_csvfile_ = generate_new_csv_filename(sasa_xvgfolder_path, public_variables.MDfeatures_allmol_csvfile)
-    all_data.to_csv(energyfolder_path / 'psa.csv', index=False)
-    return
-
-
-def run_gmx_dipoles(MD_path, output_path_TDM, output_path_epsilon):
-    ''' 
-    Create the 'xvg_files' folder to store the xvg files.
-    Run the gmx dipoles command for every molecule.
-    !!! NEEDS TO BE RUN ON LINUX/BASH !!!
-    '''
-    output_path_TDM.mkdir(parents=True, exist_ok=True)  # Create the folder for storing xvg files
-    output_path_epsilon.mkdir(parents=True, exist_ok=True)
-    # Loop over the molecules (using padded numbers)
-    for padded_num in (f"{i:03}" for i in range(1, 869)):
-        print(padded_num)
-        combined_path = MD_path / padded_num
-        if combined_path.exists() and combined_path.is_dir():
-            os.chdir(MD_path / f'{padded_num}')
-            dipole_file = output_path_TDM / f'{padded_num}.xvg'
-            epsilon_file = output_path_epsilon / f'{padded_num}.xvg'
-            xtc_file = MD_path / padded_num / f'{padded_num}_prod.xtc'
-            tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
-            ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
-
-            # If the .tpr file exists, run the gmx dipoles command
-            if tpr_file.exists():
-                
-                # Construct the GROMACS dipoles command
-                command = f'gmx dipoles -f {xtc_file} -s {tpr_file} -n {ndx_file} -o {dipole_file} -eps {epsilon_file}'
-                user_input = '2'  # Select the appropriate group (adjust if necessary)
-                
-                # Run the command to calculate the dipole moment
-                subprocess.run(command, shell=True, input=user_input, capture_output=True, text=True)
-            else:
-                print(padded_num)
-                continue
-
-    return
-
-def Total_dipole_moment_xvg_files_to_csvfiles(energyfolder_path, totaldipoleMoment_xvgfolder_path):
-    ''' Go over all the xvg files in chronological order and create one big CSV file. 
-        For .xvg files with multiple columns, only keep the first (picoseconds) and second columns.
-    '''
-    all_data = pd.DataFrame()  # Initialize an empty DataFrame
-    
-    for xvg_file in sorted(totaldipoleMoment_xvgfolder_path.glob('*.xvg')):   # Go over the xvg files in chronological order
-        print(xvg_file)
-        column_names = ['picoseconds', 'Mtot']  # Adjust column names for the first and second columns
-
-        # Read the file and filter out lines starting with '#' or '@', while extracting legends
-        with open(xvg_file, 'r') as file:
-            lines = file.readlines()
-            data_lines = []
-            for line in lines:
-                if line.startswith('#') or line.startswith('@'):
-                    continue  # Skip comment and metadata lines
-                else:
-                    data_lines.append(line)  # Collect data lines
-        
-        # Join the filtered lines into a single string
-        data_str = ''.join(data_lines)  # This is the complete xvg file but without comments
-
-        # Use StringIO to read the string as if it were a file
-        data = pd.read_csv(StringIO(data_str), sep='\s+', header=None)
-
-        # Select only the first (picoseconds) and second columns (SASA)
-        data = data[[0, 4]]
-
-        # Filter the data to match the time intervals you are interested in
-        filtered_dataframe = data #data[data[0] % (public_variables.timeinterval_snapshots * 1000) == 0]
-
-        # Rename the columns
-        filtered_dataframe.columns = column_names
-
-        # Add a column with the molecule ID (from the filename)
-        filtered_dataframe.insert(0, 'mol_id', xvg_file.name.rsplit('.', 1)[0])
-
-        # Append the selected columns to the all_data DataFrame
-        all_data = pd.concat([all_data, filtered_dataframe], ignore_index=True)
-        #print(all_data)
-
-    # Save the concatenated data as a CSV file
-    all_data.to_csv(energyfolder_path / 'dipole_moment_total.csv', index=False)
-    
-    return
-
-
-def epsilon_xvg_files_to_csvfiles(energyfolder_path, epsilon_xvgfolder_path):
-    ''' Go over all the xvg files in chronological order and create one big CSV file. 
-        For .xvg files with multiple columns, only keep the first (picoseconds) and second columns.
-    '''
-    all_data = pd.DataFrame()  # Initialize an empty DataFrame
-    
-    for xvg_file in sorted(epsilon_xvgfolder_path.glob('*.xvg')):   # Go over the xvg files in chronological order
-        print(xvg_file)
-        column_names = ['picoseconds', 'epsilon']  # Adjust column names for the first and second columns
-
-        # Read the file and filter out lines starting with '#' or '@', while extracting legends
-        with open(xvg_file, 'r') as file:
-            lines = file.readlines()
-            data_lines = []
-            for line in lines:
-                if line.startswith('#') or line.startswith('@'):
-                    continue  # Skip comment and metadata lines
-                else:
-                    data_lines.append(line)  # Collect data lines
-        
-        # Join the filtered lines into a single string
-        data_str = ''.join(data_lines)  # This is the complete xvg file but without comments
-
-        # Use StringIO to read the string as if it were a file
-        data = pd.read_csv(StringIO(data_str), sep='\s+', header=None)
-
-        # Select only the first (picoseconds) and second columns (SASA)
-        data = data[[0, 1]]
-
-        # Filter the data to match the time intervals you are interested in
-        filtered_dataframe = data #data[data[0] % (public_variables.timeinterval_snapshots * 1000) == 0]
-
-        # Rename the columns
-        filtered_dataframe.columns = column_names
-
-        # Add a column with the molecule ID (from the filename)
-        filtered_dataframe.insert(0, 'mol_id', xvg_file.name.rsplit('.', 1)[0])
-
-        # Append the selected columns to the all_data DataFrame
-        all_data = pd.concat([all_data, filtered_dataframe], ignore_index=True)
-        #print(all_data)
-
-    # Save the concatenated data as a CSV file
-    all_data.to_csv(energyfolder_path / 'epsilon.csv', index=False)
-    
-    return
-
-def run_gmx_gyrate(MD_path, output_path):
-    ''' 
-    Create the 'xvg_files' folder to store the xvg files.
-    Run the gmx gyrate command for every molecule.
-    !!! NEEDS TO BE RUN ON LINUX/BASH !!!
-    '''
-    output_path.mkdir(parents=True, exist_ok=True)  # Create the folder for storing xvg files
-
-    # Loop over the molecules (using padded numbers)
-    for padded_num in (f"{i:03}" for i in range(1, 869)):
-        print(padded_num)
-        combined_path = MD_path / padded_num
-        if combined_path.exists() and combined_path.is_dir():
-            os.chdir(MD_path / f'{padded_num}')
-            gyrate_file = output_path / f'{padded_num}.xvg'
-            xtc_file = MD_path / padded_num / f'{padded_num}_prod.xtc'
-            tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
-            ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
-
-            # If the .tpr file exists, run the gmx gyrate command
-            if tpr_file.exists():
-                # Construct the GROMACS gyrate command
-                command = f'gmx gyrate -f {xtc_file} -s {tpr_file} -n {ndx_file} -o {gyrate_file}'
-                user_input = '1'  # Select the appropriate group (typically group 1 is the molecule or complex)
-                
-                # Run the command to calculate the radius of gyration
-                subprocess.run(command, shell=True, input=user_input, capture_output=True, text=True)
-            else:
-                continue
-
-    return
-
-def gyration_xvg_files_to_csvfiles(energyfolder_path, gyration_xvgfolder_path):
-    ''' Go over all the xvg files in chronological order and create one big CSV file. 
-        For .xvg files with multiple columns, only keep the first (picoseconds) and second columns.
-    '''
-    all_data = pd.DataFrame()  # Initialize an empty DataFrame
-    
-    for xvg_file in sorted(gyration_xvgfolder_path.glob('*.xvg')):   # Go over the xvg files in chronological order
-        print(xvg_file)
-        column_names = ['picoseconds', 'Gyration']  # Adjust column names for the first and second columns
-
-        # Read the file and filter out lines starting with '#' or '@', while extracting legends
-        with open(xvg_file, 'r') as file:
-            lines = file.readlines()
-            data_lines = []
-            for line in lines:
-                if line.startswith('#') or line.startswith('@'):
-                    continue  # Skip comment and metadata lines
-                else:
-                    data_lines.append(line)  # Collect data lines
-        
-        # Join the filtered lines into a single string
-        data_str = ''.join(data_lines)  # This is the complete xvg file but without comments
-
-        # Use StringIO to read the string as if it were a file
-        data = pd.read_csv(StringIO(data_str), sep='\s+', header=None)
-
-        # Select only the first (picoseconds) and second columns (SASA)
-        data = data[[0, 1]]
-
-        # Filter the data to match the time intervals you are interested in
-        filtered_dataframe = data #data[data[0] % (public_variables.timeinterval_snapshots * 1000) == 0]
-
-        # Rename the columns
-        filtered_dataframe.columns = column_names
-
-        # Add a column with the molecule ID (from the filename)
-        filtered_dataframe.insert(0, 'mol_id', xvg_file.name.rsplit('.', 1)[0])
-
-        # Append the selected columns to the all_data DataFrame
-        all_data = pd.concat([all_data, filtered_dataframe], ignore_index=True)
-        #print(all_data)
-
-    # Save the concatenated data as a CSV file
-    all_data.to_csv(energyfolder_path / 'gyration.csv', index=False)
-    
-    return
+from MDfeatures import get_hbond_csv, get_rms, get_gyrate, get_dipoles, get_psa, get_sasa_psa, prepare_energy_files_from_MD
 
 def make_index_files(MD_path):
     ''' function'''
 
     # Change the directory to MD_path once before the loop
-    
     os.chdir(MD_path)
     user_input = 'q'
 
-    for padded_num in (f"{i:03}" for i in range(1, 869)): #not abstract yet, not necessary
-        tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
-        ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
-        combined_path = MD_path / padded_num
+    for mol in (f"{i:03}" for i in range(1, pv.PROTEIN.dataset_length)): #not abstract yet, not necessary
+        tpr_file = MD_path / mol / f'{mol}_prod.tpr'
+        ndx_file = MD_path / mol / f'{mol}_index.ndx'
+        combined_path = MD_path / mol
         if combined_path.exists() and combined_path.is_dir():
-            print(f"The directory exists: {combined_path}")
-            os.chdir(combined_path)
-            print(tpr_file)
+            os.chdir(combined_path) #change path to the path of the molecule
+            if ndx_file.exists():
+                os.remove(ndx_file)
             if tpr_file.exists():
                 # Construct the command and its arguments as a list
                 command = ["gmx", "make_ndx", "-f", str(tpr_file), "-o", str(ndx_file)]
-                
                 # Run the command using subprocess and provide inputs interactively
                 try:
                     with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True) as proc:
                         # Provide the inputs to the command
-                        proc.communicate(input='1 name ligand\nq\n')
+                        proc.communicate(input='name 1 ligand\nq\n')
                     print(f"Index file created: {ndx_file}")
                 except subprocess.CalledProcessError as e:
                     print(f"Error occurred while running the command: {e}")
                 except FileNotFoundError as e:
                     print(f"Command not found: {e}")
             else:
-                print(f'tpr not present in: {padded_num}')
+                print(f'tpr not present in: {mol}')
                 continue
     return
 
-def calculate_hbond(MD_path):
-    '''Function to compute hydrogen bonds using gmx hbond.'''
+def merge_csv_files_on_columns(folder_path, csv_filenames):
+    """
+    Merge multiple CSV files into a single DataFrame based on specified columns.
 
-    # Change the directory to MD_path once before the loop
+    Parameters:
+    - folder_path: str, the folder where the CSV files are located.
+    - csv_filenames: list of str, the names of the CSV files to merge.
+    - merge_columns: list of str, the columns to use as keys for the merge.
 
-    os.chdir(MD_path)
-
-    # Iterate through the padded range of numbers
-    for padded_num in (f"{i:03}" for i in range(1, 869)):  # Adjust the range as needed
-        # Define file paths
-        tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
-        xtc_file = MD_path / padded_num / f'{padded_num}_prod.xtc'  # Trajectory file
-        ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
-        hbond_file = Path('/home/ben/Download/Afstuderen0/Afstuderen/energyfolder_files_JAK1/other_MD_feature_files/Hbond') / f'{padded_num}_hbond.xvg'
-        print(type(tpr_file))
-        print(type(hbond_file))
+    Returns:
+    - DataFrame: merged DataFrame containing data from all CSV files.
+    """
+    merged_df = None
+    merge_columns = ["mol_id" , "picoseconds"]
+    # Loop through the list of CSV file names
+    for i, filename in enumerate(csv_filenames):
+        # Construct the full file path
+        file_path = os.path.join(folder_path, filename)
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(file_path)
         
-        print(tpr_file)
-        print(xtc_file)
-        print(ndx_file)
-        print(hbond_file)
-        
-        if tpr_file.exists() and xtc_file.exists():
-            # Construct the command and its arguments as a list
-            command = ["gmx", "hbond", "-f", str(xtc_file), "-s", str(tpr_file), "-n", str(ndx_file), "-dist", str(hbond_file)]
-            
-            # Define the input strings for group selections
-            # Assume group 2 is the donor and group 3 is the acceptor
-            input_str = '2\n3\n'  # Adjust these numbers as needed
-            
-            # Run the command using subprocess and provide inputs interactively
-            try:
-                with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True) as proc:
-                    # Provide the inputs to the command
-                    proc.communicate(input=input_str)  # Send the input strings
-                print(f"Hydrogen bond distances calculated: {hbond_file}")
-            except subprocess.CalledProcessError as e:
-                print(f"Error occurred while running the command: {e}")
-            except FileNotFoundError as e:
-                print(f"Command not found: {e}")
+        # Perform the merge
+        if merged_df is None:
+            # For the first file, initialize the merged DataFrame
+            merged_df = df
         else:
-            print(f"Files not found: {tpr_file}, {xtc_file}")
-            continue
+            # Merge on the specified columns
+            merged_df = pd.merge(merged_df, df, on=merge_columns, how='inner')
 
-    return
+    return merged_df
 
-def calculate_hbond_dataframe_trajectory(MD_path):
-    '''Function to compute hydrogen bonds using gmx hbond.'''
 
-    # Change the directory to MD_path once before the loop
-    os.chdir(MD_path)
 
-    final_df = pd.DataFrame(columns=['mol_id', 'picoseconds', 'num_of_hbonds'])
-    result_list = []
-    # Iterate through the padded range of numbers
-    for padded_num in (f"{i:03}" for i in range(1, 869)):  # Adjust the range as needed
-        print(padded_num)
-        # Define file paths
-        combined_path = MD_path / padded_num
-        if combined_path.exists() and combined_path.is_dir():
-            os.chdir(MD_path / f'{padded_num}')
-            xtc_file = MD_path / padded_num / f'{padded_num}_prod.xtc'
-            tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
-            ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
-            hbnum_file = public_variables.MDsimulations_path_ / f'{padded_num}' / 'hbnum.xvg'
-            hbond_file = public_variables.MDsimulations_path_ / f'{padded_num}' / f'{padded_num}_hbond_traj.xvg'
-            if tpr_file.exists(): # and pdbfile_path.exists():
-                #gmx hbond -f 001_prod.xtc -s 001_prod.tpr -n 001_index.ndx -dist 001_hbondtesting.xvg
-                # Construct the command and its arguments as a list
-                command = ["gmx", "hbond", "-f", str(xtc_file), "-s", str(tpr_file), "-n", str(ndx_file), "-dist", str(hbond_file)]
-                
-                # Define the input strings for group selections
-                # Assume group 2 is the donor and group 3 is the acceptor
-                input_str = '2\n3\n'  # Adjust these numbers as needed
-                # Run the command using subprocess and provide inputs interactively
-                try:
-                    print('try')
-                    with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True) as proc:
-                        # Provide the inputs to the command
-                        proc.communicate(input=input_str)  # Send the input strings
-                        num_of_hbonds_df = read_out_hbnum(hbnum_file)
-                        result_df = pd.DataFrame({
-                            'mol_id': padded_num,
-                            'picoseconds': num_of_hbonds_df.index*10,     # Original index
-                            'num_of_hbonds': num_of_hbonds_df.values  # Values from num_of_hbonds
-                        })
-                        
-                        print('append to result list')
-                        result_list.append(result_df)
-                        print('done appending')
-                except subprocess.CalledProcessError as e:
-                            print(f"Error occurred while running the command: {e}")
-                except FileNotFoundError as e:
-                    print(f"Command not found: {e}")
-            else:
-                print(f"{padded_num} not valid")
-                continue
-    final_df = pd.concat(result_list, ignore_index=True)
-    final_df.to_csv(public_variables.energyfolder_path_ / 'hbonds.csv', index=False)
-    return final_df
 
-def calculate_hbond_dataframe_trajectory2(MD_path):
-    '''Function to compute hydrogen bonds using gmx hbond.'''
-
-    # Change the directory to MD_path once before the loop
-    os.chdir(MD_path)
-
-    final_df = pd.DataFrame(columns=['mol_id', 'picoseconds', 'num_of_hbonds'])
-    result_list = []
-    # Iterate through the padded range of numbers
-    for padded_num in (f"{i:03}" for i in range(1, 869)):  # Adjust the range as needed
-        print(padded_num)
-        # Define file paths
-        
-        xtc_file = MD_path / padded_num / f'{padded_num}_prod.xtc'
-        tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
-        ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
-        hbnum_file = public_variables.MDsimulations_path_ / f'{padded_num}' / 'hbnum.xvg'
-        hbond_file = public_variables.MDsimulations_path_ / f'{padded_num}' / f'{padded_num}_hbond_traj.xvg'
-        combined_path = MD_path / padded_num
-        if combined_path.exists() and combined_path.is_dir():
-            os.chdir(MD_path / f'{padded_num}')
-            if tpr_file.exists(): # and pdbfile_path.exists():
-                #gmx hbond -f 001_prod.xtc -s 001_prod.tpr -n 001_index.ndx -dist 001_hbondtesting.xvg
-                # Construct the command and its arguments as a list
-                # command = ["gmx", "hbond", "-f", str(xtc_file), "-s", str(tpr_file), "-n", str(ndx_file), "-dist", str(hbond_file)]
-                # "gmx", "hbond", "-f", str(xtc_file), "-s", str(tpr_file), "-n", str(ndx_file), "-dist", str(hbond_file)
-                # Define the input strings for group selections
-                # Assume group 2 is the donor and group 3 is the acceptor
-                input_str = '2\n3\n'  # Adjust these numbers as needed
-                # Run the command using subprocess and provide inputs interactively
-                try:
-                    print('try')
-                    print(xtc_file)
-                    command = f"gmx hbond -f {xtc_file} -s {tpr_file} -n {ndx_file} -dist {hbond_file}"
-                    user_input = '\n'.join(["2",'3'])
-                    subprocess.run(command, shell=True, input=user_input,capture_output=True, text=True)
-                    num_of_hbonds_df = read_out_hbnum(hbnum_file)
-                    result_df = pd.DataFrame({
-                        'mol_id': padded_num,
-                        'picoseconds': num_of_hbonds_df.index*10,     # Original index
-                        'num_of_hbonds': num_of_hbonds_df.values  # Values from num_of_hbonds
-                    })
-                    
-                    print('append to result list')
-                    result_list.append(result_df)
-                    print('done appending')
-                except subprocess.CalledProcessError as e:
-                            print(f"Error occurred while running the command: {e}")
-                except FileNotFoundError as e:
-                    print(f"Command not found: {e}")
-            else:
-                print(f"{padded_num} not valid")
-                continue
-    final_df = pd.concat(result_list, ignore_index=True)
-    final_df.to_csv(public_variables.energyfolder_path_ / 'hbonds.csv', index=False)
-    return final_df
-
-def calculate_hbond_dataframe(MD_path, lig_conf_system_path):
-    '''Function to compute hydrogen bonds using gmx hbond.'''
-
-    # Change the directory to MD_path once before the loop
-    os.chdir(MD_path)
-
-    df = pd.DataFrame(columns=['mol_id', 'picoseconds', 'num_of_hbonds', 'average_hbond_distance'])
-
-    # Iterate through the padded range of numbers
-    for padded_num in (f"{i:03}" for i in range(1, 869)):  # Adjust the range as needed
-        print(padded_num)
-        # Define file paths
-        combined_path = MD_path / padded_num
-        if combined_path.exists() and combined_path.is_dir():
-            os.chdir(MD_path / f'{padded_num}')
-            tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
-            ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
-            hbnum_file = public_variables.MDsimulations_path_ / f'{padded_num}' / 'hbnum.xvg'
-            hbond_file = public_variables.MDsimulations_path_ / f'{padded_num}' / f'{padded_num}_hbond.xvg'
-            if tpr_file.exists(): # and pdbfile_path.exists():
-                for ns in range(0,11):
-                    pdbfile_path = lig_conf_system_path / f'{ns}ns' / f'{padded_num}_{ns}ns.pdb'
-                    if pdbfile_path.exists():
-                    
-                        # Construct the command and its arguments as a list
-                        command = ["gmx", "hbond", "-f", str(pdbfile_path), "-s", str(tpr_file), "-n", str(ndx_file), "-dist", str(hbond_file)]
-                        
-                        # Define the input strings for group selections
-                        # Assume group 2 is the donor and group 3 is the acceptor
-                        input_str = '2\n3\n'  # Adjust these numbers as needed
-                        
-                        # Run the command using subprocess and provide inputs interactively
-                        try:
-                            print('try')
-                            with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True) as proc:
-                                # Provide the inputs to the command
-                                proc.communicate(input=input_str)  # Send the input strings
-                            #print(f"Hydrogen bond distances calculated: {hbond_file}")
-                            num_of_hbonds = read_out_hbnum(hbnum_file)
-                            average_distance = read_out_hbond_xvgfile(hbond_file)
-                            # Delete the files after processing
-                            
-                            os.remove(hbnum_file)
-                            os.remove(hbond_file)
-
-                            df.loc[len(df)] = [padded_num, ns*1000, num_of_hbonds, average_distance]
-
-                        except subprocess.CalledProcessError as e:
-                            print(f"Error occurred while running the command: {e}")
-                        except FileNotFoundError as e:
-                            print(f"Command not found: {e}")
-                    else:
-                        print(f"Files not found: {tpr_file}, {pdbfile_path}")
-                        continue
-            else:
-                print(f"{padded_num} not valid")
-                continue
-    df.to_csv(public_variables.energyfolder_path_ / 'hbonds.csv', index=False)
-    return
-
-def calculate_sasa(MD_path, lig_conf_system_path):
-    '''Function to compute hydrogen bonds using gmx hbond.'''
-
-    # Change the directory to MD_path once before the loop
-    os.chdir(MD_path)
-
-    df = pd.DataFrame(columns=['mol_id', 'picoseconds', 'num_of_hbonds', 'average_hbond_distance'])
-
-    # Iterate through the padded range of numbers
-    for padded_num in (f"{i:03}" for i in range(1, 869)):  # Adjust the range as needed
-        print(padded_num)
-        # Define file paths
-        combined_path = MD_path / padded_num
-        if combined_path.exists() and combined_path.is_dir():
-            os.chdir(MD_path / f'{padded_num}')
-            tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
-            ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
-            hbnum_file = public_variables.MDsimulations_path_ / f'{padded_num}' / 'hbnum.xvg'
-            hbond_file = public_variables.MDsimulations_path_ / f'{padded_num}' / f'{padded_num}_hbond.xvg'
-            if tpr_file.exists(): # and pdbfile_path.exists():
-                for ns in range(0,11):
-                
-                
-                    pdbfile_path = lig_conf_system_path / f'{ns}ns' / f'{padded_num}_{ns}ns.pdb'
-                    if pdbfile_path.exists():
-                    
-                        # Construct the command and its arguments as a list
-                        command = ["gmx", "hbond", "-f", str(pdbfile_path), "-s", str(tpr_file), "-n", str(ndx_file), "-dist", str(hbond_file)]
-                        
-                        # Define the input strings for group selections
-                        # Assume group 2 is the donor and group 3 is the acceptor
-                        input_str = '2\n3\n'  # Adjust these numbers as needed
-                        
-                        # Run the command using subprocess and provide inputs interactively
-                        try:
-                            with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True) as proc:
-                                # Provide the inputs to the command
-                                proc.communicate(input=input_str)  # Send the input strings
-                            #print(f"Hydrogen bond distances calculated: {hbond_file}")
-                            num_of_hbonds = read_out_hbnum(hbnum_file)
-                            average_distance = read_out_hbond_xvgfile(hbond_file)
-                            # Delete the files after processing
-                            
-                            os.remove(hbnum_file)
-                            os.remove(hbond_file)
-
-                            df.loc[len(df)] = [padded_num, ns*1000, num_of_hbonds, average_distance]
-
-                        except subprocess.CalledProcessError as e:
-                            print(f"Error occurred while running the command: {e}")
-                        except FileNotFoundError as e:
-                            print(f"Command not found: {e}")
-                    else:
-                        print(f"Files not found: {tpr_file}, {pdbfile_path}")
-                        continue
-            else:
-                print(f"{padded_num} not valid")
-                continue
-    df.to_csv(public_variables.energyfolder_path_ / 'hbonds.csv', index=False)
-    return
-
-def read_out_hbnum(xvg_file):
-    df = pd.read_csv(xvg_file, sep="\s+", comment='@', header=None, skiprows=17)
-    
-    # Assuming the second column contains the values you're interested in
-    # Extract the value at the row you're interested in; in this case, the value on the first row
-    num_of_hbonds = df.iloc[:, 1] if not df.empty else None
-    
-    return num_of_hbonds
 
 def read_out_hbond_xvgfile(xvg_file):
     df = pd.read_csv(xvg_file, sep="\s+", comment='@', header=None, skiprows=17)
@@ -695,149 +106,9 @@ def read_out_hbond_xvgfile(xvg_file):
         weighted_average_distance = (distances * frequencies).sum() / total_weight
     return weighted_average_distance
 
-def run_gmx_sasa(MD_path, output_path):
-    ''' create the 'xvg_files' folder to store the xvg files
-        run the gmx energy command for every molecule
-        !!! NEEDS TO BE RUN ON LINUX/BASH !!!
-    '''
-    output_path.mkdir(parents=True, exist_ok=True)
-    # create the path for the xvg file to be stored
-    for padded_num in (f"{i:03}" for i in range(1, 869)):
-        print(padded_num)
-        combined_path = MD_path / padded_num
-        if combined_path.exists() and combined_path.is_dir():
-            os.chdir(MD_path / f'{padded_num}')
-            sasa_file = output_path / f'{padded_num}.xvg'
-            xtc_file = MD_path / padded_num / f'{padded_num}_prod.xtc'
-            tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
-            ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
-            # If the file already exists, modify the filename to avoid overwriting
-            if tpr_file.exists():
-            # Generate a new folder for the xvg files with a suffix to avoid overwriting
-                command = f'gmx sasa -f {xtc_file} -s {tpr_file} -n {ndx_file} -o {sasa_file}'
-                user_input = '2'
-                #run the command which creates the xvg files
-                subprocess.run(command, shell=True, input=user_input,capture_output=True, text=True)
-            else:
-                continue
-    return
 
-def sasa_xvg_files_to_csvfiles(energyfolder_path, sasa_xvgfolder_path):
-    ''' go over all the xvg files in chronical order and create one big csv file which 
-    '''
-    all_data = pd.DataFrame()
-    
-    for xvg_file in sorted(sasa_xvgfolder_path.glob('*.xvg')):   #go over the xvg files/molecules in chronical order
-        print(xvg_file)
-        column_names = ['picoseconds']
-        # Read the file and filter out lines starting with '#' or '@', while extracting legends
-        with open(xvg_file, 'r') as file:
-            lines = file.readlines()
-            data_lines = []
-            for line in lines:
-                if line.startswith('#') or line.startswith('@'):
-                    if line.startswith('@ s'):
-                        # Extract the legend name
-                        column_name = line.split('"')[1] #get "Bond" "Enthalpy" etc
-                        column_names.append(column_name)
-                else:
-                    data_lines.append(line)
-        
-        # Join the filtered lines into a single string
-        data_str = ''.join(data_lines) #this is the complete xvg file but without the first 30 lines/comments or so
 
-        # Use StringIO to read the string as if it were a file
-        data = pd.read_csv(StringIO(data_str), sep='\s+', header=None)
 
-        #NOTE: xvg file stays of equal length (independent of timeinterval_snapshot) so variable data as well
-        #NOTE: variable 'filtered_dataframe' only contains the dataline at the time intervals we are interested in
-        filtered_dataframe = data #data[data[0] % (public_variables.timeinterval_snapshots*1000) == 0]
-        # Rename the columns with the extracted legends
-        filtered_dataframe.columns = column_names
-        # add a column with the mol id
-        filtered_dataframe.insert(0, 'mol_id', xvg_file.name.rsplit('.', 1)[0])
-        
-        # Append the selected columns to the all_data DataFrame
-        all_data = pd.concat([all_data, filtered_dataframe], ignore_index=True)
-        print(all_data)
-    # concatenate the dataframes under eachother and save them in a csv file
-    #
-    
-    #MDfeatures_allmol_csvfile_ = generate_new_csv_filename(sasa_xvgfolder_path, public_variables.MDfeatures_allmol_csvfile)
-    all_data.to_csv(energyfolder_path / 'sasa.csv', index=False)
-    return
-
-def run_gmx_rms(MD_path, output_path):
-    ''' create the 'xvg_files' folder to store the xvg files
-        run the gmx energy command for every molecule
-        !!! NEEDS TO BE RUN ON LINUX/BASH !!!
-    '''
-    output_path.mkdir(parents=True, exist_ok=True)
-    # create the path for the xvg file to be stored
-    for padded_num in (f"{i:03}" for i in range(1, 869)):
-        combined_path = MD_path / padded_num
-        print(padded_num)
-        if combined_path.exists() and combined_path.is_dir():
-            os.chdir(MD_path / f'{padded_num}')
-            rmsd_file = output_path / f'{padded_num}.xvg'
-            xtc_file = MD_path / padded_num / f'{padded_num}_prod.xtc'
-            tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
-            ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
-            # If the file already exists, modify the filename to avoid overwriting
-            if tpr_file.exists():
-            # Generate a new folder for the xvg files with a suffix to avoid overwriting
-                command = f'gmx rms -f {xtc_file} -s {tpr_file} -n {ndx_file} -o {rmsd_file}'
-                user_input = '2\n2\n'
-                #run the command which creates the xvg files
-                subprocess.run(command, shell=True, input=user_input,capture_output=True, text=True)
-            else:
-                continue
-    return
-
-def rms_xvg_files_to_csvfiles(energyfolder_path, sasa_xvgfolder_path):
-    ''' go over all the xvg files in chronical order and create one big csv file which 
-    '''
-    all_data = pd.DataFrame()
-    
-    for xvg_file in sorted(sasa_xvgfolder_path.glob('*.xvg')):   #go over the xvg files/molecules in chronical order
-        print(xvg_file)
-        column_names = ['picoseconds']
-        # Read the file and filter out lines starting with '#' or '@', while extracting legends
-        with open(xvg_file, 'r') as file:
-            lines = file.readlines()
-            data_lines = []
-            for line in lines:
-                if line.startswith('#') or line.startswith('@'):
-                    if line.startswith('@ s'):
-                        # Extract the legend name
-                        column_name = 'rmsd'
-                        column_names.append(column_name)
-                else:
-                    data_lines.append(line)
-        
-        # Join the filtered lines into a single string
-        data_str = ''.join(data_lines) #this is the complete xvg file but without the first 30 lines/comments or so
-
-        # Use StringIO to read the string as if it were a file
-        data = pd.read_csv(StringIO(data_str), sep='\s+', header=None)
-
-        #NOTE: xvg file stays of equal length (independent of timeinterval_snapshot) so variable data as well
-        #NOTE: variable 'filtered_dataframe' only contains the dataline at the time intervals we are interested in
-        filtered_dataframe = data #data[data[0] % (public_variables.timeinterval_snapshots*1000) == 0]
-        # Rename the columns with the extracted legends
-        filtered_dataframe.columns = column_names
-        # add a column with the mol id
-        filtered_dataframe.insert(0, 'mol_id', xvg_file.name.rsplit('.', 1)[0])
-        
-        # Append the selected columns to the all_data DataFrame
-        all_data = pd.concat([all_data, filtered_dataframe], ignore_index=True)
-
-    # concatenate the dataframes under eachother and save them in a csv file
-    #
-    
-    #MDfeatures_allmol_csvfile_ = generate_new_csv_filename(sasa_xvgfolder_path, public_variables.MDfeatures_allmol_csvfile)
-    all_data.to_csv(energyfolder_path / 'rms.csv', index=False)
-    return
 
 def concatenate_csv_files(folder_path, csv_filenames):
     """
@@ -872,36 +143,7 @@ def concatenate_csv_files(folder_path, csv_filenames):
     
     return concatenated_df
 
-def merge_csv_files_on_columns(folder_path, csv_filenames):
-    """
-    Merge multiple CSV files into a single DataFrame based on specified columns.
 
-    Parameters:
-    - folder_path: str, the folder where the CSV files are located.
-    - csv_filenames: list of str, the names of the CSV files to merge.
-    - merge_columns: list of str, the columns to use as keys for the merge.
-
-    Returns:
-    - DataFrame: merged DataFrame containing data from all CSV files.
-    """
-    merged_df = None
-    merge_columns = ["mol_id" , "picoseconds"]
-    # Loop through the list of CSV file names
-    for i, filename in enumerate(csv_filenames):
-        # Construct the full file path
-        file_path = os.path.join(folder_path, filename)
-        # Read the CSV file into a DataFrame
-        df = pd.read_csv(file_path)
-        
-        # Perform the merge
-        if merged_df is None:
-            # For the first file, initialize the merged DataFrame
-            merged_df = df
-        else:
-            # Merge on the specified columns
-            merged_df = pd.merge(merged_df, df, on=merge_columns, how='inner')
-
-    return merged_df
 
 def calculate_psa_from_trajectory(MD_path, output_file=None, interval_ns=1):
     # Load the topology and trajectory into an MDAnalysis Universe
@@ -976,20 +218,104 @@ def calculate_psa_from_trajectory(MD_path, output_file=None, interval_ns=1):
 
     return #psa_results
 
-def main():
-    MDsimulations_path = public_variables.MDsimulations_path_
+import pandas as pd
+
+def change_column_names(MD_output):
+    """Rename specific columns in the given DataFrame."""
     
-    #create ndx files
+    column_mapping = {
+        'Total': 'SASA',
+        'num_of_hbonds': 'num of H-bonds',
+        'within_distance': 'H-bonds within 0.35A',
+        'Mtot': 'Total dipole moment',
+        'Bond': 'Ligand Bond energy',
+        'U-B': 'Urey-Bradley energy',
+        'Proper dih.': 'Torsional energy',
+        'Coul-SR:Other-Other': 'Coul-SR: Lig-Lig',
+        'LJ-SR:Other-Other': 'LJ-SR: Lig-Lig',
+        'Coul-14:Other-Other': 'Coul-14: Lig-Lig',
+        'LJ-14:Other-Other': 'LJ-14: Lig-Lig',
+        'Coul-SR:Other-SOL': 'Coul-SR: Lig-Sol',
+        'Coul-SR:Other-SOL': 'Coul-SR: Lig-Sol',
+        # Add more mappings as needed
+    }
+
+    MD_output = MD_output.rename(columns=column_mapping)
+    return MD_output
+
+def main(protein = pv.PROTEIN):
+    pv.update_config(protein_= protein)
+    MDsimulations_path = pv.MDsimulations_path_
+    energyfolder_path = pv.energyfolder_path_
+    # create ndx files
     # make_index_files(MDsimulations_path) #make index files
 
-    #use this for 
-    # calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path) #1 #nope dont use that
+    #create hbond csv #1
+    hbond_df = get_hbond_csv.calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path) #1 #use this one i guess. make sure export is okay
+    hbond_df.to_csv(pv.energyfolder_path_ / 'hbonds.csv', index=False)
 
-    # calculate_hbond_dataframe_trajectory2(MD_path=MDsimulations_path) #1 #use this one i guess. make sure export is okay
+    # create RMSD #2
+    # RMSD_xvg_dir = energyfolder_path / 'RMSD_xvg'
+    # get_rms.run_gmx_rms(MDsimulations_path, RMSD_xvg_dir) #creates the files
+    # data = get_rms.rms_xvg_files_to_csvfiles(RMSD_xvg_dir) #3
+    # data.to_csv(energyfolder_path / 'rmsd.csv', index=False)
+
+    # #gyration #3
+    # gyration_xvg_dir = energyfolder_path / 'gyration_xvg'
+    # get_gyrate.run_gmx_gyrate(MDsimulations_path, gyration_xvg_dir)
+    # data = get_gyrate.gyration_xvg_files_to_csvfiles(gyration_xvg_dir) #3
+    # data.to_csv(energyfolder_path / 'gyration.csv', index=False)
+
+    # #total dipole moment & epsilon #4 & 5
+    # TDM_xvg_dir = energyfolder_path / 'Total_dipole_moment_xvg'
+    # epsilon_xvg_dir = energyfolder_path / 'epsilon_xvg'
+    # get_dipoles.run_gmx_dipoles(MDsimulations_path, TDM_xvg_dir, epsilon_xvg_dir)
+    # data = get_dipoles.Total_dipole_moment_xvg_files_to_csvfiles(energyfolder_path, TDM_xvg_dir)
+    # data.to_csv(energyfolder_path / 'total_dipole_moment.csv', index=False)
+    # data = get_dipoles.epsilon_xvg_files_to_csvfiles(energyfolder_path, epsilon_xvg_dir)
+    # data.to_csv(energyfolder_path / 'epsilon.csv', index=False)
+
+
+    # #SASA & PSA
+    # SASA_xvg_dir = pv.energyfolder_path_ / 'SASA_xvg'
+    # PSA_xvg_dir = pv.energyfolder_path_ / 'PSA_xvg'
+
+    # get_sasa_psa.make_PSA_index_files(MDsimulations_path)
+
+    # get_sasa_psa.run_gmx_sasa(MDsimulations_path, SASA_xvg_dir)
+    # sasa_df = get_sasa_psa.sasa_xvg_files_to_csvfiles(energyfolder_path, SASA_xvg_dir)
+
+    # get_sasa_psa.run_gmx_psa_sasa(MDsimulations_path, PSA_xvg_dir)
+    # psa_df = get_sasa_psa.psa_xvg_files_to_csvfiles(energyfolder_path, PSA_xvg_dir)
+
+    # psa_df.to_csv(energyfolder_path / 'psa.csv', index=False)
+    # sasa_df.to_csv(energyfolder_path / 'sasa.csv', index=False)
+
+    #energy files
+    # prepare_energy_files_from_MD.main(MDsimulations_path)
+
     
+    #need ligand + system
+    # run_gmx_sasa(MDsimulations_path, outputdir) #NOTE: done
+    # sasa_xvg_files_to_csvfiles(energyfolder_path, outputdir) #2
+
+    #PSA #7 #all 4 lines
+    # make_PSA_index_files(MDsimulations_path)
+    # outputdir = public_variables.energyfolder_path_ / 'PSA'
+    # run_gmx_psa_sasa(MDsimulations_path, outputdir)
+    # psa_xvg_files_to_csvfiles(energyfolder_path, outputdir)
+
+
+
+
+
+
+
+
+
     #all can be removed i think:
     ############################
-    lig_conf_system_path = public_variables.base_path_ / 'ligand_conformations_system'
+    # lig_conf_system_path = public_variables.base_path_ / 'ligand_conformations_system'
     
     # calculate_hbond_dataframe(MD_path=MDsimulations_path, lig_conf_system_path = lig_conf_system_path)
     # pdb_file = Path('/home/ben/Download/Afstuderen0/MDsimulations/001/hbond_distances_try_pdb869.xvg')
@@ -999,40 +325,109 @@ def main():
 
     # calculate_hbond_dataframe(MD_path=MDsimulations_path, lig_conf_system_path = lig_conf_system_path)
     ############################
-    
-    energyfolder_path = public_variables.energyfolder_path_
 
-    outputdir = public_variables.energyfolder_path_ / 'SASA'
-    # run_gmx_sasa(MDsimulations_path, outputdir) #NOTE: done
-    # sasa_xvg_files_to_csvfiles(energyfolder_path, outputdir) #2
-
-    outputdir = public_variables.energyfolder_path_ / 'RMSD'
-    run_gmx_rms(MDsimulations_path, outputdir)
-    rms_xvg_files_to_csvfiles(energyfolder_path, outputdir) #3
-
-    #NOTE: gyration
-    outputdir_gyration = public_variables.energyfolder_path_ / 'Gyration'
-    run_gmx_gyrate(MD_path=MDsimulations_path, output_path=outputdir_gyration)
-    gyration_xvg_files_to_csvfiles(energyfolder_path, outputdir_gyration) #4
-
-    #NOTE: epsilon and total dipole moment #all 869 lines needed
-    outputdir_TDM = public_variables.energyfolder_path_ / 'Total_dipoleMoment'
-    outputdir_epsilon = public_variables.energyfolder_path_ / 'epsilon'
-    run_gmx_dipoles(MD_path=MDsimulations_path, output_path_TDM=outputdir_TDM, output_path_epsilon=outputdir_epsilon)
-    Total_dipole_moment_xvg_files_to_csvfiles(energyfolder_path, totaldipoleMoment_xvgfolder_path=outputdir_TDM) #5
-    epsilon_xvg_files_to_csvfiles(energyfolder_path, epsilon_xvgfolder_path=outputdir_epsilon) #6
 
     
-    #PSA #7 #all 4 lines
-    make_PSA_index_files(MDsimulations_path)
-    outputdir = public_variables.energyfolder_path_ / 'PSA'
-    run_gmx_psa_sasa(MDsimulations_path, outputdir)
-    psa_xvg_files_to_csvfiles(energyfolder_path, outputdir)
-
-    file_list = ['hbonds.csv', 'rms.csv', 'sasa.csv', 'psa.csv', 'epsilon.csv', 'gyration.csv', 'dipole_moment_total.csv',f'MD_features_{public_variables.dataset_protein_}.csv']
-    folder_path = public_variables.energyfolder_path_
-    dfs = merge_csv_files_on_columns(folder_path, file_list)
-    dfs.to_csv(public_variables.energyfolder_path_ / 'MD_output.csv', index=False)
+    file_list = ['hbonds.csv', 'rmsd.csv', 'gyration.csv', 'epsilon.csv', 'total_dipole_moment.csv', 'sasa.csv', 'psa.csv', f'MD_features_{pv.PROTEIN}.csv']
+    folder_path = energyfolder_path
+    MD_output_df = merge_csv_files_on_columns(folder_path, file_list)
+    MD_output_df = change_column_names(MD_output_df)
+    MD_output_df.to_csv(energyfolder_path / 'MD_output.csv', index=False)
     return
 
-main()
+
+if __name__ == "__main__":
+    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    MD_output_df = pd.read_csv(pv.MD_outputfile_)
+    MD_output_df = change_column_names(MD_output_df)
+    MD_output_df.to_csv(pv.energyfolder_path_ / 'MD_output.csv', index=False)
+    # main(pv.PROTEIN)
+
+
+
+
+############################## OLD STUFF ###############################
+    
+# def make_index_file2(path, pdb_filename):
+#     ''' create the 'xvg_files' folder to store the xvg files
+#         run the gmx energy command for every molecule
+#         !!! NEEDS TO BE RUN ON LINUX/BASH !!!
+#     '''
+
+#     # create the path for the xvg file to be stored
+#     xvg_file = xvgfolder_path / f'{molecule}.xvg'
+
+#     # If the file already exists, modify the filename to avoid overwriting
+#     if xvg_file.exists():
+#         # Generate a new folder for the xvg files with a suffix to avoid overwriting
+#         i = 1
+#         xvgfolder_path = xvgfolder_path / f'_{i}.xvg'
+#         while xvgfolder_path.exists():
+#             i += 1
+
+#     # Construct the command with the variable file prefix and output directory
+#     command = f"gmx energy -f {molecule}_prod.edr -o {xvg_file}"
+
+#     # specify the user input which are the features
+#     user_input = '\n'.join(features)
+
+#     if edrfolder_path.exists() and edrfolder_path.is_dir():
+#         os.chdir(edrfolder_path)
+
+#     #run the command which creates the xvg files
+#     subprocess.run(command, shell=True, input=user_input,capture_output=True, text=True)
+
+# def calculate_hbond_dataframe_trajectory(MD_path):
+#     '''Function to compute hydrogen bonds using gmx hbond.'''
+
+#     # Change the directory to MD_path once before the loop
+#     os.chdir(MD_path)
+
+#     final_df = pd.DataFrame(columns=['mol_id', 'picoseconds', 'num_of_hbonds'])
+#     result_list = []
+#     # Iterate through the padded range of numbers
+#     for padded_num in (f"{i:03}" for i in range(1, 869)):  # Adjust the range as needed
+#         print(padded_num)
+#         # Define file paths
+#         combined_path = MD_path / padded_num
+#         if combined_path.exists() and combined_path.is_dir():
+#             os.chdir(MD_path / f'{padded_num}')
+#             xtc_file = MD_path / padded_num / f'{padded_num}_prod.xtc'
+#             tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
+#             ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
+#             hbnum_file = public_variables.MDsimulations_path_ / f'{padded_num}' / 'hbnum.xvg'
+#             hbond_file = public_variables.MDsimulations_path_ / f'{padded_num}' / f'{padded_num}_hbond_traj.xvg'
+#             if tpr_file.exists(): # and pdbfile_path.exists():
+#                 #gmx hbond -f 001_prod.xtc -s 001_prod.tpr -n 001_index.ndx -dist 001_hbondtesting.xvg
+#                 # Construct the command and its arguments as a list
+#                 command = ["gmx", "hbond", "-f", str(xtc_file), "-s", str(tpr_file), "-n", str(ndx_file), "-dist", str(hbond_file)]
+                
+#                 # Define the input strings for group selections
+#                 # Assume group 2 is the donor and group 3 is the acceptor
+#                 input_str = '2\n3\n'  # Adjust these numbers as needed
+#                 # Run the command using subprocess and provide inputs interactively
+#                 try:
+#                     print('try')
+#                     with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True) as proc:
+#                         # Provide the inputs to the command
+#                         proc.communicate(input=input_str)  # Send the input strings
+#                         num_of_hbonds_df = read_out_hbnum(hbnum_file)
+#                         result_df = pd.DataFrame({
+#                             'mol_id': padded_num,
+#                             'picoseconds': num_of_hbonds_df.index*10,     # Original index
+#                             'num_of_hbonds': num_of_hbonds_df.values  # Values from num_of_hbonds
+#                         })
+                        
+#                         print('append to result list')
+#                         result_list.append(result_df)
+#                         print('done appending')
+#                 except subprocess.CalledProcessError as e:
+#                             print(f"Error occurred while running the command: {e}")
+#                 except FileNotFoundError as e:
+#                     print(f"Command not found: {e}")
+#             else:
+#                 print(f"{padded_num} not valid")
+#                 continue
+#     final_df = pd.concat(result_list, ignore_index=True)
+#     final_df.to_csv(public_variables.energyfolder_path_ / 'hbonds.csv', index=False)
+#     return final_df

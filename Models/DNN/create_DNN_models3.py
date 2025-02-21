@@ -1,5 +1,6 @@
-from global_files import public_variables
-from global_files import csv_to_dictionary
+from global_files import csv_to_dictionary, public_variables as pv
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -32,10 +33,8 @@ def DNN_function(name, df, dfs_path):
     # Step 4: Bin target values to handle imbalance
     bins = 5
     binned_y, bin_edges = pd.cut(y.flatten(), bins=bins, labels=False, retbins=True)
-    dir_path = public_variables.base_path_ / 'code' / 'DNN' / 'train_val_loss' / 'test'
+    dir_path = pv.base_path_ / 'code' / 'DNN' / 'train_val_loss' / 'test'
     dir_path.mkdir(parents=True, exist_ok=True)
-
-
 
     bin_counts = np.bincount(binned_y)  # Count samples per bin
     total_samples = len(binned_y)
@@ -71,7 +70,19 @@ def DNN_function(name, df, dfs_path):
     all_train_losses = []
     all_val_losses = []
     all_params = []
-    fold_results = []
+    fold_results = {"epoch_results": {}}
+    # for fold, (train_idx, test_idx) in enumerate(outer_kf.split(X_scaled, binned_y)):
+    #     print(f"Outer Fold {fold + 1}")
+
+    #     # Split into train and test sets
+    #     X_train, X_test = X_scaled[train_idx], X_scaled[test_idx]
+    #     y_train, y_test = y[train_idx], y[test_idx]
+
+    #     # Inner split: Further split training data into 70% training, 10% validation
+    #     X_inner_train, X_val, y_inner_train, y_val = train_test_split(
+    #         X_train, y_train, test_size=0.125, stratify=pd.cut(y_train.flatten(), bins=bins, labels=False),
+    #         random_state=42
+    #     )
     for fold, (train_idx, test_idx) in enumerate(outer_kf.split(X_scaled, binned_y)):
         print(f"Outer Fold {fold + 1}")
 
@@ -79,17 +90,23 @@ def DNN_function(name, df, dfs_path):
         X_train, X_test = X_scaled[train_idx], X_scaled[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        # Inner split: Further split training data into 70% training, 10% validation
-        X_inner_train, X_val, y_inner_train, y_val = train_test_split(
+        # Further split training data into 70% training, 10% validation outer
+        X_train_outer, X_val_outer, y_train_outer, y_val_outer = train_test_split(
             X_train, y_train, test_size=0.125, stratify=pd.cut(y_train.flatten(), bins=bins, labels=False),
             random_state=42
         )
 
+        #divide the 70% training into 56% training inner and 14% validation inner
+        X_train_inner, X_val_inner, y_train_inner, y_val_inner = train_test_split(
+            X_train_outer, y_train_outer, test_size=0.125, stratify=pd.cut(y_train_outer.flatten(), bins=bins, labels=False),
+            random_state=42
+        )
+
         # Convert to tensors for inner split
-        inner_train_dataset = TensorDataset(torch.tensor(X_inner_train, dtype=torch.float32),
-                                            torch.tensor(y_inner_train, dtype=torch.float32))
-        val_dataset = TensorDataset(torch.tensor(X_val, dtype=torch.float32),
-                                    torch.tensor(y_val, dtype=torch.float32))
+        inner_train_dataset = TensorDataset(torch.tensor(X_train_inner, dtype=torch.float32),
+                                            torch.tensor(y_train_inner, dtype=torch.float32))
+        val_dataset = TensorDataset(torch.tensor(X_val_inner, dtype=torch.float32),
+                                    torch.tensor(y_val_inner, dtype=torch.float32))
         train_loader = DataLoader(inner_train_dataset, batch_size=32, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
@@ -120,44 +137,46 @@ def DNN_function(name, df, dfs_path):
         final_train_dataset = TensorDataset(torch.tensor(X_train, dtype=torch.float32),
                                             torch.tensor(y_train, dtype=torch.float32))
         final_train_loader = DataLoader(final_train_dataset, batch_size=32, shuffle=True)
+        epoch_values = [100, 200, 300, 500, 700]
+        results = {}
+        for num_epochs in epoch_values:
+            final_model = FullyConnectedDNN_class2.FullyConnectedDNN2(input_size=X_train.shape[1], hidden_layers=best_params['hidden_layers'],dropout_rate=best_params["dropout_rate"])
+            final_optimizer = torch.optim.Adam(final_model.parameters(), lr=best_params['learning_rate'])
+            final_criterion = torch.nn.MSELoss()
 
-        final_model = FullyConnectedDNN_class2.FullyConnectedDNN2(input_size=X_train.shape[1], hidden_layers=best_params['hidden_layers'],dropout_rate=best_params["dropout_rate"])
-        final_optimizer = torch.optim.Adam(final_model.parameters(), lr=best_params['learning_rate'])
-        final_criterion = torch.nn.MSELoss()
+            final_model.train_without_validation(
+                final_train_loader, num_epochs=num_epochs, optimizer=final_optimizer,
+                criterion=final_criterion, device="cuda" if torch.cuda.is_available() else "cpu"
+            )
 
-        final_model.train_without_validation(
-            final_train_loader, num_epochs=500, optimizer=final_optimizer,
-            criterion=final_criterion, device="cuda" if torch.cuda.is_available() else "cpu"
-        )
+            # Evaluate on test set
+            final_model.eval()
+            test_dataset = TensorDataset(torch.tensor(X_test, dtype=torch.float32),
+                                        torch.tensor(y_test, dtype=torch.float32))
+            test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+            predictions = []
+            true_values = []
 
-        # Evaluate on test set
-        final_model.eval()
-        test_dataset = TensorDataset(torch.tensor(X_test, dtype=torch.float32),
-                                    torch.tensor(y_test, dtype=torch.float32))
-        test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
-        predictions = []
-        true_values = []
-
-        with torch.no_grad():
-            for inputs, targets in test_loader:
-                inputs = inputs.to("cuda" if torch.cuda.is_available() else "cpu")
-                outputs = final_model(inputs)
-                predictions.extend(outputs.cpu().numpy())
-                true_values.extend(targets.numpy())
+            with torch.no_grad():
+                for inputs, targets in test_loader:
+                    inputs = inputs.to("cuda" if torch.cuda.is_available() else "cpu")
+                    outputs = final_model(inputs)
+                    predictions.extend(outputs.cpu().numpy())
+                    true_values.extend(targets.numpy())
+            
+            # Calculate metrics for this epoch
+            mse = mean_squared_error(true_values, predictions)
+            r2 = r2_score(true_values, predictions)
+            print(f"Epochs {num_epochs} - Test MSE: {mse:.4f}, Test R²: {r2:.4f}")
+            fold_results["epoch_results"][num_epochs] = {"mse": mse, "r2": r2}
         # Append fold results
         all_predictions.extend(predictions)
         all_true_values.extend(true_values)
         all_train_losses.append(best_train_losses)
         all_val_losses.append(best_val_losses)
         all_params.append(best_params)
-        # Calculate metrics
-        mse = mean_squared_error(true_values, predictions)
-        r2 = r2_score(true_values, predictions)
-        mse_scores.append(mse)
+        mse_scores.append(mse)        
         r2_scores.append(r2)
-
-        print(f"Outer Fold {fold + 1} - Test MSE: {mse:.4f}, Test R²: {r2:.4f}")
-
     # Print overall metrics
     print(f"Average MSE: {np.mean(mse_scores):.4f}")
     print(f"Average R²: {np.mean(r2_scores):.4f}")
@@ -240,14 +259,15 @@ def create_pred_true_plots(name, params, all_true_values, all_predictions, dfs_p
     plt.close()
     return
 
-def main(dfs_path = public_variables.dfs_descriptors_only_path_):
-    descriptors = public_variables.Descriptor_
+def main(dfs_path = pv.dfs_descriptors_only_path_):
     print(dfs_path)
     model_ = 'DNN'
-    Modelresults_path = dfs_path / f'ModelResults_{model_}' #CHECK: if 'RF' is in public_variables or something else perhaps
+    Modelresults_path = dfs_path / f'ModelResults_{model_}' #CHECK: if 'RF' is in pv or something else perhaps
     Modelresults_path.mkdir(parents=True, exist_ok=True)
 
-    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic(dfs_path, exclude_files=['conformations_1000.csv','conformations_1000_molid.csv','conformations_500.csv','conformations_200.csv','conformations_100.csv','conformations_50.csv','initial_dataframe.csv','initial_dataframes_best.csv','MD_output.csv']) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
+    # dfs_in_dic = csv_to_dictionary.csvfiles_to_dic(dfs_path, exclude_files=['conformations_1000.csv','conformations_1000_molid.csv','conformations_500.csv','conformations_200.csv','conformations_100.csv','conformations_50.csv','initial_dataframe.csv','initial_dataframes_best.csv','MD_output.csv']) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
+    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic_include(dfs_path, include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv']) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
+    
     sorted_keys_list = csv_to_dictionary.get_sorted_columns(list(dfs_in_dic.keys())) #RDKIT first
     dfs_in_dic = {key: dfs_in_dic[key] for key in sorted_keys_list if key in dfs_in_dic} #order
     print(dfs_in_dic.keys())
@@ -257,8 +277,8 @@ def main(dfs_path = public_variables.dfs_descriptors_only_path_):
     print(filtered_dict.keys())
     ModelResults_ = []
 
-    csv_filename = f'results_Ko10_Ki_{public_variables.Descriptor_}.csv'
-    csv_filename_temp = f'results_Ko10_Ki_{public_variables.Descriptor_}_temp.csv' #if i break it early i still get some results
+    csv_filename = f'results_Ko10_Ki_{pv.DESCRIPTOR}.csv'
+    csv_filename_temp = f'results_Ko10_Ki_{pv.DESCRIPTOR}_temp.csv' #if i break it early i still get some results
     
     for name, df in filtered_dict.items():
         print(name)
@@ -272,18 +292,14 @@ def main(dfs_path = public_variables.dfs_descriptors_only_path_):
 
 if __name__ == "__main__":
 
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
 
-    for dataset_protein_ in public_variables.all_dataset_protein_:
+    for protein_ in pv.DatasetProtein:
         # Construct paths dynamically for each protein
-        dataframes_master_ = public_variables.base_path_ / f'dataframes_{dataset_protein_}_{public_variables.Descriptor_}'
-        dfs_descriptors_only_path_ = dataframes_master_ / 'descriptors only'
-        dfs_reduced_path_ = dataframes_master_ / f'reduced_t{public_variables.correlation_threshold_}'
-        dfs_reduced_and_MD_path_ = dataframes_master_ / f'reduced_t{public_variables.correlation_threshold_}_MD'
-        dfs_MD_only_path_ = dataframes_master_ / 'MD only'
-        main(dfs_descriptors_only_path_)
-        main(dfs_reduced_path_)
-        main(dfs_reduced_and_MD_path_)
-        main(dfs_MD_only_path_)
+        # main(pv.dfs_descriptors_only_path_)
+        main(pv.dfs_reduced_path_)
+        # main(pv.dfs_reduced_and_MD_path_)
+        # main(pv.dfs_MD_only_path_)
 
 
 

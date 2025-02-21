@@ -3,6 +3,9 @@ from global_files import public_variables
 import torch
 import torch.nn as nn
 import torch.optim as optim
+torch.manual_seed(42)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(42)
 
 class FullyConnectedDNN2(nn.Module):
     def __init__(self, input_size, hidden_layers, dropout_rate):
@@ -27,9 +30,14 @@ class FullyConnectedDNN2(nn.Module):
         val_losses = []
 
         best_val_loss = float('inf')
+        best_val_epoch = -1
         epochs_without_improvement = 0
         best_model_state = None
-
+        rng_state = torch.get_rng_state()
+        if torch.cuda.is_available():
+            cuda_rng_state = torch.cuda.get_rng_state()
+        print(rng_state)
+        print(cuda_rng_state)
         for epoch in range(num_epochs):
             # Training phase
             self.train()
@@ -58,6 +66,7 @@ class FullyConnectedDNN2(nn.Module):
             # Early stopping logic
             if val_losses[-1] < best_val_loss:
                 best_val_loss = val_losses[-1]
+                best_val_epoch = epoch + 1
                 best_model_state = self.state_dict()
                 epochs_without_improvement = 0
             else:
@@ -73,6 +82,10 @@ class FullyConnectedDNN2(nn.Module):
          # Restore the best model state
         if best_model_state is not None:
             self.load_state_dict(best_model_state)
+        
+        # Print the epoch with the lowest validation loss
+        if best_val_epoch != -1:
+            print(f"The lowest validation loss occurred at epoch {best_val_epoch} with a loss of {best_val_loss:.4f}")
             
         return train_losses, val_losses
 

@@ -3,7 +3,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
-import randomForest_read_in_models
+from global_files import csv_to_dictionary, public_variables as pv
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
 from global_files import public_variables, csv_to_dictionary
 
@@ -87,8 +89,8 @@ def true_and_predicted_tocsv(df,all_true_pki_pdseries, all_predicted_pki_pdserie
 def main(final_path):
     plot_path = final_path / 'plots'
     plot_path.mkdir(parents=True, exist_ok=True)
-
-    dfs_in_dic_t_vs_p = csv_to_dictionary.csvfiles_to_dic(final_path)
+    print(plot_path)
+    dfs_in_dic_t_vs_p = csv_to_dictionary.csvfiles_to_dic_include(final_path , include_files=['0ns.csv', '1ns.csv', 'conformations_10.csv', 'conformations_20.csv'])
     sorted_keys_list = csv_to_dictionary.get_sorted_columns(list(dfs_in_dic_t_vs_p.keys())) #RDKIT first
     dfs_in_dic_t_vs_p = {key: dfs_in_dic_t_vs_p[key] for key in sorted_keys_list if key in dfs_in_dic_t_vs_p} #order
     print(dfs_in_dic_t_vs_p.keys())
@@ -106,14 +108,7 @@ def main(final_path):
     return
 
 if __name__ == "__main__":
-    base_path_ = Path(__file__).resolve().parent.parent
-    model_ = 'RF'
-    RDKIT_descriptors_ = 'WHIM' #choose between 'WHIM' and 'GETAWAY' #VARIABLE
-    dataset_protein_ = 'JAK1'   #VARIABLE 'JAK1' or 'GSK3'
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
 
-    dataframes_master_ = base_path_ / Path(f'dataframes_{dataset_protein_}_{RDKIT_descriptors_}')
-    subgroup_path = dataframes_master_ / 'descriptors only'
-    Modelresults_folder_ = f'ModelResults_{model_}'
-
-    final_path = subgroup_path / Modelresults_folder_ / 'true_vs_prediction'
+    final_path = pv.dfs_descriptors_only_path_ / pv.Modelresults_folder_ / 'true_vs_prediction'
     main(final_path)

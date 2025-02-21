@@ -11,7 +11,11 @@ import re
 import MDAnalysis as mda
 from MDAnalysis.coordinates import PDB
 import shutil
-from global_files import public_variables
+from global_files import public_variables as pv
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+
+
 
 def get_molecules_lists(MDsimulations_path):
     '''uses the MD_simulations folder and checks for every molecule the simulation whether it contains the .tpr and .xtc file
@@ -47,7 +51,9 @@ def trj_to_pdb(valid_molecules_list, frames_to_extract,base_path, MDsimulations_
     # Create directories once for all frames ()
     #TODO: this can be done in the forloop of forloop is we say x= 0 and then do it
     for f in frames_to_extract:
-        ns_foldername = f / 100
+        print(f)
+        ns_foldername = round(f / (len(frames_to_extract) - 1) * 10, 3) #because 10ns 
+        print(ns_foldername)
         if ns_foldername.is_integer():
             ns_foldername = int(ns_foldername)
         dir = Path(f'{output_foldername}/{ns_foldername}ns')
@@ -75,8 +81,9 @@ def trj_to_pdb(valid_molecules_list, frames_to_extract,base_path, MDsimulations_
         trajectory_file = f'{mol}_prod.xtc'
         
         # print(f'{public_variables.base_path_ / output_foldername / frame}.pdb')
-        outputfolder = public_variables.base_path_ / output_foldername / mol
-        command = f"gmx trjconv -s {topology_file} -f {trajectory_file} -o {outputfolder}_.pdb -sep -skip 10 -conect"
+        outputfolder = pv.base_path_ / output_foldername / mol
+
+        command = f"gmx trjconv -s {topology_file} -f {trajectory_file} -o {outputfolder}_.pdb -sep -conect" #-skip 10
         print(command)
         # specify the user input which are the features
         user_input = '\n'.join(["2"])
@@ -85,30 +92,31 @@ def trj_to_pdb(valid_molecules_list, frames_to_extract,base_path, MDsimulations_
         subprocess.run(command, shell=True, input=user_input,capture_output=True, text=True)
 
         #TODO: remove LP + process the name
-        os.chdir(public_variables.base_path_ / output_foldername)
+        os.chdir(pv.base_path_ / output_foldername)
         print(os.getcwd())
-        time_step_ns = 0.1
+        time_step_ns = 10 / (len(frames_to_extract)-1)
+        print(time_step_ns)
         print(list(sorted(os.listdir())))
         for filename in sorted(os.listdir()):
-            print('filename')
-            print(filename)
             if filename.startswith(f"{mol}_") and filename.endswith(".pdb"):
+                print('filename')
+                print(filename)
                 x = re.search(f"{mol}_(\d+)\.pdb", filename).group(1)
                 print('x')
                 print(x)
                 number = float(re.search(f"{mol}_(\d+)\.pdb", filename).group(1))
                 print(number)
-                timepoint = round(time_step_ns * number, 1)
+                timepoint = round(time_step_ns * number, 2)
                 if timepoint.is_integer():
                     timepoint = int(timepoint)
                 print('timepoint')
                 print(timepoint)
                 
                 new_name = f"{mol}_{timepoint}ns.pdb"
-                destination = public_variables.base_path_ / output_foldername / f'{timepoint}ns'
+                destination = pv.base_path_ / output_foldername / f'{timepoint}ns'
                 print(destination)
                 # Move the file first
-                shutil.move(f'{public_variables.base_path_ / output_foldername / filename}', destination)
+                shutil.move(f'{pv.base_path_ / output_foldername / filename}', destination)
 
                 # Then rename the file after moving
                 os.rename(f'{destination}/{filename}', f'{destination}/{new_name}')
@@ -139,8 +147,8 @@ def trj_to_pdb(valid_molecules_list, frames_to_extract,base_path, MDsimulations_
     return
 
 #NOTE: uses the MD simulations folder to create the folder 'ligand_conformations_for_every_snapshot'
-def main(MDsimulations_path = public_variables.MDsimulations_path_, output_folder = public_variables.ligand_conformations_folder_):
-    base_path = public_variables.base_path_
+def main(MDsimulations_path = pv.MDsimulations_path_, output_folder = pv.ligand_conformations_folder_, frames = 10):
+    base_path = pv.base_path_
     
     # Create molecules list. so all molecules that are present in the folder 'simulations' get added to the list
     all_molecules_list, valid_mols, invalid_mols = get_molecules_lists(MDsimulations_path)
@@ -149,7 +157,7 @@ def main(MDsimulations_path = public_variables.MDsimulations_path_, output_folde
     print(invalid_mols)
     print('done getting molecules')
     #Define frames to extract
-    frames_to_extract = list(range(0,1001,10)) #101 frames
+    frames_to_extract = list(range(0,1001,int(1000/frames))) #101 frames
     valid_mols_sorted = sorted(valid_mols, key=int)
     
     # Process trajectories
@@ -163,11 +171,7 @@ def main(MDsimulations_path = public_variables.MDsimulations_path_, output_folde
 if __name__ == "__main__":
     #NOTE: 10 seconden per molecule als ik 100 frames doe
     print('trj_to_pdbfiles')
-    MDsimulations_path = public_variables.MDsimulations_path_ #the folder containing all the MD simulations {001,002..615}
-    
-    output_folder = public_variables.ligand_conformations_path_
-    # ligand_conformations_folder_ = f'ligand_conformations_JAK1_2'
-    ligand_conformations_folder_ = f'ligand_conformations_pparD'
-    
-    print(type(MDsimulations_path))
-    main(MDsimulations_path, ligand_conformations_folder_)
+    pv.update_config(model_=Model_deep.LSTM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    MDsimulations_path = pv.MDsimulations_path_ #the folder containing all the MD simulations {001,002..615}
+    frames = 1000
+    main(MDsimulations_path, pv.ligand_conformations_path_, frames)

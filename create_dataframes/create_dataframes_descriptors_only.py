@@ -68,14 +68,13 @@ def reduce_dataframe(df, interval=1):
     
     return reduced_df
 
-def main(time_interval = 1):
+def main(time_interval = 1, timeinterval_list = [1,0.5,0.2,0.1,0.05,0.02,0.01]):
     initial_df = pd.read_csv(pv.initial_dataframe_)
 
     dfs_in_dict = create_dfs_dic(initial_df, time_interval) #only single conformations
     save_dataframes(dfs_in_dict) #automatically save in descriptors_only_folder
     
-    timeinterval = [1,0.5,0.2,0.1]
-    for t in timeinterval:
+    for t in timeinterval_list:
         print(t)
         reduced_dataframe = reduce_dataframe(initial_df, interval=t)
         reduced_dataframe.to_csv(pv.dfs_descriptors_only_path_ / f'conformations_{int(10/t)}.csv', index=False)

@@ -7,11 +7,25 @@ from io import StringIO
 import numpy as np
 import os
 
-def get_all_targets(smiles_activity_dataset):
+def csvfiles_to_dic_include(dfs_path, include_files: list = []):
+    '''The folder with CSV files 'dataframes_JAK1_WHIM' is the input and these CSV files will be
+       put into a list of pandas DataFrames, also works with 0.5 1 1.5 formats.
+    '''
+    if include_files is None:
+        include_files = []
+    dic = {}
+    for csv_file in dfs_path.glob('*.csv'):
+        if csv_file.name in include_files:
+            dic[csv_file.stem] = pd.read_csv(csv_file)
+        else:
+            continue
+    return dic
+
+def get_all_targets(protein_dataset):
     """read out the original dataset csv file and get the targets + convert exp_mean to PKI
     out: pandas dataframe with two columns: ['mol_id','PKI']
     """
-    df = pd.read_csv(smiles_activity_dataset)
+    df = pd.read_csv(protein_dataset)
     df['PKI'] = -np.log10(df['exp_mean [nM]'] * 1e-9)
     return df[['mol_id','PKI']]
 

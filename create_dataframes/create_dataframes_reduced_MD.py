@@ -63,20 +63,20 @@ def MD_features_implementation():
     for name, df in list(dfs_in_dic.items()):
         if name.startswith('conformations'):
             print(name)
-            merged_df = pd.merge(df, df_MDfeatures, left_on=['mol_id', 'conformations (ns)'], right_on=['mol_id', 'picoseconds'], how='left')
+            merged_df = pd.merge(df, df_MDfeatures, left_on=['mol_id', 'conformations (ns)'], right_on=['mol_id', 'picoseconds'], how='inner')
             merged_df = merged_df.drop(columns='picoseconds')
             merged_df.to_csv(destination_folder / Path(name + '.csv'), index=False)
             print(f'done with {name}')
         elif name.endswith('ns'):
             print(name)
             df_MDfeatures2 = df_MDfeatures[df_MDfeatures['picoseconds'] == int(name.rstrip('ns'))]
-            merged_df = pd.merge(df, df_MDfeatures2, on='mol_id', how='left')
+            merged_df = pd.merge(df, df_MDfeatures2, on='mol_id', how='inner')
             merged_df = merged_df.drop(columns='picoseconds')
             merged_df.to_csv(destination_folder / Path(name + '.csv'), index=False)
             print(f'done with {name}')
         elif name.startswith('clustering'):
             print(name)
-            merged_df = pd.merge(df, df_MDfeatures, left_on=['mol_id', 'conformations (ns)'], right_on=['mol_id', 'picoseconds'], how='left')
+            merged_df = pd.merge(df, df_MDfeatures, left_on=['mol_id', 'conformations (ns)'], right_on=['mol_id', 'picoseconds'], how='inner')
             merged_df = merged_df.drop(columns='picoseconds')
             merged_df.to_csv(destination_folder / Path(name + '.csv'), index=False) 
             print(f'done with {name}')

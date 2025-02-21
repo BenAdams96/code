@@ -8,6 +8,10 @@ from global_files import public_variables
 from collections import defaultdict
 import math
 
+from global_files import csv_to_dictionary, public_variables as pv
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
+
 def display_dataframe_summary(dataframes_nested_dict):
     """
     Display a summary of the DataFrames collected in a nested dictionary format.
@@ -58,7 +62,7 @@ def dataframes_to_dic(dfs_path):
     
     for subfolder in subfolders:
         subfolder_name = subfolder.name
-        model_results_folder = subfolder / public_variables.Modelresults_folder_
+        model_results_folder = subfolder / pv.Modelresults_folder_
         if model_results_folder.exists(): #checks if Modelresults folder exists, if not, it doesnt count
             for csv_file in model_results_folder.glob('*.csv'):
                 try:
@@ -221,35 +225,36 @@ def plot_boxplots_compare_ns(data_for_plot, sorted_subfolders,ordered_row_names,
 
 
 
-def nested_data_dict(dfs_path, modelresults_dict, idlist_exclude_files: list = None):
+def nested_data_dict(dfs_path, modelresults_dict, idlist_include_files: list = None):
     outer_dict = defaultdict(lambda: defaultdict(), modelresults_dict)
     
-    model_results_folder = dfs_path / public_variables.Modelresults_folder_
+    model_results_folder = dfs_path / pv.Modelresults_folder_
     
     if model_results_folder.exists():
         for csv_file in model_results_folder.glob("*.csv"): #csv_file = results_k10_r2 etc. of 'descriptors only' for example. whole path
-            print(csv_file)
-            print('#########################################')
-            try:
-                    df = pd.read_csv(csv_file)
-                    row_data_dict = modelresults_to_dict(df, idlist_exclude_files)
-                    outer_dict[csv_file.name][dfs_path.name] = row_data_dict
-                    
-            except Exception as e:
-                print(f"Error reading {csv_file}: {e}")
+            if not csv_file.name.endswith("temp.csv") and "R2" in csv_file.name:
+                print(csv_file)
+                print('#########################################')
+                try:
+                        df = pd.read_csv(csv_file)
+                        row_data_dict = modelresults_to_dict(df, idlist_include_files)
+                        outer_dict[csv_file.name][dfs_path.name] = row_data_dict
+                        
+                except Exception as e:
+                    print(f"Error reading {csv_file}: {e}")
     return outer_dict
 
-def modelresults_to_dict(modelresult_df, idlist_exclude_files: list = None):
+def modelresults_to_dict(modelresult_df, idlist_include_files: list = None):
     """
     """
     # If exclude_files is None, initialize it as an empty list
-    if idlist_exclude_files is None:
-        idlist_exclude_files = []
+    if idlist_include_files is None:
+        idlist_include_files = []
     
     # Filter the DataFrame to exclude rows based on the 'id' column if specified
-    if idlist_exclude_files:
-        modelresult_df = modelresult_df[~modelresult_df['mol_id'].isin(idlist_exclude_files)]
-    
+    if idlist_include_files:
+        modelresult_df = modelresult_df[modelresult_df['mol_id'].isin(idlist_include_files)]
+
     # Get the columns that start with 'split' and end with '_test_score'
     split_columns = [col for col in modelresult_df.columns if col.startswith('split') and col.endswith('_test_score')]
 
@@ -268,10 +273,10 @@ def boxplots_compare_individuals(master_folder, csv_filename, modelresults_dict)
     
     # Define colors and labels for different subfolders
     colors = {
-        public_variables.dfs_descriptors_only_path_.name: 'lightblue',
-        public_variables.dfs_reduced_path_.name: 'lightgreen',
-        public_variables.dfs_reduced_and_MD_path_.name: 'lightcoral',
-        public_variables.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'lightblue',
+        pv.dfs_reduced_path_.name: 'lightgreen',
+        pv.dfs_reduced_and_MD_path_.name: 'lightcoral',
+        pv.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
         "PCA":"salmon",
         'descriptors only scaled mw': 'salmon',
         "reduced_t0.9": 'teal',
@@ -280,10 +285,10 @@ def boxplots_compare_individuals(master_folder, csv_filename, modelresults_dict)
     }
 
     labels = {
-        public_variables.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
-        public_variables.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
-        public_variables.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
-        public_variables.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
+        pv.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
+        pv.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
+        pv.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
         "PCA":"salmon",
         'descriptors only scaled mw': 'salmon',
         "reduced_t0.9": 'teal',
@@ -386,21 +391,27 @@ def boxplots_compare_individuals(master_folder, csv_filename, modelresults_dict)
     return
 
 
-def boxplots_compare_groups(master_folder, csv_filename, modelresults_dict):
+def boxplots_compare_groups(path, csv_filename, modelresults_dict):
     """
     """
     plt.figure()
     plt.figure(figsize=(12, 6))
     # Create a folder to save plots if it doesn't exist
-    save_plot_folder = master_folder / Path('boxplots_compare_groups')
+    save_plot_folder = pv.dataframes_master_ / 'boxplots_compare_groups'
     save_plot_folder.mkdir(parents=True, exist_ok=True)
-    
+    print(save_plot_folder)
     # Define colors and labels for different subfolders
     colors = {
-        public_variables.dfs_descriptors_only_path_.name: 'lightblue',
-        public_variables.dfs_reduced_path_.name: 'lightgreen',
-        public_variables.dfs_reduced_and_MD_path_.name: 'lightcoral',
-        public_variables.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'lightblue',
+        pv.dfs_reduced_path_.name: 'lightgreen',
+        pv.dfs_reduced_and_MD_path_.name: 'lightcoral',
+        pv.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
+
+        pv.dfs_reduced_PCA_path_.name: 'salmon',
+        pv.dfs_reduced_MD_PCA_path_.name: f'goldenrod',
+        pv.dfs_reduced_and_MD_combined_PCA_path_.name: 'teal',
+        pv.dfs_all_PCA.name: 'mediumorchid',  # Added label for "MD only"
+
         "PCA":"salmon",
         "2D":'goldenrod',
         'descriptors only scaled mw': 'salmon',
@@ -411,10 +422,15 @@ def boxplots_compare_groups(master_folder, csv_filename, modelresults_dict):
 
     labels = {
         "2D":"2D fingerprint",
-        public_variables.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
-        public_variables.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
-        public_variables.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
-        public_variables.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
+        pv.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
+        pv.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
+        pv.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
+
+        pv.dfs_reduced_PCA_path_.name: 'PCA desc',
+        pv.dfs_reduced_MD_PCA_path_.name: f'PCA MD',
+        pv.dfs_reduced_and_MD_combined_PCA_path_.name: 'PCA desc + PCA MD',
+        pv.dfs_all_PCA.name: 'PCDA desc+MD',  # Added label for "MD only"
         "PCA":"PCA",
         'descriptors only scaled mw': 'salmon',
         "reduced_t0.9": 'teal',
@@ -464,20 +480,7 @@ def boxplots_compare_groups(master_folder, csv_filename, modelresults_dict):
             box_colors.append(color)
             widths.append(box_width)
         base_position = base_position + ((num_rows * (box_width + group_gap) - group_gap) + group_spacing)
-    boxplot_dict = plt.boxplot(box_data, positions=positions, patch_artist=True,
-                                widths=widths,  # Set box widths
-                                medianprops=dict(color='red'))
     
-    # Apply colors to each box
-    for patch, color in zip(boxplot_dict['boxes'], box_colors):
-        patch.set_facecolor(color)
-    
-
-    # Round min_value down to the nearest number with 1 decimal place
-    min_value = math.floor(min_value * 10) / 10
-
-    # Round max_value up to the nearest number with 1 decimal place
-    max_value = math.ceil(max_value * 10) / 10
     # # Add individual data points
     # for pos, split_scores in zip(positions, box_data):
     #     plt.scatter([pos] * len(split_scores), split_scores, color='black', alpha=0.8, s=10, zorder=3)  # Smaller, darker dots
@@ -522,12 +525,25 @@ def boxplots_compare_groups(master_folder, csv_filename, modelresults_dict):
     #     # Draw lines connecting each pair of scores for this subgroup within all groups
     #     for i in range(len(y_values[0])):  # Assuming all y_values have the same length
     #         plt.plot(x_positions, [y[i] for y in y_values], color='black', alpha=0.5, zorder=2)
+    boxplot_dict = plt.boxplot(box_data, positions=positions, patch_artist=True,
+                                widths=widths,  # Set box widths
+                                medianprops=dict(color='red'))
+    
+    # Apply colors to each box
+    for patch, color in zip(boxplot_dict['boxes'], box_colors):
+        patch.set_facecolor(color)
+    
 
+    # Round min_value down to the nearest number with 1 decimal place
+    min_value = (math.floor(min_value * 10) / 10) - 0.1
+
+    # Round max_value up to the nearest number with 1 decimal place
+    max_value = (math.ceil(max_value * 10) / 10)+0.1
     # Add a legend
     handles = [plt.Line2D([0], [0], color=color, lw=4) for color in filtered_colors.values()]
     plt.legend(handles=handles, labels=filtered_labels.values(), loc='best')
 
-    plt.title(f"{public_variables.MLmodel_} Boxplot results for Kfold=10 using {public_variables.Descriptor_} 3D descriptors") #
+    plt.title(f"{pv.ML_MODEL} Boxplot results for Kfold=10 using {pv.DESCRIPTOR} 3D descriptors") #
     plt.xlabel("conformations group")
     plt.ylabel("R²-score")
     
@@ -543,7 +559,7 @@ def boxplots_compare_groups(master_folder, csv_filename, modelresults_dict):
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
     # Save the plot
-    plot_file_path = save_plot_folder / f'{csv_filename}.png'
+    plot_file_path = save_plot_folder / f'{pv.ML_MODEL}_{csv_filename}_{len(modelresults_dict)}.png'
     plt.tight_layout()
     plt.savefig(plot_file_path)
     plt.close()
@@ -551,168 +567,43 @@ def boxplots_compare_groups(master_folder, csv_filename, modelresults_dict):
 
  ####################################################################################################################
 
-def main(dfs_paths = [public_variables.dfs_descriptors_only_path_]):
+def main(dfs_paths = [pv.dfs_descriptors_only_path_]):
 
-    master_folder = public_variables.dataframes_master_
+    master_folder = pv.dataframes_master_
 
     all_modelresults_dict = {}
 
-    for dfs_entry in dfs_paths:
+    for dfs_path, list_to_include in dfs_paths:
+        # print(dfs_entry)
         # Check if the entry is a tuple (path, list) or just a path
-        if isinstance(dfs_entry, tuple):
-            dfs_path, idlist_to_exclude = dfs_entry  # Unpack the tuple
-            # print(dfs_path)
-            # print(f"Processing path {dfs_path.name} with CSV list to exclude: {idlist_to_exclude}")
-        else:
-            dfs_path = dfs_entry  # Only a path is given, no CSV list
-            idlist_to_exclude = None  # Set CSV list to None if not provided
-            # print(f"Processing path {dfs_path.name} with no specific CSV list to exclude")
+        # if isinstance(dfs_entry, tuple):
+        #     dfs_path, idlist_to_exclude = dfs_entry  # Unpack the tuple
+        #     # print(dfs_path)
+        #     # print(f"Processing path {dfs_path.name} with CSV list to exclude: {idlist_to_exclude}")
+        # else:
+        #     dfs_path = dfs_entry  # Only a path is given, no CSV list
+        #     idlist_to_exclude = None  # Set CSV list to None if not provided
+        #     # print(f"Processing path {dfs_path.name} with no specific CSV list to exclude")
 
-        if not dfs_path.exists():
-            # print(f"Error: The path '{dfs_path}' does not exist.")
-            continue
-        all_modelresults_dict = nested_data_dict(dfs_path, all_modelresults_dict, idlist_to_exclude)
+        # if not dfs_path.exists():
+        #     # print(f"Error: The path '{dfs_path}' does not exist.")
+        #     continue
+        all_modelresults_dict = nested_data_dict(dfs_path, all_modelresults_dict, list_to_include)
+        print(all_modelresults_dict)
         print('test')
         print(all_modelresults_dict)
     for csvfile_name, modelresults_dict in all_modelresults_dict.items(): #loop over k10_r2 etc.
         # boxplots_compare_individuals(master_folder, csvfile_name, modelresults_dict)
-        boxplots_compare_groups(master_folder, csvfile_name, modelresults_dict)
+        boxplots_compare_groups(path, csvfile_name, modelresults_dict)
     return
 
 if __name__ == "__main__":
-    # exclude_files_clusters = [
-    # 'clustering_target10.0%_cluster1', 'clustering_target10.0%_cluster2.csv',
-    # 'clustering_target10.0%_cluster3', 'clustering_target10.0%_cluster4.csv',
-    # 'clustering_target10.0%_cluster5', 'clustering_target10.0%_cluster6.csv',
-    # 'clustering_target10.0%_cluster7', 'clustering_target10.0%_cluster8.csv',
-    # 'clustering_target10.0%_cluster9', 'clustering_target10.0%_cluster10.csv',
-    # 'clustering_target20.0%_cluster1.csv', 'clustering_target20.0%_cluster2.csv',
-    # 'clustering_target20.0%_cluster3.csv', 'clustering_target20.0%_cluster4.csv',
-    # 'clustering_target20.0%_cluster5.csv', 'clustering_target20.0%_cluster6.csv',
-    # 'clustering_target20.0%_cluster7.csv', 'clustering_target20.0%_cluster8.csv',
-    # 'clustering_target20.0%_cluster9.csv', 'clustering_target20.0%_cluster10.csv',
-    # 'clustering_target30.0%_cluster1.csv', 'clustering_target30.0%_cluster2.csv',
-    # 'clustering_target30.0%_cluster3.csv', 'clustering_target30.0%_cluster4.csv',
-    # 'clustering_target30.0%_cluster5.csv', 'clustering_target30.0%_cluster6.csv',
-    # 'clustering_target30.0%_cluster7.csv', 'clustering_target30.0%_cluster8.csv',
-    # 'clustering_target30.0%_cluster9.csv', 'clustering_target30.0%_cluster10.csv',
-    # 'clustering_target40.0%_cluster1.csv', 'clustering_target40.0%_cluster2.csv',
-    # 'clustering_target40.0%_cluster3.csv', 'clustering_target40.0%_cluster4.csv',
-    # 'clustering_target40.0%_cluster5.csv', 'clustering_target40.0%_cluster6.csv',
-    # 'clustering_target40.0%_cluster7.csv', 'clustering_target40.0%_cluster8.csv',
-    # 'clustering_target40.0%_cluster9.csv', 'clustering_target40.0%_cluster10.csv',
-    # 'clustering_target50.0%_cluster1.csv', 'clustering_target50.0%_cluster2.csv',
-    # 'clustering_target50.0%_cluster3.csv', 'clustering_target50.0%_cluster4.csv',
-    # 'clustering_target50.0%_cluster5.csv', 'clustering_target50.0%_cluster6.csv',
-    # 'clustering_target50.0%_cluster7.csv', 'clustering_target50.0%_cluster8.csv',
-    # 'clustering_target50.0%_cluster9.csv', 'clustering_target50.0%_cluster10.csv'
-    # ]
-    # exclude_files_clusters10 = [
-    # 'clustering_target10.0%_cluster1.csv', 'clustering_target10.0%_cluster2.csv',
-    # 'clustering_target10.0%_cluster3.csv', 'clustering_target10.0%_cluster4.csv',
-    # 'clustering_target10.0%_cluster5.csv', 'clustering_target10.0%_cluster6.csv',
-    # 'clustering_target10.0%_cluster7.csv', 'clustering_target10.0%_cluster8.csv',
-    # 'clustering_target10.0%_cluster9.csv', 'clustering_target10.0%_cluster10.csv']
-    # exclude_files_clusters20 = [
-    # 'clustering_target20.0%_cluster1.csv', 'clustering_target20.0%_cluster2.csv',
-    # 'clustering_target20.0%_cluster3.csv', 'clustering_target20.0%_cluster4.csv',
-    # 'clustering_target20.0%_cluster5.csv', 'clustering_target20.0%_cluster6.csv',
-    # 'clustering_target20.0%_cluster7.csv', 'clustering_target20.0%_cluster8.csv',
-    # 'clustering_target20.0%_cluster9.csv', 'clustering_target20.0%_cluster10.csv']
-    # exclude_files_clusters30 = [
-    # 'clustering_target30.0%_cluster1.csv', 'clustering_target30.0%_cluster2.csv',
-    # 'clustering_target30.0%_cluster3.csv', 'clustering_target30.0%_cluster4.csv',
-    # 'clustering_target30.0%_cluster5.csv', 'clustering_target30.0%_cluster6.csv',
-    # 'clustering_target30.0%_cluster7.csv', 'clustering_target30.0%_cluster8.csv',
-    # 'clustering_target30.0%_cluster9.csv', 'clustering_target30.0%_cluster10.csv']
-    # exclude_files_clusters40 = [
-    # 'clustering_target40.0%_cluster1.csv', 'clustering_target40.0%_cluster2.csv',
-    # 'clustering_target40.0%_cluster3.csv', 'clustering_target40.0%_cluster4.csv',
-    # 'clustering_target40.0%_cluster5.csv', 'clustering_target40.0%_cluster6.csv',
-    # 'clustering_target40.0%_cluster7.csv', 'clustering_target40.0%_cluster8.csv',
-    # 'clustering_target40.0%_cluster9.csv', 'clustering_target40.0%_cluster10.csv']
-    # exclude_files_clusters50 = [
-    # 'clustering_target50.0%_cluster1.csv', 'clustering_target50.0%_cluster2.csv',
-    # 'clustering_target50.0%_cluster3.csv', 'clustering_target50.0%_cluster4.csv',
-    # 'clustering_target50.0%_cluster5.csv', 'clustering_target50.0%_cluster6.csv',
-    # 'clustering_target50.0%_cluster7.csv', 'clustering_target50.0%_cluster8.csv',
-    # 'clustering_target50.0%_cluster9.csv', 'clustering_target50.0%_cluster10.csv'
-    # ]
-    # exclude_files_other = ['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_1000.csv','conformations_1000_molid.csv','conformations_500.csv','conformations_200.csv','conformations_100.csv','conformations_50.csv','initial_dataframe.csv','initial_dataframes_best.csv','MD_output.csv','conformations_10.csv','conformations_20.csv','minimized_conformations_10.csv','stable_conformations.csv']
-    always_exclude = [
-    '10.0%_cluster6', '10.0%_cluster7', '10.0%_cluster8',
-    '10.0%_cluster9', '10.0%_cluster10', '20.0%_cluster6',
-    '20.0%_cluster7', '20.0%_cluster8', '20.0%_cluster9', '20.0%_cluster10',
-    '30.0%_cluster6', '30.0%_cluster7', '30.0%_cluster8',
-    '30.0%_cluster9', '30.0%_cluster10','40.0%_cluster6',
-    '40.0%_cluster7', '40.0%_cluster8', '40.0%_cluster9', '40.0%_cluster10',
-    '50.0%_cluster6', '50.0%_cluster7', '50.0%_cluster8',
-    '50.0%_cluster9', '50.0%_cluster10'
-    ]
-    exclude_files_clusters = [
-    '10.0%_cluster1', '10.0%_cluster2', '10.0%_cluster3', '10.0%_cluster4',
-    '10.0%_cluster5', '10.0%_cluster6', '10.0%_cluster7', '10.0%_cluster8',
-    '10.0%_cluster9', '10.0%_cluster10', '20.0%_cluster1', '20.0%_cluster2',
-    '20.0%_cluster3', '20.0%_cluster4', '20.0%_cluster5', '20.0%_cluster6',
-    '20.0%_cluster7', '20.0%_cluster8', '20.0%_cluster9', '20.0%_cluster10',
-    '30.0%_cluster1', '30.0%_cluster2', '30.0%_cluster3', '30.0%_cluster4',
-    '30.0%_cluster5', '30.0%_cluster6', '30.0%_cluster7', '30.0%_cluster8',
-    '30.0%_cluster9', '30.0%_cluster10', '40.0%_cluster1', '40.0%_cluster2',
-    '40.0%_cluster3', '40.0%_cluster4', '40.0%_cluster5', '40.0%_cluster6',
-    '40.0%_cluster7', '40.0%_cluster8', '40.0%_cluster9', '40.0%_cluster10',
-    '50.0%_cluster1', '50.0%_cluster2', '50.0%_cluster3', '50.0%_cluster4',
-    '50.0%_cluster5', '50.0%_cluster6', '50.0%_cluster7', '50.0%_cluster8',
-    '50.0%_cluster9', '50.0%_cluster10'
-    ]
-    exclude_files_clusters10 = [
-        '10.0%_cluster1', '10.0%_cluster2', '10.0%_cluster3', '10.0%_cluster4',
-        '10.0%_cluster5', '10.0%_cluster6', '10.0%_cluster7', '10.0%_cluster8',
-        '10.0%_cluster9', '10.0%_cluster10'
-    ]
-    exclude_files_clusters20 = [
-        '20.0%_cluster1', '20.0%_cluster2', '20.0%_cluster3', '20.0%_cluster4',
-        '20.0%_cluster5', '20.0%_cluster6', '20.0%_cluster7', '20.0%_cluster8',
-        '20.0%_cluster9', '20.0%_cluster10'
-    ]
-    exclude_files_clusters30 = [
-        '30.0%_cluster1', '30.0%_cluster2', '30.0%_cluster3', '30.0%_cluster4',
-        '30.0%_cluster5', '30.0%_cluster6', '30.0%_cluster7', '30.0%_cluster8',
-        '30.0%_cluster9', '30.0%_cluster10'
-    ]
-    exclude_files_clusters40 = [
-        '40.0%_cluster1', '40.0%_cluster2', '40.0%_cluster3', '40.0%_cluster4',
-        '40.0%_cluster5', '40.0%_cluster6', '40.0%_cluster7', '40.0%_cluster8',
-        '40.0%_cluster9', '40.0%_cluster10'
-    ]
-    exclude_files_clusters50 = [
-        '50.0%_cluster1', '50.0%_cluster2', '50.0%_cluster3', '50.0%_cluster4',
-        '50.0%_cluster5', '50.0%_cluster6', '50.0%_cluster7', '50.0%_cluster8',
-        '50.0%_cluster9', '50.0%_cluster10'
-    ]
-    exclude_files_other = [
-        '0ns', '1ns', '2ns', '3ns', '4ns', '5ns', '6ns', '7ns', '8ns', '9ns', '10ns',
-        'conformations_1000', 'conformations_1000_molid', 'conformations_500', 
-        'conformations_200', 'conformations_100', 'conformations_50', 
-        'initial_dataframe', 'initial_dataframes_best', 'MD_output', 
-        'conformations_10', 'conformations_20', 'minimized_conformations_10', 
-        'stable_conformations'
-    ]
-
 
     dfs_paths = []
-    # dpath = public_variables.base_path_ / Path('dataframes_JAK1_WHIM') 
-    # ddpath = dpath / Path('descriptors only')
-    # print(ddpath)
-    # print(public_variables.dfs_descriptors_only_path_)
-    # # drpath = dpath / Path('reduced_t0.65')
-    # # drmpath = dpath / Path('reduced_t0.65_MD')
-    # # dmpath = dpath / Path('MD only')
-    # dfs_paths.append((ddpath, ['2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_50','conformations_100']))
-    # # dfs_paths.append((drpath, ['2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_50','conformations_100']))
-    # # dfs_paths.append((drmpath, ['minimized','conformations_10','conformations_20','conformations_50','conformations_100']))
-    # # dfs_paths.append((dmpath, ['minimized','conformations_10','conformations_20','conformations_50','conformations_100']))
+    
     exclude_stable2 = ['stable_conformations']
     exclude_stable = ['stable_conformations','conformations_10','conformations_20','minimized_conformations_10']
+    include_files=['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','minimized_conformations_10']
     # dfs_paths.append((public_variables.dataframes_master_ / '2D', []))
     # dfs_paths.append((public_variables.dfs_descriptors_only_path_, exclude_files_clusters + exclude_stable))
     # dfs_paths.append((public_variables.dfs_reduced_path_, exclude_files_clusters+ exclude_stable))
@@ -728,10 +619,25 @@ if __name__ == "__main__":
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters10+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters30 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters40 + exclude_files_other))
-    dfs_paths.append((public_variables.dfs_descriptors_only_path_, exclude_files_clusters + exclude_stable2))
-    dfs_paths.append((public_variables.dfs_reduced_path_, exclude_files_clusters+ exclude_stable2))
-    dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters+ exclude_stable2))
-    dfs_paths.append((public_variables.dfs_MD_only_path_, exclude_files_clusters+ exclude_stable2))
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    include_files=['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','minimized_conformations_10','conformations_50','conformations_100']
+    for path in pv.get_paths():
+        dfs_paths.append((path, include_files))
+        dfs_paths.append((pv.dfs_reduced_PCA_path_, include_files))
+        dfs_paths.append((pv.dfs_reduced_MD_PCA_path_, include_files))
+        dfs_paths.append((pv.dfs_reduced_and_MD_combined_PCA_path_, include_files))
+        dfs_paths.append((pv.dfs_all_PCA, include_files))
+
+    # pv.update_config(model_=Model_deep.LSTM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    # include_files=['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','minimized_conformations_10','conformations_50','conformations_100']
+    # for path in pv.get_paths():
+    #     dfs_paths.append((path, include_files))
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+        
+    # dfs_paths.append((pv.dfs_descriptors_only_path_, include_files))
+    # dfs_paths.append((pv.dfs_reduced_path_, include_files))
+    # dfs_paths.append((pv.dfs_reduced_and_MD_path_, include_files))
+    # dfs_paths.append((pv.dfs_MD_only_path_, include_files))
     
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters20+ exclude_files_clusters40+ exclude_files_clusters30 + exclude_files_other))
     
@@ -743,9 +649,6 @@ if __name__ == "__main__":
     # dfs_paths.append((public_variables.dfs_MD_only_path_, []))#['conformations_11','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_100'])) #['rdkit_min','0ns'] ['1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns']
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, ['minimized']))
     # dfs_paths.append((public_variables.dfs_MD_only_path_, ['minimized']))
-
-
-
 
     # dfs_paths.append((public_variables.dataframes_master_ / 'custom_dataframes',['rdkit_min','0ns']))
     # dfs_paths.append((public_variables.dataframes_master_ / 'reduced_t0.75',['rdkit_min','0ns']))

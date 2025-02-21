@@ -4,7 +4,9 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from global_files import public_variables
+from global_files import csv_to_dictionary, public_variables as pv
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 from collections import defaultdict
 import math
 from scipy.stats import gaussian_kde
@@ -60,7 +62,7 @@ def dataframes_to_dic(dfs_path):
     
     for subfolder in subfolders:
         subfolder_name = subfolder.name
-        model_results_folder = subfolder / public_variables.Modelresults_folder_
+        model_results_folder = subfolder / pv.Modelresults_folder_
         if model_results_folder.exists(): #checks if Modelresults folder exists, if not, it doesnt count
             for csv_file in model_results_folder.glob('*.csv'):
                 try:
@@ -226,7 +228,7 @@ def plot_boxplots_compare_ns(data_for_plot, sorted_subfolders,ordered_row_names,
 def nested_data_dict(dfs_path, modelresults_dict, idlist_exclude_files: list = None):
     outer_dict = defaultdict(lambda: defaultdict(), modelresults_dict)
     
-    model_results_folder = dfs_path / public_variables.Modelresults_folder_
+    model_results_folder = dfs_path / pv.Modelresults_folder_
     
     if model_results_folder.exists():
         for csv_file in model_results_folder.glob("*.csv"): #csv_file = results_k10_r2 etc. of 'descriptors only' for example. whole path
@@ -270,10 +272,10 @@ def boxplots_compare_individuals(master_folder, csv_filename, modelresults_dict)
     
     # Define colors and labels for different subfolders
     colors = {
-        public_variables.dfs_descriptors_only_path_.name: 'lightblue',
-        public_variables.dfs_reduced_path_.name: 'lightgreen',
-        public_variables.dfs_reduced_and_MD_path_.name: 'lightcoral',
-        public_variables.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'lightblue',
+        pv.dfs_reduced_path_.name: 'lightgreen',
+        pv.dfs_reduced_and_MD_path_.name: 'lightcoral',
+        pv.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
         "PCA":"salmon",
         'descriptors only scaled mw': 'salmon',
         "reduced_t0.9": 'teal',
@@ -282,10 +284,10 @@ def boxplots_compare_individuals(master_folder, csv_filename, modelresults_dict)
     }
 
     labels = {
-        public_variables.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
-        public_variables.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
-        public_variables.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
-        public_variables.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
+        pv.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
+        pv.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
+        pv.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
         "PCA":"salmon",
         'descriptors only scaled mw': 'salmon',
         "reduced_t0.9": 'teal',
@@ -400,10 +402,10 @@ def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_fol
     
     # Define colors and labels for different subfolders
     colors = {
-        public_variables.dfs_descriptors_only_path_.name: 'lightblue',
-        public_variables.dfs_reduced_path_.name: 'lightgreen',
-        public_variables.dfs_reduced_and_MD_path_.name: 'lightcoral',
-        public_variables.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'lightblue',
+        pv.dfs_reduced_path_.name: 'lightgreen',
+        pv.dfs_reduced_and_MD_path_.name: 'lightcoral',
+        pv.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
         "PCA":"salmon",
         "2D":'goldenrod',
         'descriptors only scaled mw': 'salmon',
@@ -414,10 +416,10 @@ def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_fol
 
     labels = {
         "2D":"2D fingerprint",
-        public_variables.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
-        public_variables.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
-        public_variables.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
-        public_variables.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
+        pv.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
+        pv.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
+        pv.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
         "PCA":"PCA",
         'descriptors only scaled mw': 'salmon',
         "reduced_t0.9": 'teal',
@@ -490,7 +492,7 @@ def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_fol
     handles = [plt.Line2D([0], [0], color=color, lw=4) for color in filtered_colors.values()]
     plt.legend(handles=handles, labels=filtered_labels.values(), loc='best')
 
-    plt.title(f"{public_variables.MLmodel_} Boxplot results for Kfold=10 using {public_variables.Descriptor_} 3D descriptors") #
+    plt.title(f"{pv.MLmodel_} Boxplot results for Kfold=10 using {pv.Descriptor_} 3D descriptors") #
     plt.xlabel("conformations group")
     plt.ylabel("R²-score")
     
@@ -505,7 +507,7 @@ def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_fol
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
     # Save the plot
-    plot_file_path = save_plot_folder / f'boxplot_ko10_ki5_r2_{public_variables.Descriptor_}_{datasets}_len{row_idx+1}_groups{group_idx+1}.png' #row_idx is number of subgroups-1
+    plot_file_path = save_plot_folder / f'boxplot_ko10_ki5_r2_{pv.Descriptor_}_{datasets}_len{row_idx+1}_groups{group_idx+1}.png' #row_idx is number of subgroups-1
     plt.tight_layout()
     plt.savefig(plot_file_path)
     plt.close()
@@ -523,10 +525,10 @@ def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_fol
     
     # Define colors and labels for different subfolders
     colors = {
-        public_variables.dfs_descriptors_only_path_.name: 'lightblue',
-        public_variables.dfs_reduced_path_.name: 'lightgreen',
-        public_variables.dfs_reduced_and_MD_path_.name: 'lightcoral',
-        public_variables.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'lightblue',
+        pv.dfs_reduced_path_.name: 'lightgreen',
+        pv.dfs_reduced_and_MD_path_.name: 'lightcoral',
+        pv.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
         "PCA":"salmon",
         "2D":'goldenrod',
         'descriptors only scaled mw': 'salmon',
@@ -537,10 +539,10 @@ def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_fol
 
     labels = {
         "2D":"2D fingerprint",
-        public_variables.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
-        public_variables.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
-        public_variables.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
-        public_variables.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
+        pv.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
+        pv.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
+        pv.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
         "PCA":"PCA",
         'descriptors only scaled mw': 'salmon',
         "reduced_t0.9": 'teal',
@@ -604,16 +606,15 @@ def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_fol
         patch.set_facecolor(color)
     
     # Round min_value down to the nearest number with 1 decimal place
-    min_value = math.floor(min_value * 10) / 10
+    min_value = (math.floor(min_value * 10) / 10)
 
     # Round max_value up to the nearest number with 1 decimal place
-    max_value = math.ceil(max_value * 10) / 10
-
+    max_value = (math.ceil(max_value * 10) / 10)+0.1
     # Add a legend
     handles = [plt.Line2D([0], [0], color=color, lw=4) for color in filtered_colors.values()]
     plt.legend(handles=handles, labels=filtered_labels.values(), loc='best')
 
-    plt.title(f"{public_variables.MLmodel_} Boxplot results for Kfold=10 using {public_variables.Descriptor_} 3D descriptors") #
+    plt.title(f"{pv.ML_MODEL} Boxplot results for Kfold=10 using {pv.DESCRIPTOR} 3D descriptors") #
     plt.xlabel("conformations group")
     plt.ylabel("R²-score")
     
@@ -628,7 +629,7 @@ def boxplots_compare_groups(modelresults_dict, save_path, datasets): #master_fol
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
     # Save the plot
-    plot_file_path = save_plot_folder / f'boxplot_ko10_ki5_r2_{public_variables.Descriptor_}_{datasets}_len{row_idx+1}_groups{group_idx+1}.png' #row_idx is number of subgroups-1
+    plot_file_path = save_plot_folder / f'boxplot_ko10_ki5_r2_{pv.DESCRIPTOR}_{datasets}_len{row_idx+1}_groups{group_idx+1}.png' #row_idx is number of subgroups-1
     plt.tight_layout()
     plt.savefig(plot_file_path)
     plt.close()
@@ -647,10 +648,10 @@ def density_plots_compare_groups(modelresults_dict, save_path, datasets): #maste
     
     # Define colors and labels for different subfolders
     colors = {
-        public_variables.dfs_descriptors_only_path_.name: 'lightblue',
-        public_variables.dfs_reduced_path_.name: 'lightgreen',
-        public_variables.dfs_reduced_and_MD_path_.name: 'lightcoral',
-        public_variables.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'lightblue',
+        pv.dfs_reduced_path_.name: 'lightgreen',
+        pv.dfs_reduced_and_MD_path_.name: 'lightcoral',
+        pv.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
         "PCA":"salmon",
         "2D":'goldenrod',
         'descriptors only scaled mw': 'salmon',
@@ -661,10 +662,10 @@ def density_plots_compare_groups(modelresults_dict, save_path, datasets): #maste
 
     labels = {
         "2D":"2D fingerprint",
-        public_variables.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
-        public_variables.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
-        public_variables.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
-        public_variables.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
+        pv.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
+        pv.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
+        pv.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
         "PCA":"PCA",
         'descriptors only scaled mw': 'salmon',
         "reduced_t0.9": 'teal',
@@ -763,7 +764,7 @@ def density_plots_compare_groups(modelresults_dict, save_path, datasets): #maste
     # handles = [plt.Line2D([0], [0], color=color, lw=4) for color in filtered_colors.values()]
     # plt.legend(handles=handles, labels=filtered_labels.values(), loc='best')
 
-    plt.title(f"{public_variables.MLmodel_} Boxplot results for Kfold=10 using {public_variables.Descriptor_} 3D descriptors") #
+    plt.title(f"{pv.MLmodel_} Boxplot results for Kfold=10 using {pv.Descriptor_} 3D descriptors") #
     plt.xlabel("conformations group")
     plt.ylabel("R²-score")
     
@@ -778,7 +779,7 @@ def density_plots_compare_groups(modelresults_dict, save_path, datasets): #maste
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
     # Save the plot
-    plot_file_path = save_plot_folder / f'densityboxplot_ko10_ki5_r2_{public_variables.Descriptor_}_{datasets}_len{row_idx+1}_groups{group_idx+1}.png' #row_idx is number of subgroups-1
+    plot_file_path = save_plot_folder / f'densityboxplot_ko10_ki5_r2_{pv.Descriptor_}_{datasets}_len{row_idx+1}_groups{group_idx+1}.png' #row_idx is number of subgroups-1
     plt.tight_layout()
     plt.savefig(plot_file_path)
     plt.close()
@@ -787,9 +788,9 @@ def density_plots_compare_groups(modelresults_dict, save_path, datasets): #maste
 ####################################################################################################################
 
 def save_combined_df(dataframe, folder, datasets) -> Path:
-    save_path = public_variables.base_path_ / "Afstuderencode" / "plots" / "Modelresults_Combined" / f"{public_variables.MLmodel_}"  # = repositories on laptop
+    save_path = pv.base_path_ / "Afstuderencode" / "plots" / "Modelresults_Combined" / f"{pv.ML_MODEL}"  # = repositories on laptop
 
-    save_path = public_variables.base_path_ / 'code' / 'plots' / "Modelresults_Combined" / f"{public_variables.MLmodel_}"
+    save_path = pv.base_path_ / 'code' / 'plots' / "Modelresults_Combined" / f"{pv.ML_MODEL}"
     print(save_path)
     save_path.mkdir(parents=True, exist_ok=True)
     final_save_path = save_path / f"combined_df_{folder}_{datasets}.csv"
@@ -801,21 +802,21 @@ def save_combined_df(dataframe, folder, datasets) -> Path:
 ####################################################################################################################
 
 
-def main(dfs_paths = [public_variables.dfs_descriptors_only_path_]):
+def main(dfs_paths = [pv.dfs_descriptors_only_path_]):
     dfs_paths = []
-
+    pv.update_config(model_=Model_deep.DNN)
     files_to_include = ['minimized_conformation','0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20', 'minimized_conformations_10']
     
     datasets_protein = ['JAK1', 'GSK3', 'pparD']
-    descriptor_groups = ['descriptors only', f'reduced_t{public_variables.correlation_threshold_}',f'reduced_t{public_variables.correlation_threshold_}_MD', 'MD only']
+    descriptor_groups = ['descriptors only', f'reduced_t{pv.correlation_threshold_}',f'reduced_t{pv.correlation_threshold_}_MD', 'MD only']
 
     group_results_dic = {}
 
-    for descriptor_group in descriptor_groups:
-        print(descriptor_group)
+    for descriptor in descriptor_groups:
+        print(descriptor)
         combined_df = None
-        for dataset in datasets_protein:
-            df_path = public_variables.base_path_ / f'dataframes_{dataset}_{public_variables.Descriptor_}' / descriptor_group  /  f'ModelResults_{public_variables.MLmodel_}' / 'results_Ko10_Ki5_r2_WHIM.csv'
+        for protein in DatasetProtein:
+            df_path = pv.base_path_ / 'dataframes' /  f'dataframes_{protein}_WHIM' / descriptor  /  f'ModelResults_{pv.ML_MODEL}' / 'results_Ko10_Ki5_r2_WHIM.csv'
             df  = pd.read_csv(df_path)
             # Filter only rows where mol_id is in mol_id_list
             df = df[df['mol_id'].isin(files_to_include)]
@@ -826,20 +827,20 @@ def main(dfs_paths = [public_variables.dfs_descriptors_only_path_]):
             # Reset index to preserve row order
             df = df.reset_index(drop=True)
             # Rename 'split*' columns to include the dataset name
-            df = df.rename(columns={col: f"{col}_{dataset}" for col in df.columns if col != 'mol_id'})
+            df = df.rename(columns={col: f"{col}_{protein}" for col in df.columns if col != 'mol_id'})
 
             combined_df = combined_df.merge(df, on='mol_id', how='inner') if combined_df is not None else df
 
             
         print(combined_df)
-        save_csv_path = save_combined_df(combined_df, descriptor_group, datasets_protein)
+        save_csv_path = save_combined_df(combined_df, descriptor, datasets_protein)
         print(save_csv_path)
         group_result_dic = modelresults_to_dict(combined_df, idlist_exclude_files=[]) #{'minimized_conformation': [20 values], '0ns': [20 values], etc}
 
-        group_results_dic[descriptor_group] = group_result_dic
+        group_results_dic[descriptor] = group_result_dic
     
-    # boxplots_compare_groups(group_results_dic, save_csv_path, datasets_protein)
-    density_plots_compare_groups(group_results_dic, save_csv_path, datasets_protein)
+    boxplots_compare_groups(group_results_dic, save_csv_path, datasets_protein)
+    # density_plots_compare_groups(group_results_dic, save_csv_path, datasets_protein)
 
     # for csvfile_name, modelresults_dict in outer_dict.items(): #loop over k10_r2 etc.
     #     # boxplots_compare_individuals(master_folder, csvfile_name, modelresults_dict)

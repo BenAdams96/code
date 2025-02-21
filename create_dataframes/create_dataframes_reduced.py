@@ -29,7 +29,7 @@ def standardize_dataframe(df):
     df_cleaned = df.dropna()  # or df.fillna(df.mean())
     
     # Identify which non-feature columns to keep
-    non_feature_columns = ['mol_id','PKI' 'conformations (ns)']
+    non_feature_columns = ['mol_id','PKI','conformations (ns)']
     existing_non_features = [col for col in non_feature_columns if col in df_cleaned.columns]
     
     # Drop non-numeric target columns if necessary
@@ -203,7 +203,7 @@ def main(threshold = pv.correlation_threshold_):
     dfs_reduced_path = pv.dataframes_master_ / f'reduced_t{threshold}'  # e.g., 'dataframes_JAK1_WHIM
     pv.dfs_reduced_path_.mkdir(parents=True, exist_ok=True)
 
-    dfs_dictionary = csv_to_dictionary.main(pv.dfs_descriptors_only_path_,exclude_files=['concat_hor.csv','concat_ver.csv', 'big.csv','conformations_200.csv','conformations_500.csv','conformations_1000.csv','conformations_1000_molid.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
+    dfs_dictionary = csv_to_dictionary.main(pv.dfs_descriptors_only_path_,exclude_files=['concat_hor.csv','concat_ver.csv', 'big.csv','conformations_1000_molid.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
 
     print(dfs_dictionary.keys())
     dfs_dictionary = remove_constant_columns_from_dfs(dfs_dictionary)

@@ -33,9 +33,9 @@ def create_full_dfs(molID_PKI_df):
     '''
     print(pv.ligand_conformations_path_)
     sorted_ns_folders = get_sorted_folders(pv.ligand_conformations_path_)  # Sorted from 0ns to 10ns
-
-    filtered_paths = [path for path in sorted_ns_folders if float(path.name.replace('ns', '')) * 10 % 1 == 0] #only use stepsize of 0.1 instead of 0.01
-
+    print(len(sorted_ns_folders))
+    filtered_paths = [path for path in sorted_ns_folders if round(float(path.name.replace('ns', '')) * 100) % 1 == 0] #only use stepsize of 0.1 instead of 0.01 (if so change 10 to 100)
+    print(len(filtered_paths))
     rows = []
 
     for idx, dir_path in enumerate(filtered_paths):  # dir_path = 0ns, 0.1ns, 0.2ns folder etc.
@@ -156,16 +156,16 @@ def main():
     # Create the dataframes, which eventually will be placed in 'dataframes_JAK1_WHIM'
     # and also add the targets to the dataframes.
     df_sorted_by_configuration = create_full_dfs(df_targets)
-    df_sorted_by_molid = df_sorted_by_configuration.sort_values(by=['mol_id', 'conformations (ns)']).reset_index(drop=True)
+    # df_sorted_by_molid = df_sorted_by_configuration.sort_values(by=['mol_id', 'conformations (ns)']).reset_index(drop=True)
 
     # Save the dataframes
     pv.dataframes_master_.mkdir(parents=True, exist_ok=True)
     df_sorted_by_configuration.to_csv(pv.initial_dataframe_, index=False)
-    df_sorted_by_molid.to_csv(pv.dataframes_master_ / 'initial_dataframe_mol_id.csv', index=False)
+    # df_sorted_by_molid.to_csv(pv.dataframes_master_ / 'initial_dataframe_mol_id.csv', index=False)
 
 if __name__ == "__main__":
     # Update public variables
-    pv.update_config(model_=Model_classic.RF, descriptor=Descriptor.WHIM, protein=DatasetProtein.JAK1)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
 
     # Call main
     main()

@@ -9,7 +9,9 @@ import pathlib
 import MDAnalysis as mda
 from MDAnalysis.coordinates import PDB
 import shutil
-from global_files import public_variables
+from global_files import csv_to_dictionary, public_variables as pv
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
 def get_molecules_lists(MDsimulations_path):
     '''uses the MD_simulations folder and checks for every molecule the simulation whether it contains the .tpr and .xtc file
@@ -87,13 +89,9 @@ def trj_to_pdb(valid_molecules_list, frames_to_extract,base_path, MDsimulations_
     return
 
 #NOTE: uses the MD simulations folder to create the folder 'ligand_conformations_for_every_snapshot'
-def main(MDsimulations_path = public_variables.MDsimulations_path_, output_folder = public_variables.ligand_conformations_folder_):
-    base_path = public_variables.base_path_
+def main(MDsimulations_path = pv.MDsimulations_path_):
 
-    print(type(MDsimulations_path))
     print(MDsimulations_path)
-    output_path = base_path / output_folder
-    
     # Create molecules list. so all molecules that are present in the folder 'simulations' get added to the list
     all_molecules_list, valid_mols, invalid_mols = get_molecules_lists(MDsimulations_path)
     print(all_molecules_list)
@@ -105,7 +103,7 @@ def main(MDsimulations_path = public_variables.MDsimulations_path_, output_folde
     valid_mols_sorted = sorted(valid_mols, key=int)
     print(valid_mols_sorted)
     # Process trajectories
-    trj_to_pdb(valid_mols_sorted[783:], frames_to_extract,base_path, MDsimulations_path, output_folder) #at 748
+    trj_to_pdb(valid_mols_sorted[749:], frames_to_extract,pv.base_path_, MDsimulations_path, pv.ligand_conformations_path_) #at 748
     print(f"number of molecules: {len(all_molecules_list)}")
     print(f"number of molecules with succesful simulations: {len(valid_mols)}")
     print(f"Invalid molecules: {invalid_mols}")
@@ -114,14 +112,14 @@ def main(MDsimulations_path = public_variables.MDsimulations_path_, output_folde
 # Example usage
 if __name__ == "__main__":
     #NOTE: 10 seconden per molecule als ik 100 frames doe
-    print('trj_to_pdbfiles')
-    MDsimulations_path = public_variables.MDsimulations_path_ #the folder containing all the MD simulations {001,002..615}
-    MDsimulations_folder_ = f'MDsimulations_pparD'
-    MDsimulations_path = public_variables.base_path_.parents[0] / MDsimulations_folder_
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # MDsimulations_path = pv.MDsimulations_path_ #the folder containing all the MD simulations {001,002..615}
+    # MDsimulations_folder_ = f'MDsimulations_pparD'
+    # MDsimulations_path = pv.base_path_.parents[0] / MDsimulations_folder_
     
-    output_folder = public_variables.ligand_conformations_path_
-    # ligand_conformations_folder_ = f'ligand_conformations_JAK1_2'
-    ligand_conformations_folder_ = f'ligand_conformations_pparD'
+    # output_folder = pv.ligand_conformations_path_
+    # # ligand_conformations_folder_ = f'ligand_conformations_JAK1_2'
+    # ligand_conformations_folder_ = f'ligand_conformations_pparD'
     
-    print(type(MDsimulations_path))
-    main(MDsimulations_path, ligand_conformations_folder_)
+    # print(type(MDsimulations_path))
+    main(pv.MDsimulations_path_)

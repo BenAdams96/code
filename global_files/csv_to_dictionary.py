@@ -155,7 +155,6 @@ def get_sorted_columns(column_list):
     5. Columns that don't match any pattern, sorted alphabetically.
     """
     import re
-    print('get sorted columns')
     # Define the regex patterns
     ns_pattern = re.compile(r'^(\d+(\.\d+)?)ns$')
     conformations_pattern = re.compile(r'^conformations_(\d+)$')
