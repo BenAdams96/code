@@ -391,18 +391,12 @@ def boxplots_compare_individuals(master_folder, csv_filename, modelresults_dict)
     return
 
 
-def boxplots_compare_groups(path, csv_filename, modelresults_dict):
-    """
-    """
-    print(path)
-    print(csv_filename)
-    print(modelresults_dict)
-    plt.figure()
-    plt.figure(figsize=(12, 6))
+def boxplots_compare_groups(ax, path, csv_filename, modelresults_dict):
+    """Creates boxplots for comparison of groups on the provided subplot (ax)."""
     # Create a folder to save plots if it doesn't exist
     save_plot_folder = pv.dataframes_master_ / 'boxplots_compare_groups'
     save_plot_folder.mkdir(parents=True, exist_ok=True)
-    print(save_plot_folder)
+    
     # Define colors and labels for different subfolders
     colors = {
         pv.dfs_descriptors_only_path_.name: 'lightblue',
@@ -432,15 +426,16 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
         "MDnewPCA": "mediumseagreen",
         "red MD_new": "limegreen",
         "red MD_new reduced": "crimson",
-        "red MD_old": 'lightcoral'
+        "red MD_old": 'lightcoral',
+        "2D": 'gold',
     }
 
     labels = {
         "2D":"2D fingerprint",
-        pv.dfs_descriptors_only_path_.name: 'RDkit Descriptors',
-        pv.dfs_reduced_path_.name: f'RDkit Descriptors Red.',
-        pv.dfs_reduced_and_MD_path_.name: 'RDkit Descriptors Red. + MD features',
-        pv.dfs_MD_only_path_.name: 'MD features',  # Added label for "MD only"
+        pv.dfs_descriptors_only_path_.name: 'All RDkit 3D features',
+        pv.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
+        pv.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
+        pv.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
 
         # pv.dfs_reduced_PCA_path_.name: 'PCA desc',
         # pv.dfs_reduced_MD_PCA_path_.name: f'PCA MD',
@@ -461,41 +456,33 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
         "MDnewPCA": "MDnewPCA",
         "red MD_new": "red MD_new",
         "red MD_new reduced": "red MD_new reduced",
-        "red MD_old": "red MD_old"
+        "red MD_old": "red MD_old",
+        "2D": '2D ECFP',
     }
 
     filtered_colors = {key: colors[key] for key in modelresults_dict.keys() if key in colors}
     filtered_labels = {key: labels[key] for key in modelresults_dict.keys() if key in labels}
-    
+
     # Define parameters
     box_width = 3
     group_gap = 1
-    group_spacing = 5  # Increased spacing to separate different subgroups clearly
+    group_spacing = 5
     border = 2
 
-    # Get the group with the most values directly
-    group_with_most_values = max(modelresults_dict, key=lambda k: len(modelresults_dict[k]))
-
-    # Get all subgroups from that group
-    all_subgroups = list(modelresults_dict[group_with_most_values].keys())
-    
+    # Initialize positions and data storage
     positions = []
     box_data = []
     box_colors = []
     widths = []
     base_position = 0
 
-    min_value = float('inf')  # Set to positive infinity
-    max_value = float('-inf')  # Set to negative infinity
+    min_value = float('inf')
+    max_value = float('-inf')
 
     for group_idx, (group_name, color) in enumerate(filtered_colors.items()):
         num_rows = len(modelresults_dict[group_name].values())
-        
         for row_idx, subgroup in enumerate(modelresults_dict[group_name].keys()):
-            
             split_scores = modelresults_dict[group_name][subgroup]
-            
-             #using group_idx/num_rows will make it assume that all groups have same length!
             min_value = min(min_value, min(split_scores))
             max_value = max(max_value, max(split_scores))
 
@@ -505,172 +492,229 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
             box_data.append(split_scores)
             box_colors.append(color)
             widths.append(box_width)
-        base_position = base_position + ((num_rows * (box_width + group_gap) - group_gap) + group_spacing)
-    
-    # # Add individual data points
-    # for pos, split_scores in zip(positions, box_data):
-    #     plt.scatter([pos] * len(split_scores), split_scores, color='black', alpha=0.8, s=10, zorder=3)  # Smaller, darker dots
 
-    # # Draw lines connecting individual scores within the same subgroup across different groups
-    # for subgroup_idx in range(len(all_subgroups)):
-    #     # Get scores for the current subgroup from all groups
-    #     scores_per_group = []
-    #     x_positions = []
-        
-    #     for group_idx in range(len(filtered_colors)):
-    #         group_name = list(filtered_colors.keys())[group_idx]
-    #         subgroup_name = all_subgroups[subgroup_idx]
-    #         scores = modelresults_dict[group_name][subgroup_name]
-    #         scores_per_group.append(scores)
-    #         x_pos = positions[group_idx * len(all_subgroups) + subgroup_idx]
-    #         x_positions.append(x_pos)
+        base_position += ((num_rows * (box_width + group_gap) - group_gap) + group_spacing)
 
-    #         # Check if the number of scores is consistent across groups
-    #         if len(scores) != len(scores_per_group[0]):
-    #             print(f"Warning: Inconsistent number of scores for subgroup '{subgroup_name}' in group '{group_name}'")
+    # Create boxplots
+    boxplot_dict = ax.boxplot(box_data, positions=positions, patch_artist=True, widths=widths, medianprops=dict(color='red'))
 
-    #     # Draw lines connecting each pair of scores for this subgroup
-    #     for i in range(len(scores_per_group[0])):  # Assuming scores_per_group has same length
-    #         y_values = [scores_per_group[group_idx][i] for group_idx in range(len(filtered_colors))]
-    #         plt.plot(x_positions, y_values, color='black', alpha=0.5, zorder=2)
-    # print(all_subgroups)
-    # for group_idx, group_name in enumerate(filtered_colors.keys()):
-    #     print('group_idx')
-    #     print(group_idx)
-
-    #     y_values = []
-    #     x_positions = []
-
-    #     for subgroup_idx in range(len(all_subgroups)):
-    #         subgroup_name = all_subgroups[subgroup_idx]
-    #         scores = modelresults_dict[group_name][subgroup_name]
-    #         y_values.append(scores)
-    #         x_pos = positions[group_idx * len(all_subgroups) + subgroup_idx]
-    #         x_positions.append(x_pos)
-
-    #     # Draw lines connecting each pair of scores for this subgroup within all groups
-    #     for i in range(len(y_values[0])):  # Assuming all y_values have the same length
-    #         plt.plot(x_positions, [y[i] for y in y_values], color='black', alpha=0.5, zorder=2)
-    boxplot_dict = plt.boxplot(box_data, positions=positions, patch_artist=True,
-                                widths=widths,  # Set box widths
-                                medianprops=dict(color='red'))
-    
     # Apply colors to each box
     for patch, color in zip(boxplot_dict['boxes'], box_colors):
         patch.set_facecolor(color)
-    
 
-    # Round min_value down to the nearest number with 1 decimal place
+    # Round limits for y-axis
     min_value = (math.floor(min_value * 10) / 10) - 0.1
-
-    # Round max_value up to the nearest number with 1 decimal place
-    max_value = (math.ceil(max_value * 10) / 10)+0.1
-    # Add a legend
-    handles = [plt.Line2D([0], [0], color=color, lw=4) for color in filtered_colors.values()]
-    plt.legend(handles=handles, labels=filtered_labels.values(), loc='best')
-
-    plt.title(f"{pv.ML_MODEL} Boxplot results for Kfold=10 using {pv.DESCRIPTOR} 3D descriptors") #
-    plt.xlabel("conformations group")
-    plt.ylabel("R²-score")
+    max_value = (math.ceil(max_value * 10) / 10) + 0.1
+    if pv.PROTEIN.name == 'JAK1':
+        min_value = 0.4
+        max_value = 1
+    if pv.PROTEIN.name == 'GSK3':
+        min_value = -0.6
+        max_value = 0.7
+    if pv.PROTEIN.name == 'pparD':
+        min_value = -0.5
+        max_value = 0.8
     
-    # Adjust x-axis limits
-    plt.xlim(-(box_width/2) - border, positions[-1] + (box_width/2) + border)
-    # Set y-axis limits between 0.4 and 0.9
-    plt.ylim(min_value, max_value)
-    
+    # Set title and labels
+    # ax.set_title(f"{pv.ML_MODEL} Boxplot results for Kfold=10 using {pv.DESCRIPTOR} 3D descriptors")
+    # ax.set_xlabel("Conformations group")
+    # ax.set_ylabel("R²-score")
+
+    # Set x and y limits
+    ax.set_xlim(-(box_width / 2) - border, positions[-1] + (box_width / 2) + border)
+    ax.set_ylim(min_value, max_value)
+
     # Set xticks and labels
     xtick_labels = [
     'minimized' if label == '0ns' else '10 conf.' if label == 'conformations_10' else label
     for group in modelresults_dict.values() for label in group.keys()
     ]
+    ax.set_xticks(positions)
+    ax.set_xticklabels(xtick_labels, rotation=45, ha='right')
 
-    plt.xticks(ticks=positions, labels=xtick_labels, rotation=45, ha='right')
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    # Add grid
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
 
-    # Save the plot
+    # Add legend
+    handles = [plt.Line2D([0], [0], color=color, lw=4) for color in filtered_colors.values()]
+
+    # Save the plot (if needed)
     plot_file_path = save_plot_folder / f'{pv.ML_MODEL}_{csv_filename}_{len(modelresults_dict)}.png'
-    plt.tight_layout()
     plt.savefig(plot_file_path)
-    plt.close()
-    return
-
+    return handles, filtered_labels, positions, xtick_labels
  ####################################################################################################################
 
-def main(dfs_paths = [pv.dfs_descriptors_only_path_]):
 
-    master_folder = pv.dataframes_master_
+def create_subplots():
+    models = [Model_deep.DNN, Model_deep.LSTM] #, Model_classic.XGB, Model_classic.SVM
+    dataset_proteins = [DatasetProtein.JAK1, DatasetProtein.GSK3, DatasetProtein.pparD] #, DatasetProtein.GSK3, DatasetProtein.pparD
 
-    all_modelresults_dict = {}
+    
+    include_files = ['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_50']
+    include_files = ['0ns','1ns','conformations_10','conformations_50','conformations_100']
+    fig, axes = plt.subplots(len(dataset_proteins), len(models), figsize=(12, 12))  # Swapped order
+    # Convert to 2D array if there is only one row or column
+    if len(dataset_proteins) == 1:
+        axes = np.array([axes])  # Wrap in another list to make it 2D
+    if len(models) == 1:
+        axes = axes[:, np.newaxis]  # Ensure it's always 2D
 
-    for dfs_path, list_to_include in dfs_paths:
-        # print(dfs_entry)
-        # Check if the entry is a tuple (path, list) or just a path
-        # if isinstance(dfs_entry, tuple):
-        #     dfs_path, idlist_to_exclude = dfs_entry  # Unpack the tuple
-        #     # print(dfs_path)
-        #     # print(f"Processing path {dfs_path.name} with CSV list to exclude: {idlist_to_exclude}")
-        # else:
-        #     dfs_path = dfs_entry  # Only a path is given, no CSV list
-        #     idlist_to_exclude = None  # Set CSV list to None if not provided
-        #     # print(f"Processing path {dfs_path.name} with no specific CSV list to exclude")
+    all_handles = []  # Collect handles for the legend
+    all_labels = []   # Collect labels for the legend
 
-        # if not dfs_path.exists():
-        #     # print(f"Error: The path '{dfs_path}' does not exist.")
-        #     continue
-        print(all_modelresults_dict)
-        all_modelresults_dict = nested_data_dict(dfs_path, all_modelresults_dict, list_to_include)
-        print(all_modelresults_dict)
-        print('test')
-        print(all_modelresults_dict)
-    for csvfile_name, modelresults_dict in all_modelresults_dict.items(): #loop over k10_r2 etc.
-        # boxplots_compare_individuals(master_folder, csvfile_name, modelresults_dict)
-        boxplots_compare_groups(path=pv.dataframes_master_, csv_filename=csvfile_name, modelresults_dict=modelresults_dict)
-    return
+    for j, protein in enumerate(dataset_proteins):  # Outer loop is proteins now
+        print(protein)
+        for i, model in enumerate(models):  # Inner loop is models
+            print(model)
+            all_modelresults_dict = {}
+            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein)
+
+            # Collect paths
+            dfs_paths = [
+                # (pv.dfs_2D_path, ['2D']),
+                (pv.dfs_descriptors_only_path_, include_files),
+                # (pv.dataframes_master_ / 'MD_old only', include_files),
+                (pv.dataframes_master_ / 'MD_new only', include_files),
+                # (pv.dataframes_master_ / 'red MD_old', include_files),
+                (pv.dataframes_master_ / 'red MD_new', include_files),
+                # (pv.dataframes_master_ / 'MDnewPCA', include_files),
+                
+                # (pv.dfs_reduced_path_, include_files),
+                # (pv.dataframes_master_ / 'red MD_new', include_files),
+
+                # (pv.dataframes_master_ / 'red MD_new', include_files),
+            ]
+            print(dfs_paths)
+            for dfs_path, include_files in dfs_paths:
+
+                all_modelresults_dict = nested_data_dict(dfs_path, all_modelresults_dict, include_files)
+
+            ax = axes[j, i]  # Use [j, i] instead of [i, j]
+            # Set the x-axis label only for the leftmost column (i == 0)
+            # if i == 0:
+            #     ax.set_ylabel("R²-score")
+            # else:
+            #     ax.set_ylabel("")  # Remove x-axis label for other subplots
+            # Remove individual titles
+            # ax.set_title("")  
+            # Remove individual titles
+
+            # Set y-axis label only for the first column
+            # Set y-axis label for the leftmost column
+            # if i == 0:
+            #     ax.set_ylabel("R²-score", fontsize=12)  # Set the label
+            # Set x-axis label only for the bottom row
+            # if j == len(dataset_proteins) - 1:
+            #     ax.set_xlabel(model.name, fontsize=12, fontweight='bold')
+            
+                # Set the y-axis label for the protein name
+            ax.set_ylabel("R²-score", fontsize=12)  # Set the label
+            if i == 0:
+            # Set the y-axis label for protein
+                ax.text(-0.4, 0.5, f"{protein.name}", fontweight='bold',fontsize=12, ha='left', va='center', transform=ax.transAxes)
+
+            # # Set x-axis label only for the bottom row
+            # if j == len(dataset_proteins) - 1:
+            #     ax.set_xlabel(model.name, fontsize=12, fontweight='bold')
+
+            print(all_modelresults_dict)
+            for csvfile_name, modelresults_dict in all_modelresults_dict.items():
+                print(csvfile_name)
+                print(modelresults_dict)
+                handles, filtered_labels, positions, xtick_labels = boxplots_compare_groups(ax=ax, path=pv.dataframes_master_, csv_filename=csvfile_name, modelresults_dict=modelresults_dict)  # Call function to plot data on subplot
+                all_handles.extend(handles)  # Collect handles
+                all_labels.extend(filtered_labels)    # Collect labels
+            
+            # Set x-tick labels only for the bottom row
+            if j == len(dataset_proteins) - 1:  # Check if it's the last row
+                ax.set_xticks(positions)
+                ax.set_xticklabels(xtick_labels, rotation=45, ha='right')
+            else:
+                ax.set_xticks([])  # Remove x-ticks for other rows
+            # ax.set_title(f"{protein.name} - {model.name}", fontsize=12, fontweight='bold')
+            # ax.set_title("")  
+    
+    # plt.subplots_adjust(left=0.5)
+    # fig.set_size_inches(14, 12)
+    # Rf XGB SVM above
+    for i, model in enumerate(models):
+        axes[0, i].annotate(
+            model.name, xy=(0.5, 1.1), xycoords='axes fraction', 
+            fontsize=14, fontweight='bold', ha='center'
+        )
+    fig.legend(handles=handles, labels=all_labels, loc='center', bbox_to_anchor=(0.05,0.9))
+
+    plt.tight_layout(rect=[0.02, 0, 1, 1])  # Increase left margin to 0.1
+
+    plt.savefig(pv.dataframes_master_.parent / 'subplot_good_all.png')  # Save with .png extension
+    plt.close()
+
+
+
+def main():
+    create_subplots()
 
 if __name__ == "__main__":
+    main()
 
-    dfs_paths = []
+#     master_folder = pv.dataframes_master_
+
+#     all_modelresults_dict = {}
+
+#     for dfs_path, list_to_include in dfs_paths:
+#         # print(dfs_entry)
+#         # Check if the entry is a tuple (path, list) or just a path
+#         # if isinstance(dfs_entry, tuple):
+#         #     dfs_path, idlist_to_exclude = dfs_entry  # Unpack the tuple
+#         #     # print(dfs_path)
+#         #     # print(f"Processing path {dfs_path.name} with CSV list to exclude: {idlist_to_exclude}")
+#         # else:
+#         #     dfs_path = dfs_entry  # Only a path is given, no CSV list
+#         #     idlist_to_exclude = None  # Set CSV list to None if not provided
+#         #     # print(f"Processing path {dfs_path.name} with no specific CSV list to exclude")
+
+#         # if not dfs_path.exists():
+#         #     # print(f"Error: The path '{dfs_path}' does not exist.")
+#         #     continue
+#         all_modelresults_dict = nested_data_dict(dfs_path, all_modelresults_dict, list_to_include)
+#         print(all_modelresults_dict)
+#         print('test')
+#         print(all_modelresults_dict)
+#     for csvfile_name, modelresults_dict in all_modelresults_dict.items(): #loop over k10_r2 etc.
+#         # boxplots_compare_individuals(master_folder, csvfile_name, modelresults_dict)
+#         boxplots_compare_groups(path, csvfile_name, modelresults_dict)
+#     return
+
+# if __name__ == "__main__":
+
+#     dfs_paths = []
     
-    exclude_stable2 = ['stable_conformations']
-    exclude_stable = ['stable_conformations','conformations_10','conformations_20','minimized_conformations_10']
-    include_files=['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_50']
-    # dfs_paths.append((public_variables.dataframes_master_ / '2D', []))
-    # dfs_paths.append((public_variables.dfs_descriptors_only_path_, exclude_files_clusters + exclude_stable))
-    # dfs_paths.append((public_variables.dfs_reduced_path_, exclude_files_clusters+ exclude_stable))
-    # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters+ exclude_stable))
-    # dfs_paths.append((public_variables.dfs_MD_only_path_, exclude_files_clusters + exclude_stable))#['conformations_11','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_100'])) #['2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_50','conformations_100']
-    # to_exclude = exclude_files_clusters50 + exclude_files_clusters10+ exclude_files_clusters30+ exclude_files_clusters40 + list(set(exclude_files_other) - set([]))
-    # to_exclude = exclude_files_clusters40 + exclude_files_clusters20+ exclude_files_clusters10+ exclude_files_clusters50 + exclude_files_other
-    # dfs_paths.append((public_variables.dfs_descriptors_only_path_, to_exclude))
-    # dfs_paths.append((public_variables.dfs_reduced_path_, to_exclude))
-    # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, to_exclude))
-    # dfs_paths.append((public_variables.dfs_MD_only_path_, to_exclude))
-    # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
-    # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters10+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
-    # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
-    # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters30 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters40 + exclude_files_other))
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
-    # include_files=['0ns','1ns','3ns','5ns','conformations_10']
-    # for path in pv.get_paths():
-    dfs_paths.append((pv.dfs_descriptors_only_path_, include_files))
-    dfs_paths.append((pv.dfs_reduced_path_, include_files))
-    dfs_paths.append((pv.dataframes_master_ / 'red MD_old', include_files))
-    dfs_paths.append((pv.dataframes_master_ / 'MD_old only', include_files))
-
-    dfs_paths.append((pv.dataframes_master_ / 'MD_new only', include_files))
-
-    dfs_paths.append((pv.dataframes_master_ / 'red MD_new', include_files))
-    dfs_paths.append((pv.dataframes_master_ / 'red MD_new reduced', include_files))
-    dfs_paths.append((pv.dataframes_master_ / 'DescPCA20 MDnewPCA', include_files))
-    dfs_paths.append((pv.dataframes_master_ / '(DescMD)PCA_20', include_files))
-
-
-
-        # dfs_paths.append((path, include_files))
-        # dfs_paths.append((pv.dfs_reduced_PCA_path_, include_files))
-        # dfs_paths.append((pv.dfs_reduced_MD_PCA_path_, include_files))
-        # dfs_paths.append((pv.dfs_reduced_and_MD_combined_PCA_path_, include_files))
-        # dfs_paths.append((pv.dfs_all_PCA, include_files))
+#     exclude_stable2 = ['stable_conformations']
+#     exclude_stable = ['stable_conformations','conformations_10','conformations_20','minimized_conformations_10']
+#     include_files=['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','minimized_conformations_10']
+#     # dfs_paths.append((public_variables.dataframes_master_ / '2D', []))
+#     # dfs_paths.append((public_variables.dfs_descriptors_only_path_, exclude_files_clusters + exclude_stable))
+#     # dfs_paths.append((public_variables.dfs_reduced_path_, exclude_files_clusters+ exclude_stable))
+#     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters+ exclude_stable))
+#     # dfs_paths.append((public_variables.dfs_MD_only_path_, exclude_files_clusters + exclude_stable))#['conformations_11','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_100'])) #['2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_50','conformations_100']
+#     # to_exclude = exclude_files_clusters50 + exclude_files_clusters10+ exclude_files_clusters30+ exclude_files_clusters40 + list(set(exclude_files_other) - set([]))
+#     # to_exclude = exclude_files_clusters40 + exclude_files_clusters20+ exclude_files_clusters10+ exclude_files_clusters50 + exclude_files_other
+#     # dfs_paths.append((public_variables.dfs_descriptors_only_path_, to_exclude))
+#     # dfs_paths.append((public_variables.dfs_reduced_path_, to_exclude))
+#     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, to_exclude))
+#     # dfs_paths.append((public_variables.dfs_MD_only_path_, to_exclude))
+#     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
+#     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters10+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
+#     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
+#     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters30 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters40 + exclude_files_other))
+#     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+#     include_files=['0ns','1ns''5ns','10ns','conformations_10']
+#     for path in pv.get_paths():
+#         dfs_paths.append((path, include_files))
+#         dfs_paths.append((pv.dfs_reduced_PCA_path_, include_files))
+#         dfs_paths.append((pv.dfs_reduced_MD_PCA_path_, include_files))
+#         dfs_paths.append((pv.dfs_reduced_and_MD_combined_PCA_path_, include_files))
+#         dfs_paths.append((pv.dfs_all_PCA, include_files))
 
     # pv.update_config(model_=Model_deep.LSTM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
     # include_files=['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','minimized_conformations_10','conformations_50','conformations_100']
@@ -697,6 +741,3 @@ if __name__ == "__main__":
     # dfs_paths.append((public_variables.dataframes_master_ / 'custom_dataframes',['rdkit_min','0ns']))
     # dfs_paths.append((public_variables.dataframes_master_ / 'reduced_t0.75',['rdkit_min','0ns']))
     # dfs_paths.append((public_variables.dataframes_master_ / 'descriptors only scaled mw',['rdkit_min','0ns']))
-    print('dfs path wordt nu geprint')
-    print(dfs_paths)
-    main(dfs_paths)

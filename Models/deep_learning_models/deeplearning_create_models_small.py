@@ -659,7 +659,7 @@ if __name__ == "__main__":
     #     main(path, random_splitting = False, include_files = ['conformations_10.csv','conformations_50.csv','conformations_100.csv'])
     #     main(path, random_splitting = True, include_files = ['conformations_10.csv','conformations_50.csv','conformations_100.csv'])
     
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
     main(pv.dfs_descriptors_only_path_, random_splitting = False, include_files = ['0ns.csv','1ns.csv','5ns.csv','conformations_10.csv'])
 
     # main(pv.dfs_reduced_PCA_path_, random_splitting = False, include_files = ['0ns.csv','1ns.csv','5ns.csv','conformations_10.csv'])

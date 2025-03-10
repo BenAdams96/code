@@ -19,6 +19,7 @@ class Model_classic(Enum):
     SVM = ('SVM',   SVR,                            {"C": [1, 10],
                                                      "kernel": ["linear", "rbf"]})
     
+    
     model: Union[RandomForestRegressor, XGBRegressor, SVR]
     hyperparameter_grid: dict
 
@@ -41,8 +42,8 @@ class Model_classic(Enum):
         return self.value  # Ensure `str()` outputs the `value`
 
 class Model_deep(Enum):
-    DNN = 'DNN' ,   {"lr": [0.002],
-                    "hidden_layers": [[128, 64, 32],[64, 32, 16],[128, 64]],
+    DNN = 'DNN' ,   {"lr": [0.002, 0.001],
+                    "hidden_layers": [[128, 64, 32],[64, 32, 16],[128, 64],[256, 128, 64]],
                     "dropout": [0.1, 0.3],#, 0.2, 0.4],
                     } #20 in total
                     #{"lr": [0.001],
@@ -52,9 +53,9 @@ class Model_deep(Enum):
                     
     
     LSTM = 'LSTM' , {"hidden_size": [32,64],  # Number of LSTM units per layer
-                    "num_layers": [2,3],  # Number of stacked LSTM layers
+                    "num_layers": [1,2,3],  # Number of stacked LSTM layers
                     "dropout": [0.1,0.3],  # Dropout to prevent overfitting
-                    "learning_rate": [1e-3],  # Learning rate for Adam/SGD
+                    "learning_rate": [1e-3, 1e-4],  # Learning rate for Adam/SGD
                     "weight_decay": [1e-4, 1e-5],  # L2 regularization
                     } #108 in total
     

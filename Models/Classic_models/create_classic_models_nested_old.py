@@ -4,7 +4,6 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.metrics import mean_absolute_error
 from sklearn.tree import export_text
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import StandardScaler
 
 from global_files import csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
@@ -154,16 +153,9 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
     fold_assignments_df = pd.DataFrame({"mol_id": df["mol_id"]})
 
     target_column = 'PKI'
-    
-    if pv.ML_MODEL.name == 'SVM':
-        feature_cols = df.drop(columns=[target_column, 'mol_id', 'conformations (ns)'], errors='ignore').columns
-
-        scaler = StandardScaler()
-        df[feature_cols] = scaler.fit_transform(df[feature_cols])
-
-
     X = df.drop(columns=[target_column, 'mol_id', 'conformations (ns)'], axis=1, errors='ignore')
     y = df[target_column]  # Target (pKi values)
+    print(type(y))
     # Stratified outer loop
     bins, binned_y = bin_pki_values(y, num_bins=5)  # Bin pKi values for stratification, still a dataframe: all molecules with an index of which bin they are in
     unique, counts = np.unique(binned_y, return_counts=True)
@@ -298,13 +290,11 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         #build a "final" model for this train test split.
         best_model = grid_search.best_estimator_
         best_model.fit(X_train, y_train)
-        print(pv.ML_MODEL.name)
-        if pv.ML_MODEL.name != 'SVM':
-            print('no svm')
-            importance = best_model.feature_importances_
 
-            # Store the feature importance for the current fold
-            fold_feature_importance.append(importance)
+        importance = best_model.feature_importances_
+
+        # Store the feature importance for the current fold
+        fold_feature_importance.append(importance)
 
         y_pred = pd.Series(best_model.predict(X_test), index=y_test.index, name='Predicted_pKi')
 
@@ -327,8 +317,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         #get two series with idx and pki. every outerfold it adds the new test part.
         all_idx_ytrue_pki_series = pd.concat([all_idx_ytrue_pki_series, y_test]).sort_index() #pd Series of all true pki values
         all_idx_ypredicted_pki_series = pd.concat([all_idx_ypredicted_pki_series, pd.Series(y_pred, index=y_test.index)]).sort_index()
-    if pv.ML_MODEL.name != 'SVM':
-        plot_feature_importance(X, fold_feature_importance, dfs_path, name)
+    plot_feature_importance(X, fold_feature_importance, dfs_path, name)
     mean_scores = {}
     #get once the the mean scores using all the predictions
     r2_value = r2_score(all_true_values, all_predictions)
@@ -363,8 +352,8 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     Modelresults_path.mkdir(parents=True, exist_ok=True)
     
     if not include_files:
-        include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','conformations_10.csv']
-    #,'3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv',
+        include_files = ['0ns.csv','1ns.csv','5ns.csv','conformations_10.csv']
+    
     dfs_in_dic = csv_to_dictionary.csvfiles_to_dic_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
 
     sorted_keys_list = csv_to_dictionary.get_sorted_columns(list(dfs_in_dic.keys())) #RDKIT first
@@ -410,47 +399,10 @@ if __name__ == "__main__":
     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
 
     # main(pv.dfs_descriptors_only_path_)
-    for model in Model_classic:
-        print(model)
-        for protein in DatasetProtein:
-            print(protein)
-            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein)
-            for path in pv.dataframes_master_.iterdir():
-                if path.is_dir() and not path.name.startswith('boxplots'):
-                    print(path)
-                    main(path)
-    # main(pv.dataframes_master_ / '(DescMD)PCA_10')
-    # main(pv.dataframes_master_ / '(DescMD)PCA_20')
-    # main(pv.dataframes_master_ / 'DescPCA20 MDnewPCA')
-    # main(pv.dataframes_master_ / 'DescPCA20 MDnewPCA minus PC1')
-    # main(pv.dataframes_master_ / 'DescPCA20 MDnewPCA minus PCMD1')
-    # main(pv.dataframes_master_ / 'MD_old only')
-    # main(pv.dataframes_master_ / 'MD_new only')
-    # main(pv.dataframes_master_ / 'MDnewPCA')
-    # main(pv.dataframes_master_ / 'red MD_old')
-    # main(pv.dataframes_master_ / 'red MD_new')
-    # main(pv.dataframes_master_ / 'MD_new only reduced')
-    # main(pv.dataframes_master_ / 'red MD_new reduced')
-
-
-
-
-
-
-
-    # for path in pv.dataframes_master_.iterdir():
-    #     if path.is_dir() and not path.name.startswith('boxplots'):
-    #         print(path)
-    #         main(path, random_splitting = False, include_files = ['0ns.csv','1ns.csv','5ns.csv','10ns.csv','conformations_10.csv'])
-
-
-
-    # pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
-
-    # main(pv.dfs_descriptors_only_path_)
     # main(pv.dfs_reduced_path_)
     # main(pv.dfs_reduced_and_MD_path_)
-    # main(pv.dfs_MD_only_path_)
+    main(pv.dfs_MD_only_path_)
+
 
     # main(pv.dfs_reduced_PCA_path_)
     # main(pv.dfs_reduced_MD_PCA_path_)

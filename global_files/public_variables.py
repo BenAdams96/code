@@ -23,7 +23,7 @@ def update_paths():
         dfs_MD_only_path_, Modelresults_folder_, Modelresults_combined_folder_, MDsimulations_folder_, true_predicted , ligand_conformations_system_path_,\
             MDsimulations_path_, ligand_conformations_folder_, ligand_conformations_path_, energyfolder_path_, Modelresults_plots, \
             edrfolder_path_, xvgfolder_path_, MD_outputfile_, MDfeatures_allmol_csvfile, Inner_train_Val_losses, Outer_train_Val_losses, \
-            dfs_reduced_PCA_path_, dfs_reduced_MD_PCA_path_, dfs_reduced_and_MD_combined_PCA_path_, dfs_all_PCA
+            dfs_reduced_PCA_path_, dfs_reduced_MD_PCA_path_, dfs_reduced_and_MD_combined_PCA_path_, dfs_all_PCA, dfs_2D_path
 
     #Protein dataset
     dataset_path_ = base_path_ / 'dataZ/datasets' / f"{PROTEIN}_dataset.csv"
@@ -39,6 +39,7 @@ def update_paths():
     dfs_all_PCA = dataframes_master_ / f'all_PCA'
     dfs_reduced_and_MD_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}_MD'
     dfs_MD_only_path_ = dataframes_master_ / 'MD only'
+    dfs_2D_path = dataframes_master_ / '2D'
 
     Modelresults_folder_ = Path(f'ModelResults_{ML_MODEL}') #not a path because can be in different paths
     Modelresults_combined_folder_ = f'ModelResults_combined_{ML_MODEL}'
