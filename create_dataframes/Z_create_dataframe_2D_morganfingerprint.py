@@ -21,7 +21,7 @@ from rdkit.Chem.rdFingerprintGenerator import GetMorganGenerator
 
 # Project-specific imports
 from global_files import public_variables
-import trj_to_pdbfiles
+
 
 def generate_fingerprints_dataframe(smiles_tuple_list, radius=2, n_bits=2048):
     morgan_gen = GetMorganGenerator(radius=2, fpSize=2048)

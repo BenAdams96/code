@@ -145,6 +145,54 @@ def extract_number2(filename, pattern):
         return float('-inf')
     
 
+def get_sorted_columns_small(column_list):
+    """
+    Sorts columns based on the following order:
+    1. Columns with 'ns', sorted numerically.
+    2. Columns with 'c' (e.g., 'c10', 'c20'), sorted numerically.
+    3. Columns with 'minimized_conformations', sorted numerically.
+    4. Columns with 'clustering', sorted by target descending and cluster ascending.
+    5. Columns that don't match any pattern, sorted alphabetically.
+    """
+    # Define the regex patterns
+    ns_pattern = re.compile(r'^(\d+(\.\d+)?)ns$')
+    conformations_pattern = re.compile(r'^c(\d+)$')  # Updated to match 'c10', 'c20', etc.
+    minimized_conformations_pattern = re.compile(r'^minimized_conformations_(\d+)$')
+    clustering_pattern = re.compile(r'^clustering_target(\d+)_cluster(\d+)$')
+
+    # Separate the columns into categories
+    ns_columns = [col for col in column_list if ns_pattern.match(col)]
+    conformations_columns = [col for col in column_list if conformations_pattern.match(col)]
+    minimized_conformations_columns = [col for col in column_list if minimized_conformations_pattern.match(col)]
+    clustering_columns = [col for col in column_list if clustering_pattern.match(col)]
+    other_columns = [col for col in column_list if not any(
+        pattern.match(col) for pattern in [ns_pattern, conformations_pattern, minimized_conformations_pattern, clustering_pattern]
+    )]
+
+    # Sort 'ns' columns by the numeric value before 'ns'
+    sorted_ns = sorted(ns_columns, key=lambda x: float(x[:-2]))
+
+    # Sort 'conformations' columns by the numeric value after 'c'
+    sorted_conformations = sorted(conformations_columns, key=lambda x: int(x[1:]))
+
+    # Sort 'minimized_conformations' columns by the numeric value after 'minimized_conformations_'
+    sorted_minimized_conformations = sorted(minimized_conformations_columns, key=lambda x: int(x.split('_')[1]))
+
+    # Sort 'clustering' columns by target descending and cluster ascending
+    sorted_clustering = sorted(clustering_columns, key=lambda x: (
+        -int(clustering_pattern.match(x).group(1)),  # Descending target
+        int(clustering_pattern.match(x).group(2))   # Ascending cluster
+    ))
+
+    # Sort 'other' columns alphabetically
+    sorted_other = sorted(other_columns)
+
+    # Combine sorted lists
+    sorted_columns = sorted_ns + sorted_conformations + sorted_minimized_conformations + sorted_other + sorted_clustering
+
+    return sorted_columns
+
+
 def get_sorted_columns(column_list):
     """
     Sorts columns based on the following order:

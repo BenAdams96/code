@@ -19,7 +19,7 @@ from global_files import csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
-from MDfeatures import get_hbond_csv, get_rms, get_gyrate, get_dipoles, get_psa, get_sasa_psa, prepare_energy_files_from_MD
+from MDfeatures import get_hbond_csv, get_rms, get_gyrate, get_dipoles, get_psa, get_sasa_psa, prepare_energy_files_from_MD, get_entropy
 
 def make_index_files(MD_path):
     ''' function'''
@@ -54,36 +54,43 @@ def make_index_files(MD_path):
                 continue
     return
 
+import os
+import pandas as pd
+
 def merge_csv_files_on_columns(folder_path, csv_filenames):
-    """
-    Merge multiple CSV files into a single DataFrame based on specified columns.
-
-    Parameters:
-    - folder_path: str, the folder where the CSV files are located.
-    - csv_filenames: list of str, the names of the CSV files to merge.
-    - merge_columns: list of str, the columns to use as keys for the merge.
-
-    Returns:
-    - DataFrame: merged DataFrame containing data from all CSV files.
-    """
     merged_df = None
-    merge_columns = ["mol_id" , "picoseconds"]
-    # Loop through the list of CSV file names
-    for i, filename in enumerate(csv_filenames):
-        # Construct the full file path
+    merge_columns = ["mol_id", "picoseconds"]
+    
+    for filename in csv_filenames:
         file_path = os.path.join(folder_path, filename)
-        # Read the CSV file into a DataFrame
+        print(file_path)
+        if merged_df is not None:
+            print(len(merged_df))
         df = pd.read_csv(file_path)
-        
-        # Perform the merge
-        if merged_df is None:
-            # For the first file, initialize the merged DataFrame
-            merged_df = df
+        print(len(df))
+        if 'picoseconds' not in df.columns:
+            # Merge only on 'mol_id' if 'picoseconds' is not present
+            if merged_df is None:
+                merged_df = df
+            else:
+                merged_df = pd.merge(merged_df, df, on='mol_id', how='inner')
+                print(merged_df[:10])
+            # Fill the 'picoseconds' column by creating a sequence of values for each molecule
+            # merged_df['picoseconds'] = merged_df.groupby('mol_id').cumcount()
         else:
-            # Merge on the specified columns
-            merged_df = pd.merge(merged_df, df, on=merge_columns, how='inner')
+            # Merge on both 'mol_id' and 'picoseconds' if 'picoseconds' is present
+            if merged_df is None:
+                print('none')
+                merged_df = df
+            else:
+                print('else')
+                # print(merged_df[:10])
+                # print(df[:10])
 
+                merged_df = pd.merge(merged_df, df, on=merge_columns, how='inner')
+                print(len(merged_df))
     return merged_df
+
 
 
 
@@ -230,13 +237,13 @@ def change_column_names(MD_output):
         'Mtot': 'Total dipole moment',
         'Bond': 'Ligand Bond energy',
         'U-B': 'Urey-Bradley energy',
-        'Proper dih.': 'Torsional energy',
+        'Proper Dih.': 'Torsional energy',
         'Coul-SR:Other-Other': 'Coul-SR: Lig-Lig',
         'LJ-SR:Other-Other': 'LJ-SR: Lig-Lig',
         'Coul-14:Other-Other': 'Coul-14: Lig-Lig',
         'LJ-14:Other-Other': 'LJ-14: Lig-Lig',
         'Coul-SR:Other-SOL': 'Coul-SR: Lig-Sol',
-        'Coul-SR:Other-SOL': 'Coul-SR: Lig-Sol',
+        'LJ-SR:Other-SOL': 'LJ-SR: Lig-Sol',
         # Add more mappings as needed
     }
 
@@ -251,85 +258,53 @@ def main(protein = pv.PROTEIN):
     # create ndx files
     # make_index_files(MDsimulations_path) #make index files
 
-    #create hbond csv #1
-    hbond_df = get_hbond_csv.calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path) #1 #use this one i guess. make sure export is okay
-    hbond_df.to_csv(pv.energyfolder_path_ / 'hbonds.csv', index=False)
+    # get_entropy.main()
 
-    # create RMSD #2
-    RMSD_xvg_dir = energyfolder_path / 'RMSD_xvg'
-    get_rms.run_gmx_rms(MDsimulations_path, RMSD_xvg_dir) #creates the files
-    data = get_rms.rms_xvg_files_to_csvfiles(RMSD_xvg_dir) #3
-    data.to_csv(energyfolder_path / 'rmsd.csv', index=False)
+    # #create hbond csv #1
+    # hbond_df = get_hbond_csv.calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path) #1 #use this one i guess. make sure export is okay
+    # hbond_df.to_csv(pv.energyfolder_path_ / 'hbonds.csv', index=False)
 
-    #gyration #3
-    gyration_xvg_dir = energyfolder_path / 'gyration_xvg'
-    get_gyrate.run_gmx_gyrate(MDsimulations_path, gyration_xvg_dir)
-    data = get_gyrate.gyration_xvg_files_to_csvfiles(gyration_xvg_dir) #3
-    data.to_csv(energyfolder_path / 'gyration.csv', index=False)
+    # # # create RMSD #2
+    # RMSD_xvg_dir = energyfolder_path / 'RMSD_xvg'
+    # get_rms.run_gmx_rms(MDsimulations_path, RMSD_xvg_dir) #creates the files
+    # data = get_rms.rms_xvg_files_to_csvfiles(RMSD_xvg_dir) #3
+    # data.to_csv(energyfolder_path / 'rmsd.csv', index=False)
 
-    #total dipole moment & epsilon #4 & 5
-    TDM_xvg_dir = energyfolder_path / 'Total_dipole_moment_xvg'
-    epsilon_xvg_dir = energyfolder_path / 'epsilon_xvg'
-    get_dipoles.run_gmx_dipoles(MDsimulations_path, TDM_xvg_dir, epsilon_xvg_dir)
-    data = get_dipoles.Total_dipole_moment_xvg_files_to_csvfiles(energyfolder_path, TDM_xvg_dir)
-    data.to_csv(energyfolder_path / 'total_dipole_moment.csv', index=False)
-    data = get_dipoles.epsilon_xvg_files_to_csvfiles(energyfolder_path, epsilon_xvg_dir)
-    data.to_csv(energyfolder_path / 'epsilon.csv', index=False)
+    # # #gyration #3
+    # gyration_xvg_dir = energyfolder_path / 'gyration_xvg'
+    # get_gyrate.run_gmx_gyrate(MDsimulations_path, gyration_xvg_dir)
+    # data = get_gyrate.gyration_xvg_files_to_csvfiles(gyration_xvg_dir) #3
+    # data.to_csv(energyfolder_path / 'gyration.csv', index=False)
 
-
-    #SASA & PSA
-    SASA_xvg_dir = pv.energyfolder_path_ / 'SASA_xvg'
-    PSA_xvg_dir = pv.energyfolder_path_ / 'PSA_xvg'
-
-    get_sasa_psa.make_PSA_index_files(MDsimulations_path)
-
-    get_sasa_psa.run_gmx_sasa(MDsimulations_path, SASA_xvg_dir)
-    sasa_df = get_sasa_psa.sasa_xvg_files_to_csvfiles(energyfolder_path, SASA_xvg_dir)
-
-    get_sasa_psa.run_gmx_psa_sasa(MDsimulations_path, PSA_xvg_dir)
-    psa_df = get_sasa_psa.psa_xvg_files_to_csvfiles(energyfolder_path, PSA_xvg_dir)
-
-    psa_df.to_csv(energyfolder_path / 'psa.csv', index=False)
-    sasa_df.to_csv(energyfolder_path / 'sasa.csv', index=False)
-
-    # energy files
-    prepare_energy_files_from_MD.main(MDsimulations_path)
-
-    
-    #need ligand + system
-    # run_gmx_sasa(MDsimulations_path, outputdir) #NOTE: done
-    # sasa_xvg_files_to_csvfiles(energyfolder_path, outputdir) #2
-
-    #PSA #7 #all 4 lines
-    # make_PSA_index_files(MDsimulations_path)
-    # outputdir = public_variables.energyfolder_path_ / 'PSA'
-    # run_gmx_psa_sasa(MDsimulations_path, outputdir)
-    # psa_xvg_files_to_csvfiles(energyfolder_path, outputdir)
+    # # #total dipole moment & epsilon #4 & 5
+    # TDM_xvg_dir = energyfolder_path / 'Total_dipole_moment_xvg'
+    # epsilon_xvg_dir = energyfolder_path / 'epsilon_xvg'
+    # get_dipoles.run_gmx_dipoles(MDsimulations_path, TDM_xvg_dir, epsilon_xvg_dir)
+    # data = get_dipoles.Total_dipole_moment_xvg_files_to_csvfiles(energyfolder_path, TDM_xvg_dir)
+    # data.to_csv(energyfolder_path / 'total_dipole_moment.csv', index=False)
+    # data = get_dipoles.epsilon_xvg_files_to_csvfiles(energyfolder_path, epsilon_xvg_dir)
+    # data.to_csv(energyfolder_path / 'epsilon.csv', index=False)
 
 
+    # # #SASA & PSA
+    # SASA_xvg_dir = pv.energyfolder_path_ / 'SASA_xvg'
+    # PSA_xvg_dir = pv.energyfolder_path_ / 'PSA_xvg'
 
+    # get_sasa_psa.make_PSA_index_files(MDsimulations_path)
 
+    # get_sasa_psa.run_gmx_sasa(MDsimulations_path, SASA_xvg_dir)
+    # sasa_df = get_sasa_psa.sasa_xvg_files_to_csvfiles(energyfolder_path, SASA_xvg_dir)
 
+    # get_sasa_psa.run_gmx_psa_sasa(MDsimulations_path, PSA_xvg_dir)
+    # psa_df = get_sasa_psa.psa_xvg_files_to_csvfiles(energyfolder_path, PSA_xvg_dir)
 
+    # psa_df.to_csv(energyfolder_path / 'psa.csv', index=False)
+    # sasa_df.to_csv(energyfolder_path / 'sasa.csv', index=False)
 
+    # # # energy files
+    # prepare_energy_files_from_MD.main(MDsimulations_path)
 
-
-    #all can be removed i think:
-    ############################
-    # lig_conf_system_path = public_variables.base_path_ / 'ligand_conformations_system'
-    
-    # calculate_hbond_dataframe(MD_path=MDsimulations_path, lig_conf_system_path = lig_conf_system_path)
-    # pdb_file = Path('/home/ben/Download/Afstuderen0/MDsimulations/001/hbond_distances_try_pdb869.xvg')
-    # print(read_out_hbond_xvgfile(pdb_file))
-    # pdb_file = Path('/home/ben/Download/Afstuderen0/MDsimulations/001/hbnum.xvg')
-    # print(read_out_hbnum(pdb_file))
-
-    # calculate_hbond_dataframe(MD_path=MDsimulations_path, lig_conf_system_path = lig_conf_system_path)
-    ############################
-
-
-    
-    file_list = ['hbonds.csv', 'rmsd.csv', 'gyration.csv', 'epsilon.csv', 'total_dipole_moment.csv', 'sasa.csv', 'psa.csv', f'MD_features_{pv.PROTEIN}.csv']
+    file_list = ['hbonds.csv', 'rmsd.csv', 'gyration.csv', 'epsilon.csv', 'entropy.csv','total_dipole_moment.csv', 'sasa.csv', 'psa.csv', f'MD_features_{pv.PROTEIN}.csv']
     folder_path = energyfolder_path
     MD_output_df = merge_csv_files_on_columns(folder_path, file_list)
     MD_output_df = change_column_names(MD_output_df)
@@ -338,6 +313,8 @@ def main(protein = pv.PROTEIN):
 
 
 if __name__ == "__main__":
+    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    main(pv.PROTEIN)
     pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
     main(pv.PROTEIN)
     # MD_output_df = pd.read_csv(pv.MD_outputfile_)

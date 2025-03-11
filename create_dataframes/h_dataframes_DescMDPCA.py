@@ -15,6 +15,7 @@ import os
 def standardize_dataframe(df):
     """Preprocess the dataframe by handling NaNs and standardizing."""
     # Handle NaNs: drop rows with NaNs or fill them
+
     df_cleaned = df.dropna()  # or df.fillna(df.mean())
     # print(df_cleaned)
     # Identify which non-feature columns to keep
@@ -246,23 +247,24 @@ def get_molecules_lists_temp(parent_path):
 def extract_number(filename):
     return int(filename.split('ns.csv')[0])
 
-def MD_features_implementation():
+def MD_features_implementation(components):
     dfs_descriptors_only_path = pv.dfs_descriptors_only_path_
     dfs_MD_only_path = pv.dfs_MD_only_path_
 
-    destination_folder = pv.dfs_all_PCA
+    new_name = f"(DescMD)PCA_{components}"
+    destination_folder = pv.dfs_DescMDPCA_path_.parent / new_name
     destination_folder.mkdir(parents=True, exist_ok=True)
     
     dfs_dictionary_desc = csv_to_dictionary.csvfiles_to_dic_include(pv.dfs_descriptors_only_path_,include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_10.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
-    dfs_dictionary_MD = csv_to_dictionary.csvfiles_to_dic_include(pv.dfs_MD_only_path_,include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_10.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
-
+    newname_df_MDnew_only = pv.dataframes_master_ / 'MD_new only'
+    dfs_dictionary_MD = csv_to_dictionary.csvfiles_to_dic_include(newname_df_MDnew_only,include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_10.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
+    print(dfs_dictionary_MD)
     dfs_dictionary_pca = {}
     for name, df in list(dfs_dictionary_desc.items()):
         if name.startswith('conformations'):
             print(name)
             df_MD_PCA = dfs_dictionary_MD[name]
-            print(df)
-            print(df_MD_PCA)
+            
             merged_df = pd.merge(df, df_MD_PCA, on=['mol_id','PKI', 'conformations (ns)'], how='inner')
             merged_df.to_csv(destination_folder / Path(name + '.csv'), index=False)
             print(f'done with {name}')
@@ -275,12 +277,12 @@ def MD_features_implementation():
 
             merged_df.to_csv(destination_folder / Path(name + '.csv'), index=False)
             print(f'done with {name}')
-        print(merged_df)
+        # print(merged_df)
         dfs_dictionary_pca[name] = merged_df
 
     dfs_dictionary = remove_constant_columns_from_dfs(dfs_dictionary_pca)
     
-    dfs_dictionary_pca = PCA_for_dfs(dfs_dictionary_pca, 20)
+    dfs_dictionary_pca = PCA_for_dfs(dfs_dictionary_pca, components)
     
     # Reduce the dataframes based on correlation
     # reduced_dfs_in_dic = get_reduced_features_for_dataframes_in_dic(correlation_matrices_dic, dfs_dictionary, threshold)
@@ -334,9 +336,8 @@ def MD_features_implementation():
     #         continue
     return
 
-def main():
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
-    MD_features_implementation()
+def main(components):
+    MD_features_implementation(components)
 
     return
 

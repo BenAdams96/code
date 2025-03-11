@@ -87,7 +87,9 @@ def hyperparameter_tuning(model, X, y, param_grid, cv, scoring='r2'):
         verbose=1,
         n_jobs=-1
     )
+    
     grid_search.fit(X, y)
+
     return grid_search
 
 def create_true_pred_dataframe(name, df, dfs_path, all_idx_ytrue_pki_series,all_idx_ypredicted_pki_series):
@@ -292,6 +294,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         
         grid_search = hyperparameter_tuning(model_instance, X, y, pv.ML_MODEL.hyperparameter_grid, cv=custom_inner_splits, scoring=scoring)
         df_results = pd.DataFrame(grid_search.cv_results_)
+        print(df_results)
         all_best_params_outer.append(grid_search.best_params_)
         # print(df_results)
         
@@ -306,6 +309,10 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
             # Store the feature importance for the current fold
             fold_feature_importance.append(importance)
 
+        r2_train_scores = []
+        y_pred_train = pd.Series(best_model.predict(X_train), index=y_train.index, name='Predicted_pKi')
+        r2_value_train = r2_score(y_train, y_pred_train)
+        print(r2_value_train)
         y_pred = pd.Series(best_model.predict(X_test), index=y_test.index, name='Predicted_pKi')
 
         # Get the mol_id for the current fold based on the test indices (get average prediction for each molecule)
@@ -363,7 +370,7 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     Modelresults_path.mkdir(parents=True, exist_ok=True)
     
     if not include_files:
-        include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','conformations_10.csv']
+        include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','c10.csv']
     #,'3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv',
     dfs_in_dic = csv_to_dictionary.csvfiles_to_dic_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
 
@@ -407,25 +414,36 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     return
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
 
     # main(pv.dfs_descriptors_only_path_)
-    for model in Model_classic:
-        print(model)
-        for protein in DatasetProtein:
-            print(protein)
-            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein)
-            for path in pv.dataframes_master_.iterdir():
-                if path.is_dir() and not path.name.startswith('boxplots'):
-                    print(path)
-                    main(path)
+    # for model in Model_classic:
+    #     print(model)
+    #     for protein in DatasetProtein:
+    #         print(protein)
+    #         pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein)
+    #         for path in pv.dataframes_master_.iterdir():
+    #             if path.is_dir() and not path.name.startswith('boxplots'):
+    #                 print(path)
+    #                 main(path)
     # main(pv.dataframes_master_ / '(DescMD)PCA_10')
     # main(pv.dataframes_master_ / '(DescMD)PCA_20')
     # main(pv.dataframes_master_ / 'DescPCA20 MDnewPCA')
     # main(pv.dataframes_master_ / 'DescPCA20 MDnewPCA minus PC1')
     # main(pv.dataframes_master_ / 'DescPCA20 MDnewPCA minus PCMD1')
     # main(pv.dataframes_master_ / 'MD_old only')
-    # main(pv.dataframes_master_ / 'MD_new only')
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    # main(pv.dataframes_master_ / 'MD_new only4',include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','c10.csv'])
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    # main(pv.dataframes_master_ / 'MD_new only4',include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','c10.csv'])
+    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # main(pv.dataframes_master_ / 'MD_new only4',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
+    main(pv.dataframes_master_ / 'MD_new only3',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
+    main(pv.dataframes_master_ / 'MD_new only2',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
+    main(pv.dataframes_master_ / 'MD_new only',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
+    main(pv.dataframes_master_ / 'MD_old only',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
+    # main(pv.dfs_descriptors_only_path_,include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','conformations_10.csv'])
+
     # main(pv.dataframes_master_ / 'MDnewPCA')
     # main(pv.dataframes_master_ / 'red MD_old')
     # main(pv.dataframes_master_ / 'red MD_new')

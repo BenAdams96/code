@@ -9,15 +9,16 @@ from itertools import product
 
 class Model_classic(Enum):
     RF = ('RF',     RandomForestRegressor,          {'n_estimators': [100],
-                                                    'max_depth': [5,10],
-                                                    'min_samples_split': [2,5],
-                                                    'min_samples_leaf': [2,5],
+                                                    'max_depth': [5],
+                                                    'min_samples_split': [10],
+                                                    'min_samples_leaf': [10],
                                                     'max_features': ['sqrt']
                                                     })
     XGB = ('XGB',   XGBRegressor,                   {"n_estimators": [100, 200], 
                                                      "max_depth": [3, 10]})
-    SVM = ('SVM',   SVR,                            {"C": [1, 10],
-                                                     "kernel": ["linear", "rbf"]})
+    SVM = ('SVM',   SVR,                            {"C": [0.1, 0.01],
+                                                     "kernel": ["linear", "rbf"],
+                                                     "gamma": ['scale']})
     
     
     model: Union[RandomForestRegressor, XGBRegressor, SVR]

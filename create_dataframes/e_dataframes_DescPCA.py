@@ -214,7 +214,7 @@ def PCA_for_dfs(dfs_dictionary, components):
         pca_result = pca.fit_transform(features_df)
 
         # Create a DataFrame for the PCA results
-        pca_df = pd.DataFrame(data=pca_result, columns=[f'PCA_{i+1}_MD' for i in range(pca_result.shape[1])])
+        pca_df = pd.DataFrame(data=pca_result, columns=[f'PCA_{i+1}' for i in range(pca_result.shape[1])])
 
         # Re-add the non-feature columns to the PCA dataframe at the start
         non_feature_columns = ['mol_id', 'PKI', 'conformations (ns)']
@@ -231,28 +231,29 @@ def PCA_for_dfs(dfs_dictionary, components):
 
     return dfs_dictionary_pca
 
-def main():
-    dfs_reduced_MD_PCA_path = pv.dfs_reduced_MD_PCA_path_  # e.g., 'dataframes_JAK1_WHIM
-    dfs_reduced_MD_PCA_path.mkdir(parents=True, exist_ok=True)
+def main(components = 10):
+    new_name = f"desc_PCA{components}"
+    dfs_DescPCA_path = pv.dfs_DescPCA_path_.parent / new_name
+    dfs_DescPCA_path.mkdir(parents=True, exist_ok=True)
 
-    dfs_dictionary = csv_to_dictionary.csvfiles_to_dic_include(pv.dfs_MD_only_path_,include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_10.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
+    dfs_dictionary = csv_to_dictionary.csvfiles_to_dic_include(pv.dfs_descriptors_only_path_,include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_10.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
 
     print(dfs_dictionary.keys())
 
     dfs_dictionary = remove_constant_columns_from_dfs(dfs_dictionary)
     
-    dfs_dictionary_pca = PCA_for_dfs(dfs_dictionary, 10)
+    dfs_dictionary_pca = PCA_for_dfs(dfs_dictionary, components)
     
     # Reduce the dataframes based on correlation
     # reduced_dfs_in_dic = get_reduced_features_for_dataframes_in_dic(correlation_matrices_dic, dfs_dictionary, threshold)
     #reduced dataframes including mol_ID and PKI. so for 0ns 1ns etc. 
-    save_dataframes_to_csv(dfs_dictionary_pca, save_path=dfs_reduced_MD_PCA_path)
+    save_dataframes_to_csv(dfs_dictionary_pca, save_path=dfs_DescPCA_path)
     return
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
 
-    main()
+    main(components = 10)
     
     # bigdf = pd.read_csv(public_variables.initial_dataframe)
     # dic = {}

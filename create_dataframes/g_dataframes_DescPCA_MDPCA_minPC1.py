@@ -35,23 +35,21 @@ def get_molecules_lists_temp(parent_path):
 def extract_number(filename):
     return int(filename.split('ns.csv')[0])
 
-def MD_features_implementation():
-    dfs_reduced_PCA_path = pv.dfs_reduced_PCA_path_
-    dfs_reduced_MD_PCA_path = pv.dfs_reduced_MD_PCA_path_
+def MD_features_implementation(savefolder_name, dfs_MD_path,minus):
+    dfs_descPCA_path = pv.dfs_DescPCA_path_.parent / 'desc_PCA20'
 
-    destination_folder = pv.dfs_reduced_and_MD_combined_path_
+    destination_folder = pv.dataframes_master_ / savefolder_name
     destination_folder.mkdir(parents=True, exist_ok=True)
     
-    dfs_dictionary_desc = csv_to_dictionary.csvfiles_to_dic_include(pv.dfs_reduced_PCA_path_,include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_10.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
-    dfs_dictionary_MD = csv_to_dictionary.csvfiles_to_dic_include(pv.dfs_reduced_MD_PCA_path_,include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_10.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
+    dfs_dictionary_desc = csv_to_dictionary.csvfiles_to_dic_include(dfs_descPCA_path,include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_10.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
+    dfs_dictionary_MD = csv_to_dictionary.csvfiles_to_dic_include(pv.dataframes_master_ / dfs_MD_path,include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_10.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
 
     for name, df in list(dfs_dictionary_desc.items()):
         if name.startswith('conformations'):
             print(name)
             df_MD_PCA = dfs_dictionary_MD[name]
-            print(df)
-            print(df_MD_PCA)
             merged_df = pd.merge(df, df_MD_PCA, on=['mol_id','PKI', 'conformations (ns)'], how='inner')
+            merged_df = merged_df.drop(columns=[minus])
             merged_df.to_csv(destination_folder / Path(name + '.csv'), index=False)
             print(f'done with {name}')
         elif name.endswith('ns'):
@@ -60,7 +58,7 @@ def MD_features_implementation():
 
             merged_df = pd.merge(df, df_MD_PCA, on=['mol_id','PKI'], how='inner')
             merged_df = merged_df.drop(columns='picoseconds', errors='ignore')
-
+            merged_df = merged_df.drop(columns=[minus])
             merged_df.to_csv(destination_folder / Path(name + '.csv'), index=False)
             print(f'done with {name}')
 
@@ -114,8 +112,8 @@ def MD_features_implementation():
     #         continue
     return
 
-def main():
-    MD_features_implementation()
+def main(savefolder_name, dfs_MD_path,minus):
+    MD_features_implementation(savefolder_name, dfs_MD_path,minus)
 
     return
 

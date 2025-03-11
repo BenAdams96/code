@@ -55,13 +55,13 @@ def visualize_matrix(matrix, save_plot_path, idx, title_suffix=""):
     plt.colorbar()
     plt.title(f'Matrix Visualization {title_suffix}')
     
-    # # Add value annotations only if |value| > 0.85
-    # for i in range(len(matrix)):
-    #     for j in range(len(matrix.columns)):
-    #         value = matrix.iloc[i, j]
-    #         if abs(value) > 0.85:  # Only display if above 0.85
-    #             plt.text(j, i, f"{value:.2f}", ha='center', va='center', 
-    #                      color='black' if abs(value) < 0.5 else 'white')
+    # Add value annotations only if |value| > 0.85
+    for i in range(len(matrix)):
+        for j in range(len(matrix.columns)):
+            value = matrix.iloc[i, j]
+            if abs(value) > 0.5:  # Only display if above 0.85
+                plt.text(j, i, f"{value:.2f}", ha='center', va='center', 
+                         color='black' if abs(value) < 0.5 else 'white')
 
     plt.xticks(range(len(matrix.columns)), matrix.columns, rotation=90)
     plt.yticks(range(len(matrix.columns)), matrix.columns)
@@ -109,6 +109,8 @@ def main(dfs_path = pv.dfs_descriptors_only_path_):
 
 if __name__ == "__main__":
     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    main(dfs_path = pv.dataframes_master_ / 'MD_new only2')
+    main(dfs_path = pv.dataframes_master_ / 'MD_new only3')
     # main(dfs_path = pv.dfs_descriptors_only_path_)
     # main(dfs_path = pv.dfs_reduced_path_)
     # main(dfs_path = pv.dfs_reduced_and_MD_path_)
@@ -117,7 +119,10 @@ if __name__ == "__main__":
     # main(dfs_path = pv.dfs_reduced_PCA_path_)
     # main(dfs_path = pv.dfs_reduced_MD_PCA_path_)
     # main(dfs_path = pv.dfs_reduced_and_MD_combined_path_)
-    main(dfs_path = pv.dfs_all_PCA)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    main(dfs_path = pv.dataframes_master_ / 'MD_new only2')
+    main(dfs_path = pv.dataframes_master_ / 'MD_new only3')
+
 
 
 
