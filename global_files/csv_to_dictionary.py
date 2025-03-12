@@ -4,7 +4,7 @@ import os
 import MDAnalysis as mda
 from MDAnalysis.coordinates import PDB
 import rdkit
-from global_files import public_variables
+from global_files import public_variables as pv
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors3D
@@ -30,6 +30,77 @@ def main(folder_name = public_variables.dfs_descriptors_only_path_, exclude_file
     
     dic = csvfiles_to_dic_exclude(dfs_path, exclude_files)
     return dic
+
+def remove_constant_columns_from_dfs(dfs_dictionary):
+    cleaned_dfs = {}
+    
+    for key, df in dfs_dictionary.items():
+        # Identify constant columns, excluding 'picoseconds' and 'conformations (ns)'
+        constant_columns = df.columns[(df.nunique() <= 1) & ~df.columns.isin(['picoseconds', 'conformations (ns)'])]
+        
+        if len(constant_columns) > 0:
+            print(f"In '{key}', the following constant columns were removed: {', '.join(constant_columns)}")
+        
+        # Remove constant columns and keep only non-constant columns, excluding 'picoseconds' and 'conformations (ns)'
+        non_constant_columns = df.loc[:, (df.nunique() > 1) | df.columns.isin(['picoseconds', 'conformations (ns)'])]
+        cleaned_dfs[key] = non_constant_columns
+    return cleaned_dfs
+
+def get_targets(dataset):
+    """read out the original dataset csv file and get the targets + convert exp_mean to PKI
+    out: pandas dataframe with two columns: ['mol_id','PKI']
+    """
+    df = pd.read_csv(dataset)
+    df['PKI'] = -np.log10(df['exp_mean [nM]'] * 1e-9)
+    return df[['mol_id','PKI']]
+
+def create_dfs_dic(totaldf_path, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20']):
+    totaldf = pd.read_csv(totaldf_path)
+    target_df = get_targets(pv.dataset_path_)
+    # Check if conformations or picoseconds
+    df_dict = {}
+    # time_interval, time_col = (1, "nanoseconds (ns)") if "nanoseconds (ns)" in totaldf.columns else (1000, "picoseconds") if "picoseconds" in totaldf.columns else (None, None)
+    always_keep = ['mol_id', 'PKI', 'conformations (ns)']
+
+    # Drop PKI from totaldf if it exists (so only the PKI from target_df will be kept)
+    if 'PKI' in totaldf.columns:
+        totaldf.drop(columns=['PKI'], inplace=True)
+        
+    # Merge totaldf with target_df on 'mol_id'
+    totaldf = pd.merge(totaldf, target_df, on='mol_id', how='left')
+    
+    # If the 'picoseconds' column exists, convert it to 'nanoseconds (ns)'
+    if 'picoseconds' in totaldf.columns:
+        totaldf['conformations (ns)'] = totaldf['picoseconds'] / 1000
+        totaldf.drop(columns=['picoseconds'], inplace=True)
+    
+    # If to_keep is empty, keep all columns except 'mol_id', 'PKI', and 'conformations (ns)'
+    if not to_keep:
+        print(totaldf.columns)
+        to_keep = [col for col in totaldf.columns if col not in always_keep]
+        print(to_keep)
+
+    columns_to_keep = always_keep + to_keep
+
+    # Reorganize columns: 'mol_id', 'pKi', and 'conformations (ns)' are first, then to_keep columns
+    totaldf = totaldf[columns_to_keep]
+    print(totaldf)
+    for x in include:
+        if isinstance(x, int):
+            filtered_df = totaldf[totaldf['conformations (ns)'] == x].copy()
+
+            # Store the DataFrame in the dictionary
+            df_dict[str(x) + 'ns'] = filtered_df
+        elif isinstance(x, str) and x.startswith("c"):
+            num_conformations = int(x[1:])
+            total_time = totaldf['conformations (ns)'].max()
+            
+            target_conformations = [round(i * (total_time / num_conformations),1) for i in range(1, num_conformations + 1)]
+            filtered_df = totaldf[totaldf['conformations (ns)'].isin(target_conformations)].copy()
+            # Store the DataFrame in the dictionary
+            df_dict[x] = filtered_df
+
+    return df_dict
 
 def csvfiles_to_dic_exclude(dfs_path, exclude_files: list = []):
     '''The folder with CSV files 'dataframes_JAK1_WHIM' is the input and these CSV files will be

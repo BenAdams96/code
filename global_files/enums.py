@@ -16,7 +16,7 @@ class Model_classic(Enum):
                                                     })
     XGB = ('XGB',   XGBRegressor,                   {"n_estimators": [100, 200], 
                                                      "max_depth": [3, 10]})
-    SVM = ('SVM',   SVR,                            {"C": [0.1, 0.01],
+    SVM = ('SVM',   SVR,                            {"C": [1,0.1, 0.01],
                                                      "kernel": ["linear", "rbf"],
                                                      "gamma": ['scale']})
     

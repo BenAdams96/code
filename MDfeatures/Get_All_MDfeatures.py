@@ -313,6 +313,8 @@ def main(protein = pv.PROTEIN):
 
 
 if __name__ == "__main__":
+    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    main(pv.PROTEIN)
     pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
     main(pv.PROTEIN)
     pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)

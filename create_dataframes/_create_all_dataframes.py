@@ -32,10 +32,12 @@ def main():
     # i_dataframes_MD_only_changed.main(savefolder_name='MD_old only reduced', to_keep=['PSA','SASA','num of H-bonds','H-bonds within 0.35A', 'Total dipole moment', 'Ligand Bond energy', 'Urey-Bradley energy', 'Torsional energy'])
     # i_dataframes_MD_only_changed.main(savefolder_name='MD_new only', to_keep=['rmsd','Gyration','epsilon','PSA','SASA','num of H-bonds','H-bonds within 0.35A', 'Total dipole moment', 'Ligand Bond energy', 'Urey-Bradley energy', 'Torsional energy', 'Coul-SR: Lig-Lig','LJ-SR: Lig-Lig','Coul-14: Lig-Lig','LJ-14: Lig-Lig','Coul-SR: Lig-Sol','LJ-SR: Lig-Sol'])
     # i_dataframes_MD_only_changed.main(savefolder_name='MD_new only reduced', to_keep=['PSA','SASA','num of H-bonds','H-bonds within 0.35A', 'Total dipole moment', 'Ligand Bond energy', 'Urey-Bradley energy', 'Torsional energy', 'Coul-SR: Lig-Lig','LJ-SR: Lig-Lig','Coul-14: Lig-Lig','LJ-14: Lig-Lig','Coul-SR: Lig-Sol','LJ-SR: Lig-Sol'])
+    i_dataframes_MD_only_changed_improvedq.main(savefolder_name='MD_new onlyall', to_keep=['rmsd','Gyration','epsilon','Schlitter Entropy','Quasiharmonic Entropy','PSA','SASA','num of H-bonds','H-bonds within 0.35A', 'Total dipole moment', 'Ligand Bond energy', 'Urey-Bradley energy', 'Torsional energy', 'Coul-SR: Lig-Lig','LJ-SR: Lig-Lig','Coul-14: Lig-Lig','LJ-14: Lig-Lig','Coul-SR: Lig-Sol','LJ-SR: Lig-Sol'])
+    i_dataframes_MD_only_changed_improvedq.main(savefolder_name='MD_new only3', to_keep=['Schlitter Entropy','Quasiharmonic Entropy','PSA','SASA','num of H-bonds','H-bonds within 0.35A','Urey-Bradley energy', 'Torsional energy', 'Coul-SR: Lig-Lig','LJ-SR: Lig-Lig','Coul-14: Lig-Lig','LJ-14: Lig-Lig','Coul-SR: Lig-Sol','LJ-SR: Lig-Sol'])
     i_dataframes_MD_only_changed_improvedq.main(savefolder_name='MD_new only4', to_keep=['SASA','Ligand Bond energy', 'Urey-Bradley energy', 'Torsional energy', 'Coul-SR: Lig-Lig','LJ-SR: Lig-Lig','Coul-14: Lig-Lig','Coul-SR: Lig-Sol'])
 
     # ###############PCA of descriptors only
-    # e_dataframes_DescPCA.main(components=10)
+    e_dataframes_DescPCA.main(components=10)
     # e_dataframes_DescPCA.main(components=20)
 
     # f_dataframes_MDPCA.main()

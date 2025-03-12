@@ -28,7 +28,8 @@ def get_targets(dataset):
     df['PKI'] = -np.log10(df['exp_mean [nM]'] * 1e-9)
     return df[['mol_id','PKI']]
 
-def create_dfs_dic(totaldf,target_df, to_keep, include = [0,1,2,3,4,5,6,7,8,9,10,'10c','20c']):
+def create_dfs_dic(totaldf, to_keep, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20']):
+    target_df = get_targets(pv.dataset_path_)
     # Check if conformations or picoseconds
     df_dict = {}
     # time_interval, time_col = (1, "nanoseconds (ns)") if "nanoseconds (ns)" in totaldf.columns else (1000, "picoseconds") if "picoseconds" in totaldf.columns else (None, None)
@@ -36,11 +37,16 @@ def create_dfs_dic(totaldf,target_df, to_keep, include = [0,1,2,3,4,5,6,7,8,9,10
 
     # Merge totaldf with target_df on 'mol_id'
     totaldf = pd.merge(totaldf, target_df, on='mol_id', how='left')
-    
+    print(totaldf.columns)
     # If the 'picoseconds' column exists, convert it to 'nanoseconds (ns)'
     if 'picoseconds' in totaldf.columns:
         totaldf['conformations (ns)'] = totaldf['picoseconds'] / 1000
         totaldf.drop(columns=['picoseconds'], inplace=True)
+    
+    # If to_keep is empty, keep all columns except 'mol_id', 'PKI', and 'conformations (ns)'
+    if not to_keep:
+        to_keep = [col for col in totaldf.columns if col not in always_keep]
+
     columns_to_keep = always_keep + to_keep
 
     # Reorganize columns: 'mol_id', 'pKi', and 'conformations (ns)' are first, then to_keep columns
@@ -167,8 +173,8 @@ def create_dataframes_MD_only(savefolder_name, to_keep = ['SASA','num of H-bonds
 
     savefolder_path = pv.dfs_descriptors_only_path_.parent / savefolder_name
     savefolder_path.mkdir(parents=True, exist_ok=True)
-    target_df = get_targets(pv.dataset_path_)
-    dfs_in_dic = create_dfs_dic(MD_output_df,target_df,to_keep, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20'])
+    
+    dfs_in_dic = create_dfs_dic(MD_output_df,to_keep, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20'])
     print(dfs_in_dic.keys())
  
     # if dfs_DescPCA_path.exists():
