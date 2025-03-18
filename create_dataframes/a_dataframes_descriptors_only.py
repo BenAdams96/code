@@ -5,7 +5,7 @@ import MDAnalysis as mda
 from MDAnalysis.coordinates import PDB
 import rdkit
 # Project-specific imports
-from global_files import csv_to_dictionary, public_variables as pv
+from global_files import dataframe_processing, csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
@@ -18,15 +18,6 @@ import pandas as pd
 from pathlib import Path
 import re
 import pathlib
-
-def save_dataframes(dic_with_dfs):
-    save_path = pv.dfs_descriptors_only_path_
-    save_path.mkdir(parents=True, exist_ok=True)
-    
-    for name, df in dic_with_dfs.items():
-        #print(f"name: {name}, i: {df.head(1)}")
-        df.to_csv(save_path / f'{name}.csv', index=False)
-
 
 def create_dfs_dic(totaldf, time_interval = 1):
 
@@ -48,7 +39,7 @@ def create_dfs_dic(totaldf, time_interval = 1):
 
     return df_dict
 
-def reduce_dataframe(df, interval=1):
+def create_df_multiple_conformations(df, interval=1):
     """
     Reduces the number of conformations per molecule in the dataframe
     by selecting only specific conformations at given intervals, excluding 0.
@@ -72,12 +63,12 @@ def main(time_interval = 1, timeinterval_list = [1,0.5,0.2,0.1,0.05,0.02,0.01]):
     initial_df = pd.read_csv(pv.initial_dataframe_)
 
     dfs_in_dict = create_dfs_dic(initial_df, time_interval) #only single conformations
-    save_dataframes(dfs_in_dict) #automatically save in descriptors_only_folder
+    dataframe_processing.save_dict_with_dfs(dfs_in_dict) #automatically save in descriptors_only_folder
     
     for t in timeinterval_list:
         print(t)
-        reduced_dataframe = reduce_dataframe(initial_df, interval=t)
-        reduced_dataframe.to_csv(pv.dfs_descriptors_only_path_ / f'conformations_{int(10/t)}.csv', index=False)
+        reduced_dataframe = create_df_multiple_conformations(initial_df, interval=t)
+        reduced_dataframe.to_csv(pv.dfs_descriptors_only_path_ / f'c{int(10/t)}.csv', index=False)
     return
 
 if __name__ == "__main__":

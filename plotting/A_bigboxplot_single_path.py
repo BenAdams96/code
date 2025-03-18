@@ -583,7 +583,7 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
     'minimized' if label == '0ns' else '10 conf.' if label == 'conformations_10' else label
     for group in modelresults_dict.values() for label in group.keys()
     ]
-
+    print(xtick_labels)
     plt.xticks(ticks=positions, labels=xtick_labels, rotation=45, ha='right')
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
@@ -634,6 +634,8 @@ if __name__ == "__main__":
     exclude_stable2 = ['stable_conformations']
     exclude_stable = ['stable_conformations','conformations_10','conformations_20','minimized_conformations_10']
     include_files=['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_50']
+    include_files=['0ns','1ns']
+
     # dfs_paths.append((public_variables.dataframes_master_ / '2D', []))
     # dfs_paths.append((public_variables.dfs_descriptors_only_path_, exclude_files_clusters + exclude_stable))
     # dfs_paths.append((public_variables.dfs_reduced_path_, exclude_files_clusters+ exclude_stable))
@@ -652,17 +654,17 @@ if __name__ == "__main__":
     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
     # include_files=['0ns','1ns','3ns','5ns','conformations_10']
     # for path in pv.get_paths():
-    dfs_paths.append((pv.dfs_descriptors_only_path_, include_files))
-    dfs_paths.append((pv.dfs_reduced_path_, include_files))
+    # dfs_paths.append((pv.dfs_descriptors_only_path_, include_files))
+    # dfs_paths.append((pv.dfs_reduced_path_, include_files))
     dfs_paths.append((pv.dataframes_master_ / 'red MD_old', include_files))
     dfs_paths.append((pv.dataframes_master_ / 'MD_old only', include_files))
 
-    dfs_paths.append((pv.dataframes_master_ / 'MD_new only', include_files))
+    # dfs_paths.append((pv.dataframes_master_ / 'MD_new only', include_files))
 
-    dfs_paths.append((pv.dataframes_master_ / 'red MD_new', include_files))
-    dfs_paths.append((pv.dataframes_master_ / 'red MD_new reduced', include_files))
-    dfs_paths.append((pv.dataframes_master_ / 'DescPCA20 MDnewPCA', include_files))
-    dfs_paths.append((pv.dataframes_master_ / '(DescMD)PCA_20', include_files))
+    # dfs_paths.append((pv.dataframes_master_ / 'red MD_new', include_files))
+    # dfs_paths.append((pv.dataframes_master_ / 'red MD_new reduced', include_files))
+    # dfs_paths.append((pv.dataframes_master_ / 'DescPCA20 MDnewPCA', include_files))
+    # dfs_paths.append((pv.dataframes_master_ / '(DescMD)PCA_20', include_files))
 
 
 

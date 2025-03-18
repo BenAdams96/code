@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import pandas as pd
 from io import StringIO
-from global_files import public_variables as pv, public_functions
+from global_files import global_functions, public_variables as pv
 import os
 import re
 
@@ -193,7 +193,7 @@ def main(MDsimulations_path_):
     # get_edr_files(MDsimulations_path, edrfolder_path)
 
     #use the edr files to create xvg files
-    valid_mols = public_functions.get_molecules_lists(MDsimulations_path)[1]
+    valid_mols = global_functions.get_molecules_lists(MDsimulations_path)[1]
     print(valid_mols)
     #create xvg files from the edr files, check public variables which features we want
     MDfeatures = pv.MDfeatures

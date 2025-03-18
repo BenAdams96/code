@@ -1,4 +1,4 @@
-from global_files import csv_to_dictionary, public_variables as pv
+from global_files import dataframe_processing, csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
@@ -626,15 +626,11 @@ def main(dfs_path = pv.dfs_descriptors_only_path_, random_splitting = False ,inc
     if not include_files:
         include_files = ['conformations_10.csv']
     
-    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
-    
-    sorted_keys_list = csv_to_dictionary.get_sorted_columns(list(dfs_in_dic.keys())) #RDKIT first
-    dfs_in_dic_sorted = {key: dfs_in_dic[key] for key in sorted_keys_list if key in dfs_in_dic} #order
-    print(dfs_in_dic_sorted.keys())
+    dfs_in_dict = dataframe_processing.csvfiles_to_dic_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
 
     ModelResults = {'R2': [], 'MSE': [], 'MAE': []}
 
-    for name, df in dfs_in_dic_sorted.items():
+    for name, df in dfs_in_dict.items():
         print(name)
         # Perform nested cross-validation for the current dataset
         results_all_metrics = deeplearning_function(name, df, dfs_path, random_splitting)

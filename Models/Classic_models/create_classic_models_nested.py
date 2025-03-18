@@ -6,7 +6,7 @@ from sklearn.tree import export_text
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
-from global_files import csv_to_dictionary, public_variables as pv
+from global_files import dataframe_processing, csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 from sklearn.model_selection import StratifiedKFold, KFold, StratifiedGroupKFold
@@ -49,7 +49,7 @@ def save_fold_results(results, metric, ModelResults, Modelresults_path):
         updated_results_df = pd.concat([updated_results_df, new_results_df]).drop_duplicates(subset=['mol_id'], keep='last')
 
         # Fix the order of mol_id
-        sorted_mol_ids = csv_to_dictionary.get_sorted_columns(updated_results_df['mol_id'].tolist())
+        sorted_mol_ids = dataframe_processing.sort_columns(updated_results_df['mol_id'].tolist())
         updated_results_df = updated_results_df.set_index('mol_id').loc[sorted_mol_ids].reset_index()
     else:
         updated_results_df = new_results_df
@@ -57,12 +57,6 @@ def save_fold_results(results, metric, ModelResults, Modelresults_path):
     updated_results_df.to_csv(csv_filepath, index=False)
     return
 
-def save_dataframes_to_csv(dic_with_dfs,save_path):
-    save_path.mkdir(parents=True, exist_ok=True)
-    
-    for name, df in dic_with_dfs.items():
-        print(f"save dataframe: {name}")
-        df.to_csv(save_path / f'{name}.csv', index=False)
 
 def bin_pki_values(y, num_bins=5):
     """
@@ -158,10 +152,11 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
     target_column = 'PKI'
     
     if pv.ML_MODEL.name == 'SVM':
-        feature_cols = df.drop(columns=[target_column, 'mol_id', 'conformations (ns)'], errors='ignore').columns
+        df = dataframe_processing.standardize_dataframe(df)
+        # feature_cols = df.drop(columns=[target_column, 'mol_id', 'conformations (ns)'], errors='ignore').columns
 
-        scaler = StandardScaler()
-        df[feature_cols] = scaler.fit_transform(df[feature_cols])
+        # scaler = StandardScaler()
+        # df[feature_cols] = scaler.fit_transform(df[feature_cols])
 
 
     X = df.drop(columns=[target_column, 'mol_id', 'conformations (ns)'], axis=1, errors='ignore')
@@ -188,7 +183,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         'MSE': [],
         'MAE': []
     }
-
+    r2_train_scores = []
     fold_feature_importance = []
     custom_outer_splits = []
     all_best_params_outer = []
@@ -309,10 +304,13 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
             # Store the feature importance for the current fold
             fold_feature_importance.append(importance)
 
-        r2_train_scores = []
+        mol_id_for_fold = df.loc[train_idx_all, 'mol_id']
+        y_train_average = y_train.groupby(mol_id_for_fold).mean()
         y_pred_train = pd.Series(best_model.predict(X_train), index=y_train.index, name='Predicted_pKi')
-        r2_value_train = r2_score(y_train, y_pred_train)
+        y_pred_train_average = y_pred_train.groupby(mol_id_for_fold).mean()
+        r2_value_train = r2_score(y_train_average, y_pred_train_average)
         print(r2_value_train)
+        r2_train_scores.append(r2_value_train)
         y_pred = pd.Series(best_model.predict(X_test), index=y_test.index, name='Predicted_pKi')
 
         # Get the mol_id for the current fold based on the test indices (get average prediction for each molecule)
@@ -336,6 +334,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         all_idx_ypredicted_pki_series = pd.concat([all_idx_ypredicted_pki_series, pd.Series(y_pred, index=y_test.index)]).sort_index()
     if pv.ML_MODEL.name != 'SVM':
         plot_feature_importance(X, fold_feature_importance, dfs_path, name)
+
     mean_scores = {}
     #get once the the mean scores using all the predictions
     r2_value = r2_score(all_true_values, all_predictions)
@@ -344,6 +343,37 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
     mean_scores['R2'] = r2_value
     mean_scores['MSE'] = mse_value
     mean_scores['MAE'] = mae_value
+
+    #write out the r2 train
+    # Define the output file path
+    output_file = dfs_path / pv.Modelresults_folder_ / "R2_train_scores.csv"
+
+    # Create DataFrame for the current run
+    df_new = pd.DataFrame({
+        'mol_id': [name],  # Store 'name' as a single-item list
+        **{f'split{i+1}_train_score': [r2_train_scores[i]] for i in range(10)}  # Create 10 columns
+    })
+
+    # If the file exists, update or append the data
+    if os.path.exists(output_file):
+        df_existing = pd.read_csv(output_file)
+
+        # Check if the molecule ID already exists
+        if name in df_existing['mol_id'].values:
+            # Update the existing row with new scores
+            idx = df_existing.index[df_existing['mol_id'] == name].tolist()[0]  # Get index of existing row
+            for i in range(10):
+                df_existing.at[idx, f'split{i+1}_train_score'] = r2_train_scores[i]
+        else:
+            # Append new data if mol_id is not in the existing file
+            df_existing = pd.concat([df_existing, df_new], ignore_index=True)
+    else:
+        # If file does not exist, create it with new data
+        df_existing = df_new
+
+    # Save back to CSV
+    df_existing.to_csv(output_file, index=False)
+    print(f"Updated R² train scores saved to {output_file}")
 
     create_true_pred_dataframe(name, df, dfs_path, all_idx_ytrue_pki_series, all_idx_ypredicted_pki_series)
     
@@ -372,18 +402,14 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     if not include_files:
         include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','c10.csv']
     #,'3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv',
-    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
-
-    sorted_keys_list = csv_to_dictionary.get_sorted_columns(list(dfs_in_dic.keys())) #RDKIT first
-    dfs_in_dic_sorted = {key: dfs_in_dic[key] for key in sorted_keys_list if key in dfs_in_dic} #order
-    print(dfs_in_dic_sorted.keys())
+    dfs_in_dict = dataframe_processing.csvfiles_to_dict_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
     
     outer_folds = 10
     inner_folds = 5
     scoring = 'r2'
     ModelResults = {'R2': [], 'MSE': [], 'MAE': []}
 
-    for name, df in dfs_in_dic_sorted.items():
+    for name, df in dfs_in_dict.items():
         # Perform nested cross-validation for the current dataset
         fold_results = nested_cross_validation(name, df, dfs_path, outer_folds, inner_folds, scoring)
         for metric, results in fold_results.items():
@@ -443,12 +469,47 @@ if __name__ == "__main__":
     # main(pv.dataframes_master_ / 'MD_new only4',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
     # main(pv.dataframes_master_ / 'MD_old only',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
     # main(pv.dfs_descriptors_only_path_,include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','conformations_10.csv'])
-    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    
+    
+    
+    
+    
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    main(pv.dataframes_master_ / 'MD_new onlyall',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dataframes_master_ / "desc_PCA15",include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dataframes_master_ / 'dPCA MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dataframes_master_ / 'red MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dfs_descriptors_only_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dfs_reduced_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
 
-    main(pv.dataframes_master_ / 'dPCA MD2',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    main(pv.dataframes_master_ / 'MD_new onlyall',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dataframes_master_ / "desc_PCA15",include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dataframes_master_ / 'dPCA MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dataframes_master_ / 'red MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dfs_descriptors_only_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dfs_reduced_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
 
-    main(pv.dataframes_master_ / 'dPCA MD2',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    main(pv.dataframes_master_ / 'MD_new onlyall',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dataframes_master_ / "desc_PCA15",include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dataframes_master_ / 'dPCA MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dataframes_master_ / 'red MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dfs_descriptors_only_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    main(pv.dfs_reduced_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
+
+
+
+
+
+
+
+
+
+    # main(pv.dataframes_master_ / 'MD_new only3',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+
+    # main(pv.dataframes_master_ / 'dPCA MD2',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
     # main(pv.dataframes_master_ / 'MD_new only3',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
     # main(pv.dataframes_master_ / 'MD_new only4',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
     # main(pv.dataframes_master_ / 'MDnewPCA')

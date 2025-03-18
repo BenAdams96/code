@@ -9,14 +9,14 @@ from itertools import product
 
 class Model_classic(Enum):
     RF = ('RF',     RandomForestRegressor,          {'n_estimators': [100],
-                                                    'max_depth': [5],
-                                                    'min_samples_split': [10],
-                                                    'min_samples_leaf': [10],
+                                                    'max_depth': [2,5],
+                                                    'min_samples_split': [5,10],
+                                                    'min_samples_leaf': [5,10],
                                                     'max_features': ['sqrt']
                                                     })
-    XGB = ('XGB',   XGBRegressor,                   {"n_estimators": [100, 200], 
+    XGB = ('XGB',   XGBRegressor,                   {"n_estimators": [100], 
                                                      "max_depth": [3, 10]})
-    SVM = ('SVM',   SVR,                            {"C": [1,0.1, 0.01],
+    SVM = ('SVM',   SVR,                            {"C": [0.01, 0.1],
                                                      "kernel": ["linear", "rbf"],
                                                      "gamma": ['scale']})
     

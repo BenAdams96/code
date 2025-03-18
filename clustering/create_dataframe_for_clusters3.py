@@ -12,7 +12,7 @@ from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
 # Project-specific imports
-from global_files import public_variables, public_functions
+from global_files import global_functions, public_variables
 import trj_to_pdbfiles
 
 def create_full_dfs(folder_path_clustered_pdbs, molID_PKI_df, descriptors):
@@ -166,7 +166,7 @@ def get_filtered_and_sorted_folders(base_folder, target_filter=None, cluster_fil
 
 #NOTE: this file does: get targets, count how many valid molecules and which,it creates the folder 'dataframes_WHIMJAK1' or equivellant
 def main(base_path,smiles_activity_dataset, RDKIT_descriptors):
-    df_targets = public_functions.get_all_targets(smiles_activity_dataset) #df with columns: 'mol_id' and 'PKI value'. all molecules
+    df_targets = global_functions.get_all_targets(smiles_activity_dataset) #df with columns: 'mol_id' and 'PKI value'. all molecules
     clustering_folder = public_variables.base_path_ / 'clustering folder' / public_variables.dataset_protein_
     clustering_folder.mkdir(parents=True, exist_ok=True)
     target_filter = [50,40,30,20,10]  # Only include targets 10 and 20

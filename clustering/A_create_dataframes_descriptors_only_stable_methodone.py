@@ -11,7 +11,7 @@ from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
 # Project-specific imports
-from global_files import public_variables, public_functions
+from global_files import global_functions, public_variables
 import trj_to_pdbfiles
 
 def get_centroid_from_log_file(logfile):
@@ -143,7 +143,7 @@ def save_dataframes(dic_with_dfs,base_path):
 
 #NOTE: this file does: get targets, count how many valid molecules and which,it creates the folder 'dataframes_WHIMJAK1' or equivellant
 def main(groups, base_path,smiles_activity_dataset):
-    df_targets = public_functions.get_all_targets(smiles_activity_dataset) #df with columns: 'mol_id' and 'PKI value'. all molecules
+    df_targets = global_functions.get_all_targets(smiles_activity_dataset) #df with columns: 'mol_id' and 'PKI value'. all molecules
     for group in groups:
         destination_path = base_path / f'stable_conformations_group_{group}'
     #only contains molID and PKI value

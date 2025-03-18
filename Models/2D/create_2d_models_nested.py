@@ -4,7 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.metrics import mean_absolute_error
 
-from global_files import csv_to_dictionary, public_variables as pv
+from global_files import dataframe_processing, csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 from sklearn.model_selection import StratifiedKFold, KFold, StratifiedGroupKFold
@@ -56,6 +56,7 @@ def save_fold_results(results, metric, ModelResults, Modelresults_path):
 
     updated_results_df.to_csv(csv_filepath, index=False)
     return
+
 def hyperparameter_tuning(model, X, y, param_grid, cv, scoring='r2'):
     """Performs hyperparameter tuning using GridSearchCV."""
     grid_search = GridSearchCV(
@@ -146,7 +147,7 @@ def Kfold_Cross_Validation_incl_grouped_RF(df, hyperparameter_grid, kfold_, scor
     # print(custom_splits[3][0])
     # print(custom_splits[3][1])
 
-    visualize_splits(custom_splits, df, output_dir=public_variables.base_path_)
+    visualize_splits(custom_splits, df, output_dir=pv.base_path_)
     # print('custom splits')
     # print(custom_splits[1][0][0:40])
     # print(custom_splits[1][1][0:40])

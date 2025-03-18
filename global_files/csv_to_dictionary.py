@@ -54,8 +54,8 @@ def get_targets(dataset):
     df['PKI'] = -np.log10(df['exp_mean [nM]'] * 1e-9)
     return df[['mol_id','PKI']]
 
-def create_dfs_dic(totaldf_path, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20']):
-    totaldf = pd.read_csv(totaldf_path)
+def create_dfs_dic(total_df, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20']):
+    totaldf = pd.read_csv(total_df)
     target_df = get_targets(pv.dataset_path_)
     # Check if conformations or picoseconds
     df_dict = {}
