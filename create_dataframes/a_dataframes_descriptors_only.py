@@ -59,17 +59,19 @@ def create_df_multiple_conformations(df, interval=1):
     
     return reduced_df
 
-def main(time_interval = 1, timeinterval_list = [1,0.5,0.2,0.1,0.05,0.02,0.01]):
+def main(time_interval = 1, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20'], write_out = True):
     initial_df = pd.read_csv(pv.initial_dataframe_)
 
-    dfs_in_dict = create_dfs_dic(initial_df, time_interval) #only single conformations
-    dataframe_processing.save_dict_with_dfs(dfs_in_dict) #automatically save in descriptors_only_folder
+    # dfs_in_dict = create_dfs_dic(initial_df, time_interval) #only single conformations
+    dfs_in_dict = dataframe_processing.create_dfs_dict(pv.initial_dataframe_, include = include)
+    if write_out:
+        dataframe_processing.save_dict_with_dfs(dfs_in_dict, pv.dfs_descriptors_only_path_) #automatically save in descriptors_only_folder
     
-    for t in timeinterval_list:
-        print(t)
-        reduced_dataframe = create_df_multiple_conformations(initial_df, interval=t)
-        reduced_dataframe.to_csv(pv.dfs_descriptors_only_path_ / f'c{int(10/t)}.csv', index=False)
-    return
+    # for t in timeinterval_list:
+    #     print(t)
+    #     reduced_dataframe = create_df_multiple_conformations(initial_df, interval=t)
+    #     reduced_dataframe.to_csv(pv.dfs_descriptors_only_path_ / f'c{int(10/t)}.csv', index=False)
+    return dfs_in_dict
 
 if __name__ == "__main__":
 

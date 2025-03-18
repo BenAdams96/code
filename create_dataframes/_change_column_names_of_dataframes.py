@@ -1,6 +1,6 @@
 
 from create_dataframes import _initial_dataframe, a_dataframes_descriptors_only,b_dataframes_reduced, c_dataframes_red_MD, \
-    d_dataframes_MD, e_dataframes_DescPCA, f_dataframes_MDPCA, g_dataframes_DescPCA_MDPCA, h_dataframes_DescMDPCA, i_dataframes_MD_only_changed
+    d_dataframes_MD_only, e_dataframes_DescPCA
 
 from global_files import public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR

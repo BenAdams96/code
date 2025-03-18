@@ -37,7 +37,7 @@ def MD_features_implementation(savefolder_name, include, threshold, to_keep = ['
     dataframe_processing.save_dict_with_dfs(merged_dfs_dict, save_path=destination_folder)
     return
 
-def main(savefolder_name = 'desc_red MD', include=[], threshold=0.85, to_keep = ['SASA','num of H-bonds','H-bonds within 0.35A', 'Total dipole moment', 'Ligand Bond energy', 'Urey-Bradley energy', 'Torsional energy', 'Coul-SR: Lig-Lig','LJ-SR: Lig-Lig','Coul-14: Lig-Lig','LJ-14: Lig-Lig','Coul-SR: Lig-Sol','Coul-SR: Lig-Sol']):
+def main(savefolder_name = 'desc_red MD', include=[], threshold=0.85, to_keep = ['SASA','num of H-bonds','H-bonds within 0.35A', 'Total dipole moment', 'Ligand Bond energy', 'Urey-Bradley energy', 'Torsional energy', 'Coul-SR: Lig-Lig','LJ-SR: Lig-Lig','Coul-14: Lig-Lig','LJ-14: Lig-Lig','Coul-SR: Lig-Sol','Coul-SR: Lig-Sol'], write_out = True):
     destination_folder = pv.dataframes_master_ / savefolder_name
     destination_folder.mkdir(parents=True, exist_ok=True)
     
@@ -61,8 +61,9 @@ def main(savefolder_name = 'desc_red MD', include=[], threshold=0.85, to_keep = 
             merged_dfs_dict[key] = reduced_dfs_in_dict[key]  # Keep the original if no match
         
     #write out the dataframe to csv files
-    dataframe_processing.save_dict_with_dfs(merged_dfs_dict, save_path=destination_folder)
-    return
+    if write_out:
+        dataframe_processing.save_dict_with_dfs(merged_dfs_dict, save_path=destination_folder)
+    return merged_dfs_dict
 
 if __name__ == "__main__":
     main()

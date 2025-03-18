@@ -27,9 +27,11 @@ import os
 def PCA_for_dfs(dfs_dictionary, components):
     dfs_in_dict_pca = {}
     for key, df in dfs_dictionary.items():
+        print(key)
         # Standardize the dataframe
         standardized_df = dataframe_processing.standardize_dataframe(df)  # Assuming this function returns the standardized df
-
+        print(standardized_df)
+        print(f"After standardization, NaN count: {standardized_df.isna().sum().sum()}")
         # Drop non-feature columns for PCA
         features_df = standardized_df.drop(columns=['mol_id', 'PKI', 'conformations (ns)'], errors='ignore')
 
@@ -58,8 +60,11 @@ def main(components = 10, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20'], write_
         dfs_dPCA_path = pv.dataframes_master_ / new_name
         dfs_dPCA_path.mkdir(parents=True, exist_ok=True)
 
-    dfs_in_dict = csv_to_dictionary.create_dfs_dic(pv.initial_dataframe_, include = include)
-    dfs_in_dict = csv_to_dictionary.remove_constant_columns_from_dfs(dfs_in_dict)
+    dfs_in_dict = dataframe_processing.create_dfs_dict(pv.initial_dataframe_, include = include)
+    print(dfs_in_dict['1ns'])
+    dfs_in_dict = dataframe_processing.remove_constant_columns_from_dict_of_dfs(dfs_in_dict)
+    print(dfs_in_dict['1ns'])
+
     dfs_in_dic_pca = PCA_for_dfs(dfs_in_dict, components)
     if write_out:
         dataframe_processing.save_dict_with_dfs(dfs_in_dic_pca, save_path=dfs_dPCA_path)

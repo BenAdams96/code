@@ -27,22 +27,25 @@ import re
 def standardize_dataframe(df):
     """Preprocess the dataframe by handling NaNs and standardizing."""
     # Handle NaNs: drop rows with NaNs or fill them
-    df_cleaned = df.dropna()  # or df.fillna(df.mean())
+    df_cleaned = df.dropna().reset_index(drop=True)  # or df.fillna(df.mean())
     
     # Identify which non-feature columns to keep
     non_feature_columns = ['mol_id','PKI','conformations (ns)','picoseconds']
     existing_non_features = [col for col in non_feature_columns if col in df_cleaned.columns]
-    
+    print(existing_non_features)
     # Drop non-numeric target columns if necessary
     features_df = df_cleaned.drop(columns=existing_non_features, axis=1, errors='ignore')
     
     # Standardize the dataframe
     scaler = StandardScaler()
     features_scaled_df = pd.DataFrame(scaler.fit_transform(features_df), columns=features_df.columns)
-    
+
+    # Create standardized DataFrame
+    standardized_df = df_cleaned.copy()  # Copy to preserve original structure
+    standardized_df.loc[:, features_df.columns] = features_scaled_df  # Replace feature columns
     # Concatenate the non-feature columns back into the standardized dataframe
-    standardized_df = pd.concat([df_cleaned[existing_non_features], features_scaled_df], axis=1)
-    
+    # standardized_df = pd.concat([df_cleaned[existing_non_features], features_scaled_df], axis=1)
+
     return standardized_df
 
 def calculate_correlation_matrix(df):
@@ -148,6 +151,7 @@ def get_targets(dataset):
     return df[['mol_id','PKI']]
 
 def create_dfs_dict(df_path, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20']):
+    print(f'create dfs in dict for {df_path}')
     totaldf = pd.read_csv(df_path)
     target_df = get_targets(pv.dataset_path_)
     # Check if conformations or picoseconds
@@ -189,6 +193,36 @@ def create_dfs_dict(df_path, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,10,'c1
             filtered_df = totaldf[totaldf['conformations (ns)'].isin(target_conformations)].copy()
             # Store the DataFrame in the dictionary
             dfs_in_dict[x] = filtered_df
+        elif isinstance(x, str) and x.startswith("ti"):
+            time_part, conformations_part = x.split('c')
+            start_time, end_time = map(int, time_part[2:].split('_'))
+            num_conformations = int(conformations_part)
+            print(start_time)
+            print(end_time)
+            print(num_conformations)
+            stepsize = (end_time - start_time) / num_conformations
+            target_conformations = np.arange(start_time + stepsize, end_time+stepsize, stepsize).round(1)
+            filtered_df = totaldf[totaldf['conformations (ns)'].isin(target_conformations)].copy()
+            # Store the DataFrame in the dictionary
+            dfs_in_dict[x] = filtered_df
+        elif isinstance(x, str) and x.startswith("ta"):
+            bins, conformations_part = x.split('c')
+            num_conformations = int(conformations_part)
+            total_time = totaldf['conformations (ns)'].max()
+            bins = int(bins[2:])
+            stepsize_outer = total_time/bins
+            for i in np.arange(0,total_time,stepsize_outer):
+                start_time = i
+                end_time = i+stepsize_outer
+                stepsize_inner = (end_time - start_time) / num_conformations
+                target_conformations = np.arange(start_time+stepsize_inner, end_time+(stepsize_inner*0.1), stepsize_inner).round(2)
+                filtered_df = totaldf[totaldf['conformations (ns)'].isin(target_conformations)].copy()
+                # Round the start_time and end_time and check if they are effectively integers
+                if start_time.is_integer():
+                    start_time = int(start_time)
+                if end_time.is_integer():  
+                    end_time = int(end_time)
+                dfs_in_dict[f't{start_time}_{end_time}c{num_conformations}'] = filtered_df
     sorted_keys_list = sort_columns(list(dfs_in_dict.keys()))
     dfs_in_dict = {key: dfs_in_dict[key] for key in sorted_keys_list if key in dfs_in_dict}
     return dfs_in_dict

@@ -626,7 +626,7 @@ def main(dfs_path = pv.dfs_descriptors_only_path_, random_splitting = False ,inc
     if not include_files:
         include_files = ['conformations_10.csv']
     
-    dfs_in_dict = dataframe_processing.csvfiles_to_dic_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
+    dfs_in_dict = dataframe_processing.csvfiles_to_dict_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
 
     ModelResults = {'R2': [], 'MSE': [], 'MAE': []}
 
