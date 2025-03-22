@@ -171,7 +171,12 @@ def main(MDsimulations_path = pv.MDsimulations_path_, output_folder = pv.ligand_
 if __name__ == "__main__":
     #NOTE: 10 seconden per molecule als ik 100 frames doe
     print('trj_to_pdbfiles')
-    pv.update_config(model_=Model_deep.LSTM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    pv.update_config(model_=Model_classic, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    MDsimulations_path = pv.MDsimulations_path_ #the folder containing all the MD simulations {001,002..615}
+    frames = 1000
+    main(MDsimulations_path, pv.ligand_conformations_path_, frames)
+
+    pv.update_config(model_=Model_classic, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
     MDsimulations_path = pv.MDsimulations_path_ #the folder containing all the MD simulations {001,002..615}
     frames = 1000
     main(MDsimulations_path, pv.ligand_conformations_path_, frames)

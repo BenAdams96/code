@@ -205,54 +205,54 @@ def create_dfs_dict(totaldf_path, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,1
 #     total_df_conf_order = pd.DataFrame(rows, columns=columns).dropna().reset_index(drop=True)
 #     return total_df_conf_order
 
-# # def get_sorted_folders(base_path):
-# #     '''The folder with CSV files 'dataframes_JAK1_WHIM' is the input and these CSV files will be
-# #        put into a list of pandas DataFrames, also works with 0.5 1 1.5 formats.
-# #     '''
-# #     folders = [f for f in base_path.iterdir() if f.is_dir()]
-# #     sorted_folders = []
-# #     # Define the regex pattern to match filenames like '0ns.csv', '1ns.csv', '1.5ns.csv', etc.
-# #     pattern = re.compile(r'^\d+(\.\d+)?ns$')
+# def get_sorted_folders(base_path):
+#     '''The folder with CSV files 'dataframes_JAK1_WHIM' is the input and these CSV files will be
+#        put into a list of pandas DataFrames, also works with 0.5 1 1.5 formats.
+#     '''
+#     folders = [f for f in base_path.iterdir() if f.is_dir()]
+#     sorted_folders = []
+#     # Define the regex pattern to match filenames like '0ns.csv', '1ns.csv', '1.5ns.csv', etc.
+#     pattern = re.compile(r'^\d+(\.\d+)?ns$')
 
-# #     for csv_file in sorted(base_path.glob('*'), key=lambda x: extract_number(x.name)):
-# #         if pattern.match(csv_file.name):  # Check if the file name matches the pattern
-# #             sorted_folders.append(csv_file)
-# #         else:
-# #             sorted_folders.insert(0,csv_file)
-# #     return sorted_folders
+#     for csv_file in sorted(base_path.glob('*'), key=lambda x: extract_number(x.name)):
+#         if pattern.match(csv_file.name):  # Check if the file name matches the pattern
+#             sorted_folders.append(csv_file)
+#         else:
+#             sorted_folders.insert(0,csv_file)
+#     return sorted_folders
 
-# # def extract_number(filename):
-# #     # Use regular expression to extract numeric part (integer or float) before 'ns.csv'
-# #     match = re.search(r'(\d+(\.\d+)?)ns$', filename)
-# #     if match:
-# #         number_str = match.group(1)
-# #         # Convert to float first
-# #         number = float(number_str)
-# #         # If it's an integer, convert to int
-# #         if number.is_integer():
-# #             return int(number)
-# #         return number
-# #     else:
-# #         return float('inf')
+# def extract_number(filename):
+#     # Use regular expression to extract numeric part (integer or float) before 'ns.csv'
+#     match = re.search(r'(\d+(\.\d+)?)ns$', filename)
+#     if match:
+#         number_str = match.group(1)
+#         # Convert to float first
+#         number = float(number_str)
+#         # If it's an integer, convert to int
+#         if number.is_integer():
+#             return int(number)
+#         return number
+#     else:
+#         return float('inf')
 
-# # def remove_invalids_from_dfs(dic_with_dfs,invalids):
-# #     invalids = list(map(int, invalids))
-# #     print(invalids)
-# #     filtered_dic_with_dfs = {}
-# #     for name, df in dic_with_dfs.items():
-# #         filtered_df = df[~df['mol_id'].isin(invalids)]
-# #         filtered_dic_with_dfs[name] = filtered_df
-# #     return filtered_dic_with_dfs
+# def remove_invalids_from_dfs(dic_with_dfs,invalids):
+#     invalids = list(map(int, invalids))
+#     print(invalids)
+#     filtered_dic_with_dfs = {}
+#     for name, df in dic_with_dfs.items():
+#         filtered_df = df[~df['mol_id'].isin(invalids)]
+#         filtered_dic_with_dfs[name] = filtered_df
+#     return filtered_dic_with_dfs
 
-# # def save_dataframes(dic_with_dfs,base_path):
-# #     dir = public_variables.dfs_descriptors_only_path_
-# #     final_path = base_path / dir
-# #     final_path.mkdir(parents=True, exist_ok=True)
-# #     timeinterval = public_variables.timeinterval_snapshots
-# #     #TODO: use a dictionary.
-# #     for name, df in dic_with_dfs.items():
-# #         #print(f"name: {name}, i: {df.head(1)}")
-# #         df.to_csv(final_path / f'{name}.csv', index=False)
+# def save_dataframes(dic_with_dfs,base_path):
+#     dir = public_variables.dfs_descriptors_only_path_
+#     final_path = base_path / dir
+#     final_path.mkdir(parents=True, exist_ok=True)
+#     timeinterval = public_variables.timeinterval_snapshots
+#     #TODO: use a dictionary.
+#     for name, df in dic_with_dfs.items():
+#         #print(f"name: {name}, i: {df.head(1)}")
+#         df.to_csv(final_path / f'{name}.csv', index=False)
 
 def get_filtered_and_sorted_folders(base_folder, target_filter=None, cluster_filter=None):
     # Get all folders in the base directory
@@ -307,8 +307,8 @@ def main(dfs_path, initial_df):
     cluster_folder =  dfs_path / 'clustering folder'
     cluster_folder.mkdir(parents=True, exist_ok=True)
     # sorted_folders = get_filtered_and_sorted_folders(cluster_folder, target_filter, cluster_filter)
-    create_dfs_dict(save_path = cluster_folder, totaldf_path=initial_df, to_keep=None, include = ['CLt100_cl10_c10'])
-
+    dfs_in_dict = dataframe_processing.create_dfs_dict(totaldf_path=initial_df, to_keep=None, include = ['CLt100_cl10_c10'])
+    dataframe_processing.save_dict_with_dfs(dfs_in_dict, dfs_path)
 
     # print(sorted_folders)
     # for folder in sorted_folders:
@@ -322,7 +322,7 @@ def main(dfs_path, initial_df):
 
 if __name__ == "__main__":
     pv.update_config(model_= Model_classic.RF, protein_=DatasetProtein.JAK1)
-    main(pv.dfs_descriptors_only_path_, pv.initial_dataframe_)
+    main(pv.dfs_MD_only_path_, pv.initial_dataframe_)
     # base_path = pv.base_path_
     # dataset_csvfile_path = pv.dataset_path_ # 'JAK1dataset.csv'
     # # RDKIT_descriptors = pv.Descriptor_

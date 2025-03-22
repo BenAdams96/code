@@ -79,9 +79,9 @@ def plot_tanimoto_density(sim_matrix,valid=True):
     plt.ylabel("Density")
     plt.title("Tanimoto Similarity Distribution")
     if valid:
-        plt.savefig(pv.base_path_ /'code'/'plots'/ f'tanimoto_similarity_{pv.PROTEIN}_validmols.png')
+        plt.savefig(pv.dataframes_master_ / f'tanimoto_similarity_{pv.PROTEIN}_validmols.png')
     else:
-        plt.savefig(pv.base_path_ /'code'/'plots'/ f'tanimoto_similarity_{pv.PROTEIN}_allmols.png')
+        plt.savefig(pv.dataframes_master_ / f'tanimoto_similarity_{pv.PROTEIN}_allmols.png')
     plt.close()
     
 def main():
@@ -91,18 +91,23 @@ def main():
     # smiles_list = df["smiles"].tolist()
     # print(smiles_list)
     # 
-
-    csv_file_path = pv.dataset_path_
-    df = pd.read_csv(csv_file_path)
-    all_molecules_list, valid_mols, invalid_mols = trj_to_pdbfiles.get_molecules_lists(pv.MDsimulations_path_)
+    for protein in DatasetProtein:
+        pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=protein)
+        df = pd.read_csv(pv.dataset_path_)
+        smiles_list = [(f"{mol_id:03d}", smiles) for mol_id, smiles in zip(df['mol_id'], df['smiles'])]
+        sim_matrix = tanimoto_similarity_matrix(smiles_list)
+        plot_tanimoto_density(sim_matrix, valid=False)
+    # csv_file_path = pv.dataset_path_
+    # df = pd.read_csv(csv_file_path)
+    # all_molecules_list, valid_mols, invalid_mols = trj_to_pdbfiles.get_molecules_lists(pv.MDsimulations_path_)
     
-    smiles_list = [(f"{mol_id:03d}", smiles) for mol_id, smiles in zip(df['mol_id'], df['smiles'])]
-    valid_smiles_list = [tuple for tuple in smiles_list if tuple[0] in valid_mols]
-    sim_matrix = tanimoto_similarity_matrix(smiles_list=valid_smiles_list)
-    plot_tanimoto_density(sim_matrix, valid=True)
+    # smiles_list = [(f"{mol_id:03d}", smiles) for mol_id, smiles in zip(df['mol_id'], df['smiles'])]
+    # valid_smiles_list = [tuple for tuple in smiles_list if tuple[0] in valid_mols]
+    # sim_matrix = tanimoto_similarity_matrix(smiles_list=valid_smiles_list)
+    # plot_tanimoto_density(sim_matrix, valid=True)
 
-    sim_matrix = tanimoto_similarity_matrix(smiles_list=smiles_list)
-    plot_tanimoto_density(sim_matrix, valid=False)
+    # sim_matrix = tanimoto_similarity_matrix(smiles_list=smiles_list)
+    # plot_tanimoto_density(sim_matrix, valid=False)
 
     # plot_path = final_path / 'plots'
     # plot_path.mkdir(parents=True, exist_ok=True)

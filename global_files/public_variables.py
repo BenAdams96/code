@@ -13,7 +13,9 @@ code_path_ = base_path_ / 'code'
 ML_MODEL: Union[Model_classic, Model_deep] = Model_classic.RF
 DESCRIPTOR: Descriptor = Descriptor.WHIM
 PROTEIN: DatasetProtein = DatasetProtein.JAK1
-correlation_threshold_ = 0.85
+HYPERPARAMETER_SET = 'small'
+HYPERPARAMETER_GRID = ML_MODEL._hyperparameter_grid[HYPERPARAMETER_SET]
+correlation_threshold_ = 0.8
 components = 20
 MDfeatures = ["Bond","U-B","Proper-Dih.","Coul-SR:Other-Other","LJ-SR:Other-Other","Coul-14:Other-Other","LJ-14:Other-Other","Coul-SR:Other-SOL","LJ-SR:Other-SOL"]
 # rerun_MD_features = ["Coul-SR:Other-Other","LJ-SR:Other-Other","Coul-14:Other-Other","LJ-14:Other-Other","Coul-SR:Other-SOL","LJ-SR:Other-SOL"]
@@ -43,7 +45,7 @@ def update_paths():
     dfs_MD_only_path_ = dataframes_master_ / 'MD only'
     
     #folder for results
-    Modelresults_folder_ = Path(f'ModelResults_{ML_MODEL}') #not a path because can be in different paths
+    Modelresults_folder_ = Path(f'ModelResults_{ML_MODEL}_{HYPERPARAMETER_SET}') #not a path because can be in different paths
     true_predicted = Modelresults_folder_ / 'true_predicted'
     Inner_train_Val_losses =  Modelresults_folder_ / 'inner_train_val_losses'
     Outer_train_Val_losses =  Modelresults_folder_ / 'outer_train_val_losses'
@@ -70,17 +72,29 @@ def update_paths():
 update_paths()
 
 # Config update function for dynamically changing variables
-def update_config(model_: Union[Model_classic, Model_deep]=None,
-                  descriptor_: Descriptor=None,
-                  protein_: DatasetProtein = None):
-    global ML_MODEL, DESCRIPTOR, PROTEIN
+def update_config(model_: Union[Model_classic, Model_deep] = None,
+                  descriptor_: Descriptor = None,
+                  protein_: DatasetProtein = None,
+                  hyperparameter_set: str = None):
+    global ML_MODEL, DESCRIPTOR, PROTEIN, HYPERPARAMETER_SET, HYPERPARAMETER_GRID
+
     if model_:
         ML_MODEL = model_
     if descriptor_:
         DESCRIPTOR = descriptor_
     if protein_:
         PROTEIN = protein_
-    # Recalculate dependent paths when dataset or descriptor changes
+    if hyperparameter_set:
+        # Check if the hyperparameter set is valid ('small' or 'big')
+        if hyperparameter_set not in ['small', 'big']:
+            raise ValueError("Invalid hyperparameter set. Must be 'small' or 'big'.")
+        
+        # Set the hyperparameter grid based on the selected hyperparameter set
+        HYPERPARAMETER_SET = hyperparameter_set
+        # Access the correct hyperparameter grid from the model enum
+        HYPERPARAMETER_GRID = ML_MODEL._hyperparameter_grid[hyperparameter_set]
+
+    # Recalculate dependent paths
     update_paths()
 
 def get_paths(model_: Union[Model_classic, Model_deep]=None,

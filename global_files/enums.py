@@ -8,39 +8,47 @@ from itertools import product
 
 
 class Model_classic(Enum):
-    RF = ('RF',     RandomForestRegressor,          {'n_estimators': [100],
-                                                    'max_depth': [2,5],
-                                                    'min_samples_split': [5,10],
-                                                    'min_samples_leaf': [5,10],
-                                                    'max_features': ['sqrt']
-                                                    })
-    XGB = ('XGB',   XGBRegressor,                   {"n_estimators": [100], 
-                                                     "max_depth": [3, 10]})
-    SVM = ('SVM',   SVR,                            {"C": [0.01, 0.1],
-                                                     "kernel": ["linear", "rbf"],
-                                                     "gamma": ['scale']})
-    
-    
+    RF = ('RF', RandomForestRegressor, 
+          {'small': {'n_estimators': [100], 'max_depth': [5], 'min_samples_split': [5], 
+                     'min_samples_leaf': [5], 'max_features': ['sqrt']},
+           'big': {'n_estimators': [100, 200], 'max_depth': [3, 5, 10], 
+                     'min_samples_split': [2, 5, 10], 'min_samples_leaf': [2, 5, 10], 
+                     'max_features': ['sqrt', 'log2']}})
+
+    XGB = ('XGB', XGBRegressor, 
+           {'small': {"n_estimators": [100], "max_depth": [3, 5]},
+            'big': {"n_estimators": [100, 200], "max_depth": [3, 6, 10], 
+                      "learning_rate": [0.01, 0.1, 0.3]}})
+
+    SVM = ('SVM', SVR, 
+           {'small': {"C": [0.1], "kernel": ["linear", "rbf"], "gamma": ['scale']},
+            'big': {"C": [0.01, 0.1, 1, 10], "kernel": ["linear", "rbf", "poly"], 
+                      "gamma": ['scale', 'auto']}})
+
     model: Union[RandomForestRegressor, XGBRegressor, SVR]
     hyperparameter_grid: dict
 
     def __new__(cls, value, _model, _hyperparameter_grid):
         obj = object.__new__(cls)
         obj._value_ = value
-        obj._model = _model  # Store the model class (not an instance)
-        obj.hyperparameter_grid = _hyperparameter_grid
+        obj._model = _model  # Store the model class
+        obj._hyperparameter_grid = _hyperparameter_grid  # Store both grids
         return obj
 
     @property
     def model(self):
         """Instantiate the model class with optional random_state."""
-        # Check if random_state is applicable for the model type
         if self._model in [RandomForestRegressor, XGBRegressor]:
-            return self._model(random_state=42)  # Set random_state for models that support it
-        return self._model()  # For SVM and other models that don't have random_state
-
+            return self._model(random_state=42)  # Set random_state for reproducibility
+        return self._model()
+    
+    @property
+    def hyperparameter_grid(self):
+        """Return the hyperparameter grid for the current model."""
+        return self._hyperparameter_grid
+    
     def __str__(self) -> str:
-        return self.value  # Ensure `str()` outputs the `value`
+        return self.value  # Ensure `str()` outputs the model name
 
 class Model_deep(Enum):
     DNN = 'DNN' ,   {"lr": [0.002, 0.001],
@@ -158,6 +166,19 @@ class DatasetProtein(Enum):
     JAK1 = 'JAK1', 615, 4
     GSK3 = 'GSK3', 856, 4 
     pparD = 'pparD', 1125, 4
+
+    ABL1 = 'ABL1', 794, 4
+    AR = 'AR', 659, 4 
+    CLK4 = 'CLK4', 731, 4
+    FXR = 'FXR', 631, 4 
+    GHSR = 'GHSR', 682, 4
+    GR = 'GR', 750, 4 
+    HRH1 = 'HRH1', 973, 4
+    JAK2 = 'JAK2', 976, 4
+    PIK3CA = 'PIK3CA', 960, 4
+
+
+
 
     def __new__(cls, value, dataset_length, num_of_splits):
         obj = object.__new__(cls)

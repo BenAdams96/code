@@ -6,6 +6,8 @@ import subprocess
 import pandas as pd
 from io import StringIO
 from rdkit import Chem
+import random
+
 from rdkit.Chem import Descriptors
 from rdkit.Chem import rdMolDescriptors
 # import Afstuderen0.Afstuderen.removed.randomForest_add_MD_features as randomForest_add_MD_features
@@ -20,6 +22,10 @@ import MDAnalysis as mda
 
 import numpy as np
 from pathlib import Path
+
+from global_files import public_variables as pv
+from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
+from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
 def order_MDsimulations_folders(MDsimulations_path):
     sorted_folders = sorted(
@@ -51,29 +57,43 @@ def make_cluster_files(molecule_number, cluster_files, rmsd):
     subprocess.run(command, shell=True, input=user_input,capture_output=True, text=True)
     return
 
-def get_clustering_information(cluster_log_file):
+def get_clustering_information(cluster_log_file, num_of_random_conformations):
     #cluster_list and cluster_centroid_time_list are rebundant. all information is in the other two (indexing and /10)
     cluster_sizes = []
     cluster_centroid_frames = []
+    all_clusters_random_conformations = []
+    random_conformations_list = []
     
     with open(cluster_log_file, 'r') as file:
         for line in file:
             if not line.strip():  # This checks if the line is empty or only contains spaces
                 continue
             parts = line.split()
+            
             if parts[0] == 'Found':
                 number_of_clusters = int(parts[1])
             elif parts[0].isdigit():
-                if int(parts[0]) <= 10:
+                if random_conformations_list:  # Check if the list is not empty
+                    random_conformations_list = [int(x / 10) for x in random_conformations_list]
+                    sampled_conformations = random.sample(random_conformations_list, min(num_of_random_conformations, len(random_conformations_list)))
+                    all_clusters_random_conformations.append(sampled_conformations)
+                random_conformations_list = []
+                if int(parts[0]) <= 10: #so only look at first 10 clusters
                     # Only process lines where parts[0] is a digit and less than 10
                     cluster_size = int(parts[2])
                     cluster_centroid_time = int(parts[5] if cluster_size > 1 else parts[4])  # clusters with size 1 are different
                     cluster_sizes.append(cluster_size)
                     cluster_centroid_frames.append(cluster_centroid_time // 10)
+                    last_pipe_index = len(parts) - parts[::-1].index('|') #always 3 '|' in these lines
+                    random_conformations_list = list(map(int,parts[last_pipe_index:]))
                 else:
                     break
+            elif parts[0] == '|':
+                last_pipe_index = len(parts) - parts[::-1].index('|') #always 3 '|' in these lines
+                random_conformations_list.extend(list(map(int, parts[last_pipe_index:])))
+        # print(all_clusters_random_conformations)
     # Construct the clustering_information list for clarity
-    clustering_information = [number_of_clusters, cluster_sizes, cluster_centroid_frames]
+    clustering_information = [number_of_clusters, cluster_sizes, cluster_centroid_frames, all_clusters_random_conformations]
     return clustering_information
 
 
@@ -192,20 +212,20 @@ def create_pdb_with_one_rmsd(smiles_strings, sorted_folders, goal_amount_of_clus
         create_folder_stable_conformations_method_one(full_path_pdb_file)
     return
 
-def clustering(smiles_strings, valid_sorted_folders):
+def clustering(smiles_strings, valid_sorted_folders, random_conformations):
     all_clustering_information = []
 
     # Check if the file exists
-    file_path = pv.base_path_ / 'code' /'clustering' / f'clustering_information_{pv.PROTEIN}.csv'
+    file_path = pv.base_path_ / 'dataZ' /'clustering' / f'clustering_information_{pv.PROTEIN}.csv'
     if os.path.exists(file_path):
         # If it exists, read it into a DataFrame
         df_existing = pd.read_csv(file_path)
     else:
         # If the file doesn't exist, create an empty DataFrame with the same columns
-        columns = ['mol_id', 'RMSD', 'Number of clusters', 'Cluster Sizes', 'Cluster Centroids', 'Number of Rotatable Bonds']
+        columns = ['mol_id', 'RMSD', 'Number of clusters', 'Cluster Sizes', 'Cluster Centroids','random conformations per cluster', 'Number of Rotatable Bonds']
         df_existing = pd.DataFrame(columns=columns)
 
-    for molecule_folder in valid_sorted_folders[0:2]: #NOTE: remove [1:2], [107:108] is 125 with LP lonepairs.
+    for molecule_folder in valid_sorted_folders[350:450]: #NOTE: remove [1:2], [107:108] is 125 with LP lonepairs.
         os.chdir(molecule_folder)
         molecule_number = molecule_folder.name
         print(molecule_number)
@@ -219,40 +239,41 @@ def clustering(smiles_strings, valid_sorted_folders):
 
         rmsd = 0.01
         step_size = 0.005
-
+        
         #do this to reduce time step in the beginning
         # Loop to adjust RMSD
         while rmsd <= 0.35:
             make_cluster_files(molecule_number, cluster_files, rmsd)
-            clustering_information = get_clustering_information(cluster_files['g']) #get all information from the log file
+            clustering_information = get_clustering_information(cluster_files['g'], num_of_random_conformations=random_conformations) #get all information from the log file
             # remove_cluster_files(cluster_files)
             
             #insert the molecule number and rmsd to keep track
             clustering_information.insert(0, molecule_number)
             clustering_information.insert(1, rmsd)
             clustering_information.append(num_rotatable_bonds)
-            print(clustering_information)
+            print(clustering_information[:-2])
             # Check number of clusters and adjust step size
             size_cluster_one = clustering_information[3][0]  # Assuming clustering_information[2] holds cluster sizes
             if size_cluster_one < 30:
-                step_size = 0.01  # If cluster 1 is bigger than 50 decrease step size
+                step_size = 0.01  # If cluster 1 is bigger than 30 decrease step size
             else:
-                step_size = 0.005  # If number of clusters is less than 500, revert to the smaller step size
+                step_size = 0.005  # If number of clusters is less than 300, revert to the smaller step size
             rmsd = np.round(rmsd + step_size, 4)
             
             
             #add some benchmarks to shorten the code and reduce the size of the dataframe
-            if clustering_information[3][0] < 90: #if first cluster is smaller than 90 molecules, continue
+            if clustering_information[3][0] < 80: #if first cluster is smaller than 90 molecules, continue
                 continue
             #if first cluster has more than 700 molecules or less then 10 clusters, break, reduces time
-            if clustering_information[3][0] > 600:# or clustering_information[2] < 5: 
+            if clustering_information[3][0] > 300:# or clustering_information[2] < 5:
+                all_clustering_information.append(clustering_information)
                 break
             all_clustering_information.append(clustering_information)
             
             
             
     # Convert new data to a DataFrame
-    new_data = pd.DataFrame(all_clustering_information, columns=['mol_id', 'RMSD', 'Number of clusters', 'Cluster Sizes', 'Cluster Centroids', 'Number of Rotatable Bonds'])
+    new_data = pd.DataFrame(all_clustering_information, columns=['mol_id', 'RMSD', 'Number of clusters', 'Cluster Sizes', 'Cluster Centroids','random conformations per cluster', 'Number of Rotatable Bonds'])
     
     # Append new data to the existing DataFrame
     df_combined = pd.concat([df_existing, new_data], ignore_index=True)
@@ -278,16 +299,19 @@ def clustering(smiles_strings, valid_sorted_folders):
     #create_variables_cluster_files(molecule_number)
     return
 
-def main():
+def main(random_conformations):
     MDsimulations_path = pv.MDsimulations_path_
     dataset_path = pv.dataset_path_
-    
+
+    file_path = pv.base_path_ / 'dataZ' /'clustering'
+    file_path.mkdir(parents=True, exist_ok=True)
+
     dataset_df = pd.read_csv(dataset_path)
     dataset_df.set_index("mol_id", inplace=True)
     smiles_strings = dataset_df.loc[:,"smiles"] #series
     valid_sorted_folders = order_MDsimulations_folders(MDsimulations_path) #all valid folders sorted (so valid molecules)
 
-    clustering(smiles_strings, valid_sorted_folders)
+    clustering(smiles_strings, valid_sorted_folders, random_conformations)
     #NOTE: something is redundant
     # dic = {}
     # create_pdb_with_one_rmsd(smiles_strings, valid_sorted_folders, goal_amount_of_clusters=20)
@@ -328,4 +352,12 @@ def main():
         # shutil.move(output_pdb_file, dst_filename)
 
 if __name__ == "__main__":
-    main()
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    # random_conformations = 20
+    # main(random_conformations)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    random_conformations = 20
+    main(random_conformations)
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # random_conformations = 20
+    # main(random_conformations)

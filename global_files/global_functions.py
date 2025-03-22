@@ -7,6 +7,16 @@ from io import StringIO
 import numpy as np
 import os
 
+def get_targets_series(dataset):
+    """Read the original dataset csv file and get the targets + convert exp_mean to PKI.
+    Output: pandas Series with mol_id as index and PKI as the value.
+    """
+    df = pd.read_csv(dataset)
+    df['PKI'] = -np.log10(df['exp_mean [nM]'] * 1e-9)
+    
+    # Create the Series with mol_id as the index and PKI as the value
+    return pd.Series(df['PKI'].values, index=df['mol_id'])
+
 def get_smiles_list(dataset_path = pv.dataset_path_):
     '''list with tuples of all available mol_ids and the corresponding smiles string'''
     dataset_df = pd.read_csv(dataset_path)
@@ -40,6 +50,6 @@ def main(base_path):
     return
 
 if __name__ == "__main__":
-    base_path = public_variables.base_path_
+    base_path = pv.base_path_
     main(base_path)
 

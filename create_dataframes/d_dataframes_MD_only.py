@@ -72,18 +72,20 @@ def create_dataframes_MD_only(savefolder_name = 'MD only',include = [0,1,2,3,4,5
 
     always_keep = ['mol_id', 'PKI']
     if write_out:
-        for name, df in list(dfs_in_dict.items()):
-            if name.endswith('c') or name.endswith('ns'):
-                # Save the cleaned DataFrame to a CSV
-                df.to_csv(savefolder_path / Path(name + '.csv'), index=False)
-                print(f'done with {name}')
-            else:
-                # If no cleaning is needed, just save the original DataFrame
-                df.to_csv(savefolder_path / Path(name + '.csv'), index=False)
-                continue
+        dataframe_processing.save_dict_with_dfs(dict_with_dfs=dfs_in_dict, save_path=savefolder_path)
+        # for name, df in list(dfs_in_dict.items()):
+        #     if name.endswith('c') or name.endswith('ns'):
+        #         # Save the cleaned DataFrame to a CSV
+        #         df.to_csv(savefolder_path / Path(name + '.csv'), index=False)
+        #         print(f'done with {name}')
+        #     else:
+        #         # If no cleaning is needed, just save the original DataFrame
+        #         df.to_csv(savefolder_path / Path(name + '.csv'), index=False)
+        #         continue
     return dfs_in_dict
 
 def main(savefolder_name='MD only', include=[], to_keep = ['SASA','num of H-bonds','H-bonds within 0.35A', 'Total dipole moment', 'Ligand Bond energy', 'Urey-Bradley energy', 'Torsional energy', 'Coul-SR: Lig-Lig','LJ-SR: Lig-Lig','Coul-14: Lig-Lig','LJ-14: Lig-Lig','Coul-SR: Lig-Sol','Coul-SR: Lig-Sol'], write_out = True):
+    include = ['CLt100_cl10_c10']
     dfs_in_dic = create_dataframes_MD_only(savefolder_name, include, to_keep, write_out)
     return dfs_in_dic
 

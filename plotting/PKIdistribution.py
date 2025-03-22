@@ -62,8 +62,11 @@ def plot_column_distribution(csv_file, bin_size=0.1):
     # plt.show()
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
-    # Example usage
-    csv_file_path = pv.dataset_path_
-    print(csv_file_path)
-    plot_column_distribution(csv_file_path, bin_size=0.1) #0.188 looks awefully close to ppim
+    for protein in DatasetProtein:
+        pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=protein)
+        plot_column_distribution(pv.dataset_path_, bin_size=0.1)
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # # Example usage
+    # csv_file_path = pv.dataset_path_
+    # print(csv_file_path)
+    # plot_column_distribution(csv_file_path, bin_size=0.1) #0.188 looks awefully close to ppim

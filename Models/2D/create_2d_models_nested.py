@@ -9,7 +9,7 @@ from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 from sklearn.model_selection import StratifiedKFold, KFold, StratifiedGroupKFold
 from sklearn.preprocessing import StandardScaler
-
+from plotting import A_true_vs_pred_plotting
 import matplotlib.pyplot as plt
 import itertools
 import pickle
@@ -281,7 +281,7 @@ def Kfold_Cross_Validation_incl_grouped_SVM(df, hyperparameter_grid, kfold_, sco
     df_features = df.drop(columns=['mol_id', 'PKI', 'conformations (ns)'], axis=1, errors='ignore')
 
     # Perform grid search with the SVM model
-    grid_search = svm_model.hyperparameter_tuning(df_features, targets, hyperparameter_grid, cv=custom_splits, scoring_=scoring_)
+    grid_search = svm_model.hyperparameter_tuning(df_features, targets, pv.HYPERPARAMETER_GRID, cv=custom_splits, scoring_=scoring_)
 
     # Collect results
     df_results = pd.DataFrame(grid_search.cv_results_)
@@ -301,6 +301,35 @@ def Kfold_Cross_Validation_incl_grouped_SVM(df, hyperparameter_grid, kfold_, sco
     models['SVM'] = svm_model
     
     return models, ModelResults_
+
+
+def create_true_pred_dataframe(name, df, dfs_path, all_idx_ytrue_pki_series,all_idx_ypredicted_pki_series):
+
+    #idx, mol_id, conformations (ns) of the whole df
+    mol_id_and_ns = df[['mol_id'] + (['conformations (ns)'] if 'conformations (ns)' in df else [])]
+    
+    #idx, mol_id, y_true, y_pred
+    df_ytrue_ypred_pki = pd.DataFrame({
+        'mol_id': mol_id_and_ns['mol_id'],
+        'True_pKi': all_idx_ytrue_pki_series,
+        'Predicted_pKi': all_idx_ypredicted_pki_series
+    })
+    
+    # Add 'conformations (ns)' only if it exists in mol_id_and_ns. why? no need to
+    if 'conformations (ns)' in mol_id_and_ns:
+        df_ytrue_ypred_pki.insert(1, 'conformations (ns)', mol_id_and_ns['conformations (ns)'])
+
+    #make sure the sorting is nice, for better viewing. (all 10 conformations of mol_id 1 first, etc.)
+    sort_columns = ['mol_id'] + (['conformations (ns)'] if 'conformations (ns)' in df_ytrue_ypred_pki else [])
+    df_ytrue_ypred_pki = df_ytrue_ypred_pki.sort_values(by=sort_columns).reset_index(drop=True)
+
+    # Ensure the parent directory exists, save the true and predicted values in a csv file for later analysis
+    save_path = dfs_path / pv.true_predicted
+
+    save_path.mkdir(parents=True, exist_ok=True)
+    df_ytrue_ypred_pki.to_csv(save_path / f'{name}_true_predicted.csv', index=False)
+
+    return df_ytrue_ypred_pki
 
 def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, scoring = 'r2'):
     """
@@ -454,7 +483,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
 
         model_instance = pv.ML_MODEL.model #create random forest model for example
         
-        grid_search = hyperparameter_tuning(model_instance, X, y, pv.ML_MODEL.hyperparameter_grid, cv=custom_inner_splits, scoring=scoring)
+        grid_search = hyperparameter_tuning(model_instance, X, y, pv.HYPERPARAMETER_GRID, cv=custom_inner_splits, scoring=scoring)
         df_results = pd.DataFrame(grid_search.cv_results_)
         all_best_params_outer.append(grid_search.best_params_)
         # print(df_results)
@@ -503,7 +532,8 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
     mean_scores['MAE'] = mae_value
 
     # create_true_pred_dataframe(name, df, dfs_path, all_idx_ytrue_pki_series, all_idx_ypredicted_pki_series)
-    
+    df_ytrue_ypred_pki = create_true_pred_dataframe(name, df, dfs_path, all_idx_ytrue_pki_series,all_idx_ypredicted_pki_series)
+    A_true_vs_pred_plotting.plot_avg_predicted_vs_real_pKi(df_ytrue_ypred_pki, name, dfs_path)
     # Store the results for the fold
     results_all = {}
     for metric, fold_list in fold_results.items():
@@ -517,11 +547,11 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
             **{f"split{split_idx}_hyperparameter_set": all_best_params_outer[split_idx] for split_idx in range(len(all_best_params_outer))},  # Loop to add splits
         }
         results_all[metric] = results
-    print(results_all)
+    # print(results_all)
     return results_all
 
-def main(dataframes_master):  ###set as default, but can always change it to something else.
-    csv_file_path =  pv.dataset_path_.parent / f'2D_ECFP_{pv.PROTEIN}.csv'
+def main(dfs_2D_path):  ###set as default, but can always change it to something else.
+    csv_file_path =  dfs_2D_path / f'2D_ECFP_{pv.PROTEIN}.csv'
 
     #create folder for storing the models and results from them
     Modelresults_path = pv.dfs_2D_path / pv.Modelresults_folder_
@@ -568,7 +598,7 @@ def main(dataframes_master):  ###set as default, but can always change it to som
     # 'epsilon': [0.1],             # Standard values for error tolerance
     # 'gamma': ['scale', 0.1]             # Default and a specific small value for tuning influence
     # }
-    print(pv.ML_MODEL.hyperparameter_grid)
+
     # param_combinations = list(itertools.product(pv.ML_MODEL.hyperparameter_grid['kfold_'], parameter_grid['scoring_']))
     # print(param_combinations)
     # dic_models = {}
@@ -626,11 +656,17 @@ def main(dataframes_master):  ###set as default, but can always change it to som
 
 if __name__ == "__main__":
     # for model in Model_classic:
-    #     for protein in DatasetProtein:
-    #         pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein)
-    #         main(pv.dfs_2D_path)
-    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set='big')
     main(pv.dfs_2D_path)
+    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set='big')
+    main(pv.dfs_2D_path)
+    # for protein in DatasetProtein:
+    #     pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=protein, hyperparameter_set='big')
+    #     main(pv.dfs_2D_path)
+        # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=protein, hp_set='small')
+        # main(pv.dfs_2D_path)
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    # main(pv.dfs_2D_path)
     # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
     # main(pv.dfs_2D_path)
 

@@ -403,7 +403,7 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
         include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','c10.csv']
     #,'3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv',
     dfs_in_dict = dataframe_processing.csvfiles_to_dict_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
-    
+    print(dfs_in_dict)
     outer_folds = 10
     inner_folds = 5
     scoring = 'r2'
@@ -440,8 +440,8 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     return
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
-
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    main(pv.dfs_MD_only_path_,include_files = ['CLt100_cl10_c10'])
     # main(pv.dfs_descriptors_only_path_)
     # for model in Model_classic:
     #     print(model)
@@ -462,7 +462,7 @@ if __name__ == "__main__":
     # main(pv.dataframes_master_ / 'MD_new only4',include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','c10.csv'])
     # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
     # main(pv.dataframes_master_ / 'MD_new only4',include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','c10.csv'])
-    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
     # main(pv.dataframes_master_ / 'MD_new only4',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
     # main(pv.dataframes_master_ / 'MD_new onlyall',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
     # main(pv.dataframes_master_ / 'MD_new only3',include_files = ['0ns.csv','1ns.csv','c10.csv','conformations_10.csv'])
@@ -474,29 +474,29 @@ if __name__ == "__main__":
     
     
     
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
-    main(pv.dataframes_master_ / 'MD_new onlyall',include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dataframes_master_ / "desc_PCA15",include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dataframes_master_ / 'dPCA MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dataframes_master_ / 'red MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dfs_descriptors_only_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dfs_reduced_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    # main(pv.dataframes_master_ / 'MD_new onlyall',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dataframes_master_ / "desc_PCA15",include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dataframes_master_ / 'dPCA MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dataframes_master_ / 'red MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dfs_descriptors_only_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dfs_reduced_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
 
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
-    main(pv.dataframes_master_ / 'MD_new onlyall',include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dataframes_master_ / "desc_PCA15",include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dataframes_master_ / 'dPCA MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dataframes_master_ / 'red MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dfs_descriptors_only_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dfs_reduced_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    # main(pv.dataframes_master_ / 'MD_new onlyall',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dataframes_master_ / "desc_PCA15",include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dataframes_master_ / 'dPCA MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dataframes_master_ / 'red MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dfs_descriptors_only_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dfs_reduced_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
 
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
-    main(pv.dataframes_master_ / 'MD_new onlyall',include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dataframes_master_ / "desc_PCA15",include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dataframes_master_ / 'dPCA MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dataframes_master_ / 'red MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dfs_descriptors_only_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
-    main(pv.dfs_reduced_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # main(pv.dataframes_master_ / 'MD_new onlyall',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dataframes_master_ / "desc_PCA15",include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dataframes_master_ / 'dPCA MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dataframes_master_ / 'red MD_new',include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dfs_descriptors_only_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
+    # main(pv.dfs_reduced_path_,include_files = ['0ns.csv','1ns.csv','c10.csv'])
 
 
 

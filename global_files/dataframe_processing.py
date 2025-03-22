@@ -1,9 +1,11 @@
 import math
 import numpy as np
 import os
+import ast
 import MDAnalysis as mda
 from MDAnalysis.coordinates import PDB
 import rdkit
+from typing import Dict
 from global_files import public_variables as pv
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -150,9 +152,9 @@ def get_targets(dataset):
     df['PKI'] = -np.log10(df['exp_mean [nM]'] * 1e-9)
     return df[['mol_id','PKI']]
 
-def create_dfs_dict(df_path, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20']):
-    print(f'create dfs in dict for {df_path}')
-    totaldf = pd.read_csv(df_path)
+def create_dfs_dict(totaldf_path, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20']):
+    print(f'create dfs in dict for {totaldf_path}')
+    totaldf = pd.read_csv(totaldf_path)
     target_df = get_targets(pv.dataset_path_)
     # Check if conformations or picoseconds
     dfs_in_dict = {}
@@ -223,22 +225,110 @@ def create_dfs_dict(df_path, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,10,'c1
                 if end_time.is_integer():  
                     end_time = int(end_time)
                 dfs_in_dict[f't{start_time}_{end_time}c{num_conformations}'] = filtered_df
+        elif isinstance(x, str) and x.startswith("CLt"):
+            CLtarget, clusters, conformations = x.split('_')
+            CLtarget = int(CLtarget[3:])
+            clusters = int(clusters[2:])
+            conformations = int(conformations[1:])
+            cluster_information_path = pv.base_path_ / 'dataZ' /'clustering' / f'clustering_information_{pv.PROTEIN}.csv'
+            cluster_information_df = pd.read_csv(cluster_information_path)
+            
+            # Initialize a list to store all the data for each cluster
+            all_clusters_data = []
+            for i in range(1,clusters+1):
+                # Extract the first cluster size and find the closest match to CLtarget
+                cluster_information_df['First Cluster Size'] = cluster_information_df['Cluster Sizes'].apply(lambda x: ast.literal_eval(x)[0])
+                closest_rows_df = cluster_information_df.loc[
+                    cluster_information_df.groupby('mol_id')['First Cluster Size'].apply(lambda group: (group - CLtarget).abs().idxmin())
+                ]
+                
+                # Copy relevant columns and convert string representation of lists to actual lists
+                # Copy relevant columns and convert string representation of lists to actual lists
+                target_conformations = closest_rows_df[['mol_id', 'random conformations per cluster']].copy()
+                
+                # Convert string representation of lists to actual lists (if needed)
+                target_conformations['random conformations per cluster'] = target_conformations['random conformations per cluster'].apply(
+                    lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+                )
+                
+                # Extract the i-th list from each nested list and keep only the first 10 values
+                target_conformations['random conformations per cluster'] = target_conformations['random conformations per cluster'].apply(
+                    lambda lst: lst[i-1][:conformations] if isinstance(lst, list) and len(lst) > i-1 and isinstance(lst[i-1], list) else None
+                )
+                
+                # Divide each value in the selected list by 100
+                target_conformations['random conformations per cluster'] = target_conformations['random conformations per cluster'].apply(
+                    lambda lst: [x / 100 for x in lst] if isinstance(lst, list) else None
+                )
+                
+                # Explode the lists into separate rows (for each conformation)
+                expanded_target_conformations = target_conformations.explode('random conformations per cluster')
+
+                # Rename column to match totaldf and merge
+                expanded_target_conformations.rename(columns={'random conformations per cluster': 'conformations (ns)'}, inplace=True)
+                filtered_df = totaldf.merge(expanded_target_conformations, on=['mol_id', 'conformations (ns)'])
+                filtered_df.sort_values(by=['mol_id', 'conformations (ns)'], inplace=True)
+                #filtered_df.to_csv(save_path / f'CLtarget{CLtarget}_cluster{i}_c{conformations}.csv', index=False)
+                dfs_in_dict[f'CLt{CLtarget}_cl{i}_c{conformations}'] = filtered_df
+
+                # Instead of appending the entire filtered_df, select only one row per mol_id
+                # Here, you can choose how to select the row (e.g., first row, random row, etc.)
+                selected_rows = filtered_df.groupby('mol_id').head(1)  # This selects the first row per mol_id
+                
+                # Store only the selected rows in the list
+                all_clusters_data.append(selected_rows)
+            # After processing all clusters, concatenate the selected rows
+            combined_clusters_df = pd.concat(all_clusters_data, ignore_index=True)
+            combined_clusters_df.sort_values(by=['mol_id', 'conformations (ns)'], inplace=True)
+            # Store this DataFrame in the dictionary for the mol_id with 10 conformations from 10 clusters
+            dfs_in_dict[f'CLt{CLtarget}_cl{i}x_c{conformations}'] = combined_clusters_df
+
+
     sorted_keys_list = sort_columns(list(dfs_in_dict.keys()))
     dfs_in_dict = {key: dfs_in_dict[key] for key in sorted_keys_list if key in dfs_in_dict}
     return dfs_in_dict
+
 ###############################################################################
 
 def csvfiles_to_dict_include(dfs_path, include_files: list = []):
-    '''xxx
-    '''
+    '''xxx'''
     if include_files is None:
         include_files = []
+    
     dict = {}
-    for csv_file in dfs_path.glob('*.csv'):
-        if csv_file.name in include_files:
-            dict[csv_file.stem] = pd.read_csv(csv_file)
+    
+    # Loop through the include_files list first
+    for include_file in include_files:
+        # Check if the file exists in the folder
+        csv_file = dfs_path / include_file
+        if csv_file.exists():
+            dict[include_file] = pd.read_csv(csv_file)
+        elif include_file.startswith("CLt"):  # Additional check if it's in the "CLt" format
+            # Try to parse and read the corresponding cluster files
+            print('true')
+            try:
+                CLtarget, clusters, conformations = include_file.split('_')
+                CLtarget = int(CLtarget[3:])  # Extract number after 'CLt'
+                clusters = int(clusters[2:])  # Extract number after 'cl'
+                conformations = int(conformations[1:])  # Extract number after 'c'
+                
+                # Loop through clusters and read corresponding CSV files
+                for i in range(1, clusters + 1):
+                    csv_file_stem = f'CLt{CLtarget}_cl{i}_c{conformations}'
+                    cluster_file = dfs_path / 'clustering folder' / (csv_file_stem + '.csv')
+                    print(cluster_file)
+                    if cluster_file.exists():
+                        dict[csv_file_stem] = pd.read_csv(cluster_file)
+                csv_file_stem = f'CLt{CLtarget}_cl{clusters}x_c{conformations}'
+                cluster_file = dfs_path / 'clustering folder' / (csv_file_stem + '.csv')
+                print(cluster_file)
+                if cluster_file.exists():
+                    dict[csv_file_stem] = pd.read_csv(cluster_file)
+            except ValueError:
+                print(f"Skipping file with unexpected name format: {include_file}")
         else:
-            continue
+            print(f"File not found in folder: {include_file}")
+
     return dict
 
 ###############################################################################
@@ -248,7 +338,7 @@ def categorize_columns(column_list):
         "ns": re.compile(r'^(\d+(\.\d+)?)ns$'),
         "conformations": re.compile(r'^c(\d+)$'),
         "minimized_conformations": re.compile(r'^minimized_conformations_(\d+)$'),
-        "clustering": re.compile(r'^clustering_target(\d+)_cluster(\d+)$')
+        "CLtarget": re.compile(r'^CLtarget(\d+)_cluster(\d+)$')
     }
 
     categorized = {key: [] for key in patterns}
@@ -273,32 +363,37 @@ def sort_columns(column_list):
     2. 'c' (conformations) columns (numerically)
     3. 'minimized_conformations' columns (numerically)
     4. Other columns (alphabetically)
-    5. 'clustering' columns (target descending, cluster ascending)
+    5. 'CLtarget' columns (target descending, cluster ascending)
     """
     categorized, other_columns = categorize_columns(column_list)
 
-    clustering_pattern = re.compile(r'^clustering_target(\d+)_cluster(\d+)$')
+    clustering_pattern = re.compile(r'^CLtarget(\d+)_cluster(\d+)$')
 
     sorted_columns = (
-        sorted(categorized["ns"], key=lambda x: float(x[:-2])) +
-        sorted(categorized["conformations"], key=lambda x: int(x[1:])) +
-        sorted(categorized["minimized_conformations"], key=lambda x: int(x.split('_')[1])) +
-        sorted(other_columns) +
-        sorted(categorized["clustering"], key=lambda x: (
-            -int(clustering_pattern.match(x).group(1)), 
-            int(clustering_pattern.match(x).group(2))
+        sorted(categorized["ns"], key=lambda x: float(x[:-2])) +  # Sorting ns columns numerically
+        sorted(categorized["conformations"], key=lambda x: int(x[1:])) +  # Sorting conformations numerically
+        sorted(categorized["minimized_conformations"], key=lambda x: int(x.split('_')[1])) +  # Sorting minimized_conformations numerically
+        sorted(other_columns) +  # Sorting other columns alphabetically
+        sorted(categorized["CLtarget"], key=lambda x: (
+            -int(clustering_pattern.match(x).group(1)),  # Sorting by target number (descending)
+            int(clustering_pattern.match(x).group(2))  # Sorting by cluster number (ascending)
         ))
     )
 
     return sorted_columns
 
 ###############################################################################
-def save_dict_with_dfs(dict_with_dfs, save_path):
+def save_dict_with_dfs(dict_with_dfs: Dict[str, pd.DataFrame], save_path):
     '''save the dataframes that are in the dictionary to the path, using the key as filename'''
     save_path.mkdir(parents=True, exist_ok=True)
-    
+    save_path_clustering = save_path / 'clustering folder'
+    save_path_clustering.mkdir(parents=True, exist_ok=True)
+
     for name, df in dict_with_dfs.items():
-        save_df(save_path=save_path, df=df, name=name)
+        if isinstance(name, str) and name.startswith('CLt'):
+            save_df(save_path=save_path_clustering, df=df, name=name)
+        else:
+            save_df(save_path=save_path, df=df, name=name)
 
 def save_df(save_path, df, name):
     df.to_csv(save_path / f'{name}.csv', index=False)
