@@ -229,10 +229,10 @@ def nested_data_dict(dfs_path, modelresults_dict, idlist_include_files: list = N
     outer_dict = defaultdict(lambda: defaultdict(), modelresults_dict)
     
     model_results_folder = dfs_path / pv.Modelresults_folder_
-    
+    print(model_results_folder)
     if model_results_folder.exists():
         for csv_file in model_results_folder.glob("*.csv"): #csv_file = results_k10_r2 etc. of 'descriptors only' for example. whole path
-            if not csv_file.name.endswith("temp.csv") and "R2" in csv_file.name:
+            if not csv_file.name.endswith("temp.csv") and "R2" in csv_file.name and not "train" in csv_file.name:
                 print(csv_file)
                 print('#########################################')
                 try:
@@ -405,11 +405,12 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
     print(save_plot_folder)
     # Define colors and labels for different subfolders
     colors = {
+
         pv.dfs_descriptors_only_path_.name: 'lightblue',
         pv.dfs_reduced_path_.name: 'lightgreen',
         pv.dfs_reduced_and_MD_path_.name: 'lightcoral',
         pv.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
-
+        pv.dfs_dPCA_MD_path_.name: 'orchid',
         "PCA": "salmon",
         "2D": 'goldenrod',
         'descriptors only scaled mw': 'salmon',
@@ -441,7 +442,7 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
         pv.dfs_reduced_path_.name: f'RDkit Descriptors Red.',
         pv.dfs_reduced_and_MD_path_.name: 'RDkit Descriptors Red. + MD features',
         pv.dfs_MD_only_path_.name: 'MD features',  # Added label for "MD only"
-
+        pv.dfs_dPCA_MD_path_.name: 'desc PCA + MD',
         # pv.dfs_reduced_PCA_path_.name: 'PCA desc',
         # pv.dfs_reduced_MD_PCA_path_.name: f'PCA MD',
         # pv.dfs_reduced_and_MD_combined_PCA_path_.name: 'PCA desc + PCA MD',
@@ -490,7 +491,7 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
 
     for group_idx, (group_name, color) in enumerate(filtered_colors.items()):
         num_rows = len(modelresults_dict[group_name].values())
-        
+        print(group_name)
         for row_idx, subgroup in enumerate(modelresults_dict[group_name].keys()):
             
             split_scores = modelresults_dict[group_name][subgroup]
@@ -580,10 +581,11 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
     
     # Set xticks and labels
     xtick_labels = [
-    'minimized' if label == '0ns' else '10 conf.' if label == 'conformations_10' else label
+    'minimized' if label == '0ns' else '10 conf.' if label == 'c10' else label
     for group in modelresults_dict.values() for label in group.keys()
     ]
     print(xtick_labels)
+    print(positions)
     plt.xticks(ticks=positions, labels=xtick_labels, rotation=45, ha='right')
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
@@ -603,6 +605,7 @@ def main(dfs_paths = [pv.dfs_descriptors_only_path_]):
     all_modelresults_dict = {}
 
     for dfs_path, list_to_include in dfs_paths:
+        print(dfs_path)
         # print(dfs_entry)
         # Check if the entry is a tuple (path, list) or just a path
         # if isinstance(dfs_entry, tuple):
@@ -634,7 +637,7 @@ if __name__ == "__main__":
     exclude_stable2 = ['stable_conformations']
     exclude_stable = ['stable_conformations','conformations_10','conformations_20','minimized_conformations_10']
     include_files=['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_50']
-    include_files=['0ns','1ns']
+    include_files=['2D','0ns','1ns','2ns','c10']
 
     # dfs_paths.append((public_variables.dataframes_master_ / '2D', []))
     # dfs_paths.append((public_variables.dfs_descriptors_only_path_, exclude_files_clusters + exclude_stable))
@@ -651,13 +654,19 @@ if __name__ == "__main__":
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters10+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters30 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters40 + exclude_files_other))
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
-    # include_files=['0ns','1ns','3ns','5ns','conformations_10']
-    # for path in pv.get_paths():
-    # dfs_paths.append((pv.dfs_descriptors_only_path_, include_files))
-    # dfs_paths.append((pv.dfs_reduced_path_, include_files))
-    dfs_paths.append((pv.dataframes_master_ / 'red MD_old', include_files))
-    dfs_paths.append((pv.dataframes_master_ / 'MD_old only', include_files))
+    for model in Model_classic:
+        dfs_paths = []
+        pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set='big')
+        # include_files=['0ns','1ns','3ns','5ns','conformations_10']
+        # for path in pv.get_paths():
+        dfs_paths.append((pv.dfs_2D_path, include_files))
+        dfs_paths.append((pv.dfs_descriptors_only_path_, include_files))
+        dfs_paths.append((pv.dfs_reduced_path_, include_files))
+        dfs_paths.append((pv.dfs_reduced_and_MD_path_, include_files))
+        dfs_paths.append((pv.dfs_MD_only_path_, include_files))
+        # dfs_paths.append((pv.dfs_dPCA_path_, include_files))
+        dfs_paths.append((pv.dfs_dPCA_MD_path_, include_files))
+        main(dfs_paths)
 
     # dfs_paths.append((pv.dataframes_master_ / 'MD_new only', include_files))
 

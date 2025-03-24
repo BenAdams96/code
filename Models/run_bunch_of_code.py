@@ -60,117 +60,102 @@ if __name__ == "__main__":
     #     create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
     #classic part
     set = 'big'
-    for model in Model_classic:
-        print(model)
-        include_files = [0,2,4,6,8,10,'c10','xCLt100_cl10_c10'] #'ta10c10'
-        pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1, hyperparameter_set=set)
-        create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
 
-        include_files = [0,2,4,6,8,10,'c10','xCLt50_cl10_c10'] #'ta10c10'
-        pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=set)
-        create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
-
-        include_files = [0,2,4,6,8,10,'c10'] # 'ta10c10'
-        pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD, hyperparameter_set=set)
-        create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
-
-        include_files = [0,1,2,3,4,'c10'] # 'ta4c10' 
-        pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set=set)
-        create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
-
-    include_files = [0,2,4,6,8,10,'c10','xCLt100_cl10_c10']
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
-    deeplearning_create_models_small.main(pv.dfs_descriptors_only_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_reduced_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_reduced_and_MD_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_MD_only_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_dPCA_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_dPCA_MD_path_,random_splitting = False,include_files = include_files)
     
-    include_files = [0,2,4,6,8,10,'c10','xCLt50_cl10_c10']
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
-    deeplearning_create_models_small.main(pv.dfs_descriptors_only_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_reduced_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_reduced_and_MD_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_MD_only_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_dPCA_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_dPCA_MD_path_,random_splitting = False,include_files = include_files)
+    # include_files = [0,2,4,6,8,10,'c10','xCLt50_cl10_c10'] #'ta10c10'
+    # pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=set)
+    # create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    # create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
+    # create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    # create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
+    # create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
+    # create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
 
-    include_files = [0,2,4,6,8,10,'c10']
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
-    deeplearning_create_models_small.main(pv.dfs_descriptors_only_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_reduced_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_reduced_and_MD_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_MD_only_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_dPCA_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_dPCA_MD_path_,random_splitting = False,include_files = include_files)
+    include_files = [0,2,4,6,8,10,'c10'] # 'ta10c10'
+    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD, hyperparameter_set=set)
+    create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
+    create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
+    create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
+    create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
 
-    include_files = [0,1,2,3,4,'c10']
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
-    deeplearning_create_models_small.main(pv.dfs_descriptors_only_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_reduced_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_reduced_and_MD_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_MD_only_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_dPCA_path_,random_splitting = False,include_files = include_files)
-    deeplearning_create_models_small.main(pv.dfs_dPCA_MD_path_,random_splitting = False,include_files = include_files)
+    # include_files = [0,1,2,3,'c10']
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
+    # deeplearning_create_models_small.main(pv.dfs_descriptors_only_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_reduced_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_reduced_and_MD_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_MD_only_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_dPCA_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_dPCA_MD_path_,random_splitting = False,include_files = include_files)
 
-    for model in Model_classic:
-        print(model)
-        include_files = ['ta10c10'] #'ta10c10'
-        pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1, hyperparameter_set=set)
-        create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
 
-        include_files = ['ta10c10'] #'ta10c10'
-        pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=set)
-        create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
+    # include_files = [0,2,4,6,8,10,'c10','xCLt100_cl10_c10']
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    # deeplearning_create_models_small.main(pv.dfs_descriptors_only_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_reduced_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_reduced_and_MD_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_MD_only_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_dPCA_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_dPCA_MD_path_,random_splitting = False,include_files = include_files)
+    
+    # include_files = [0,2,4,6,8,10,'c10','xCLt50_cl10_c10']
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    # deeplearning_create_models_small.main(pv.dfs_descriptors_only_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_reduced_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_reduced_and_MD_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_MD_only_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_dPCA_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_dPCA_MD_path_,random_splitting = False,include_files = include_files)
 
-        include_files = ['ta10c10'] # 'ta10c10'
-        pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD, hyperparameter_set=set)
-        create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
+    # include_files = [0,2,4,6,8,10,'c10']
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # deeplearning_create_models_small.main(pv.dfs_descriptors_only_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_reduced_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_reduced_and_MD_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_MD_only_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_dPCA_path_,random_splitting = False,include_files = include_files)
+    # deeplearning_create_models_small.main(pv.dfs_dPCA_MD_path_,random_splitting = False,include_files = include_files)
 
-        include_files = ['ta4c10'] # 'ta4c10' 
-        pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set=set)
-        create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
-        create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
+    
+
+    # for model in Model_classic:
+    #     print(model)
+    #     include_files = ['ta10c10'] #'ta10c10'
+    #     pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1, hyperparameter_set=set)
+    #     create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
+
+    #     include_files = ['ta10c10'] #'ta10c10'
+    #     pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=set)
+    #     create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
+
+    #     include_files = ['ta10c10'] # 'ta10c10'
+    #     pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD, hyperparameter_set=set)
+    #     create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
+
+    #     include_files = ['ta4c10'] # 'ta4c10' 
+    #     pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set=set)
+    #     create_classic_models_nested.main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_reduced_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_MD_only_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_dPCA_path_,include_files = include_files)
+    #     create_classic_models_nested.main(pv.dfs_dPCA_MD_path_,include_files = include_files)
 
     
     # for model in Model_classic:

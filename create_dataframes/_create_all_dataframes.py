@@ -16,7 +16,7 @@ def main(include):
     # b_dataframes_reduced.main(threshold=pv.correlation_threshold_, include = include, write_out=True)
     # c_dataframes_red_MD.main(savefolder_name=pv.dfs_reduced_and_MD_path_, include = include, threshold=pv.correlation_threshold_, to_keep=to_keep)
     # d_dataframes_MD_only.main(savefolder_name='MD only', include = include, to_keep=to_keep,write_out=True)
-    # e_dataframes_DescPCA.main(components=15, include = include, write_out=True)
+    e_dataframes_DescPCA.main(components=15, include = include, write_out=True)
     f_dataframes_DescPCA_MD.main(savefolder_name=pv.dfs_dPCA_MD_path_, include = include, components=15, to_keep=to_keep)
 
 

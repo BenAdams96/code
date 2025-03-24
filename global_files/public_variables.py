@@ -39,7 +39,7 @@ def update_paths():
     dfs_2D_path = dataframes_master_ / '2D'
     dfs_descriptors_only_path_ = dataframes_master_ / 'descriptors only'
     dfs_reduced_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}'
-    dfs_dPCA_path_ = dataframes_master_ / f'dPCA_{components}'
+    dfs_dPCA_path_ = dataframes_master_ / f'desc_PCA{components}'
     dfs_reduced_and_MD_path_ = dataframes_master_ / f'reduced_t{correlation_threshold_}_MD'
     dfs_dPCA_MD_path_ = dataframes_master_ / f'dPCA_{components}_MD'
     dfs_MD_only_path_ = dataframes_master_ / 'MD only'

@@ -232,7 +232,7 @@ def nested_data_dict(dfs_path, modelresults_dict, idlist_include_files: list = N
     
     if model_results_folder.exists():
         for csv_file in model_results_folder.glob("*.csv"): #csv_file = results_k10_r2 etc. of 'descriptors only' for example. whole path
-            if not csv_file.name.endswith("temp.csv") and "R2" in csv_file.name:
+            if not csv_file.name.endswith("temp.csv") and "R2" in csv_file.name and not "train" in csv_file.name:
                 print(csv_file)
                 print('#########################################')
                 try:
@@ -403,7 +403,7 @@ def boxplots_compare_groups(ax, path, csv_filename, modelresults_dict):
         pv.dfs_reduced_path_.name: 'lightgreen',
         pv.dfs_reduced_and_MD_path_.name: 'lightcoral',
         pv.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
-
+        pv.dfs_dPCA_MD_path_.name: 'darkviolet',
         "PCA": "salmon",
         "2D": 'goldenrod',
         'descriptors only scaled mw': 'salmon',
@@ -436,7 +436,7 @@ def boxplots_compare_groups(ax, path, csv_filename, modelresults_dict):
         pv.dfs_reduced_path_.name: f'Reduced RDkit 3D features',
         pv.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
         pv.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
-
+        pv.dfs_dPCA_MD_path_.name: 'desc PCA + MD',
         # pv.dfs_reduced_PCA_path_.name: 'PCA desc',
         # pv.dfs_reduced_MD_PCA_path_.name: f'PCA MD',
         # pv.dfs_reduced_and_MD_combined_PCA_path_.name: 'PCA desc + PCA MD',
@@ -514,6 +514,9 @@ def boxplots_compare_groups(ax, path, csv_filename, modelresults_dict):
     if pv.PROTEIN.name == 'pparD':
         min_value = -0.5
         max_value = 0.8
+    if pv.PROTEIN.name == 'CLK4':
+        min_value = -0.5
+        max_value = 0.8
     
     # Set title and labels
     # ax.set_title(f"{pv.ML_MODEL} Boxplot results for Kfold=10 using {pv.DESCRIPTOR} 3D descriptors")
@@ -546,12 +549,12 @@ def boxplots_compare_groups(ax, path, csv_filename, modelresults_dict):
 
 
 def create_subplots():
-    models = [Model_deep.DNN, Model_deep.LSTM] #, Model_classic.XGB, Model_classic.SVM
-    dataset_proteins = [DatasetProtein.JAK1, DatasetProtein.GSK3, DatasetProtein.pparD] #, DatasetProtein.GSK3, DatasetProtein.pparD
+    models = [Model_classic.RF, Model_classic.XGB, Model_classic.SVM] #, Model_classic.XGB, Model_classic.SVM
+    dataset_proteins = [DatasetProtein.CLK4] #, DatasetProtein.GSK3, DatasetProtein.pparD
 
     
     include_files = ['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_50']
-    include_files = ['0ns','1ns','conformations_10','conformations_50','conformations_100']
+    include_files = ['0ns','1ns','c10']
     fig, axes = plt.subplots(len(dataset_proteins), len(models), figsize=(12, 12))  # Swapped order
     # Convert to 2D array if there is only one row or column
     if len(dataset_proteins) == 1:
@@ -567,16 +570,24 @@ def create_subplots():
         for i, model in enumerate(models):  # Inner loop is models
             print(model)
             all_modelresults_dict = {}
-            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein)
+            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein, hyperparameter_set='big')
 
             # Collect paths
             dfs_paths = [
-                # (pv.dfs_2D_path, ['2D']),
+                (pv.dfs_2D_path, ['2D']),
                 (pv.dfs_descriptors_only_path_, include_files),
+                (pv.dfs_reduced_path_, include_files),
+
+                (pv.dfs_reduced_and_MD_path_, include_files),
+
+                (pv.dfs_MD_only_path_, include_files),
+
+                (pv.dfs_dPCA_MD_path_, include_files),
+
                 # (pv.dataframes_master_ / 'MD_old only', include_files),
-                (pv.dataframes_master_ / 'MD_new only', include_files),
-                # (pv.dataframes_master_ / 'red MD_old', include_files),
-                (pv.dataframes_master_ / 'red MD_new', include_files),
+                # (pv.dataframes_master_ / 'MD_new only', include_files),
+                # # (pv.dataframes_master_ / 'red MD_old', include_files),
+                # (pv.dataframes_master_ / 'red MD_new', include_files),
                 # (pv.dataframes_master_ / 'MDnewPCA', include_files),
                 
                 # (pv.dfs_reduced_path_, include_files),

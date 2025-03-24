@@ -22,7 +22,7 @@ class Model_classic(Enum):
 
     SVM = ('SVM', SVR, 
            {'small': {"C": [0.1], "kernel": ["linear", "rbf"], "gamma": ['scale']},
-            'big': {"C": [0.01, 0.1, 1, 10], "kernel": ["linear", "rbf"], 
+            'big': {"C": [0.01, 0.1, 1], "kernel": ["linear", "rbf"], 
                       "gamma": ['scale']}})
 
     model: Union[RandomForestRegressor, XGBRegressor, SVR]
