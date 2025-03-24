@@ -15,8 +15,8 @@ DESCRIPTOR: Descriptor = Descriptor.WHIM
 PROTEIN: DatasetProtein = DatasetProtein.JAK1
 HYPERPARAMETER_SET = 'small'
 HYPERPARAMETER_GRID = ML_MODEL._hyperparameter_grid[HYPERPARAMETER_SET]
-correlation_threshold_ = 0.8
-components = 20
+correlation_threshold_ = 0.85
+components = 15
 MDfeatures = ["Bond","U-B","Proper-Dih.","Coul-SR:Other-Other","LJ-SR:Other-Other","Coul-14:Other-Other","LJ-14:Other-Other","Coul-SR:Other-SOL","LJ-SR:Other-SOL"]
 # rerun_MD_features = ["Coul-SR:Other-Other","LJ-SR:Other-Other","Coul-14:Other-Other","LJ-14:Other-Other","Coul-SR:Other-SOL","LJ-SR:Other-SOL"]
 

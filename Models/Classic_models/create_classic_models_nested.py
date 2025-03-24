@@ -5,11 +5,12 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.tree import export_text
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-
+import shap
 from global_files import dataframe_processing, csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 from sklearn.model_selection import StratifiedKFold, KFold, StratifiedGroupKFold
+from plotting import A_true_vs_pred_plotting
 import matplotlib.pyplot as plt
 import itertools
 import pickle
@@ -22,6 +23,34 @@ import pandas as pd
 import math
 import re
 import os
+
+def save_average_feature_importance_plot(average_feature_importance, feature_names, save_path, name):
+    """
+    Saves a plot of the average feature importance across all folds using SHAP.
+
+    Parameters:
+    - average_feature_importance: The mean of SHAP values across all folds (array of feature importances)
+    - feature_names: List of feature names (same order as the columns in X)
+    - save_path: Path where the plot should be saved
+    """
+    
+    # If average_feature_importance is a dictionary, extract its values
+    if isinstance(average_feature_importance, dict):
+        average_feature_importance = np.mean(list(average_feature_importance.values()), axis=0)
+    
+    # Create a bar plot for the average feature importance
+    plt.figure(figsize=(10, 6))
+    feature_idx = np.argsort(average_feature_importance)  # Sort feature importances
+    plt.barh(range(len(average_feature_importance)), average_feature_importance[feature_idx], align='center')
+    plt.yticks(range(len(average_feature_importance)), np.array(feature_names)[feature_idx])
+    plt.xlabel("Mean Absolute SHAP Value")
+    plt.ylabel("Features")
+    plt.title("Average Feature Importance Across Folds")
+    plt.gca().invert_yaxis()  # Invert y-axis to display most important features at the top
+    
+    # Save the plot as a file
+    plt.savefig(save_path / f'shap_average_feature_importance_{name}')
+    plt.close()
 
 def save_fold_results(results, metric, ModelResults, Modelresults_path):
     # Process each metric separately
@@ -112,7 +141,7 @@ def create_true_pred_dataframe(name, df, dfs_path, all_idx_ytrue_pki_series,all_
     save_path.mkdir(parents=True, exist_ok=True)
     df_ytrue_ypred_pki.to_csv(save_path / f'{name}_true_predicted.csv', index=False)
 
-    return
+    return df_ytrue_ypred_pki
 
 def plot_feature_importance(X, fold_feature_importance, dfs_path, name):
     # Assuming 'best_model' is fitted after hyperparameter tuning
@@ -183,6 +212,9 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         'MSE': [],
         'MAE': []
     }
+    X_all_folds = []
+    shap_values_per_fold = {}
+    feature_importance_per_fold = {}
     r2_train_scores = []
     fold_feature_importance = []
     custom_outer_splits = []
@@ -226,7 +258,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         # Split data (use X because we dont want to incorperate the columns 'pki', 'mol_id', 'conformations (ns)')
         X_train, X_test = X.loc[train_idx_all], X.loc[test_idx_all]
         y_train, y_test = y.loc[train_idx_all], y.loc[test_idx_all]
-        
+        X_all_folds.append(X_test)
         groups_train = df.loc[X_train.index, 'mol_id']  # Train set molecule IDs (series with index train_full_idxs and all molids duplicate times) 
         groups_test = df.loc[X_test.index, 'mol_id']  # Test set molecule IDs
 
@@ -284,10 +316,10 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
             fold_assignments_df.loc[fold_assignments_df["mol_id"].isin(train_inner_mol_ids), inner_col] = "train"
             fold_assignments_df.loc[fold_assignments_df["mol_id"].isin(val_mol_ids), inner_col] = "val"
             fold_assignments_df[inner_col] = None
-
+        #back to outerfold
         model_instance = pv.ML_MODEL.model #create random forest model for example
-        
-        grid_search = hyperparameter_tuning(model_instance, X, y, pv.ML_MODEL.hyperparameter_grid, cv=custom_inner_splits, scoring=scoring)
+
+        grid_search = hyperparameter_tuning(model_instance, X, y, pv.HYPERPARAMETER_GRID, cv=custom_inner_splits, scoring=scoring)
         df_results = pd.DataFrame(grid_search.cv_results_)
         print(df_results)
         all_best_params_outer.append(grid_search.best_params_)
@@ -303,6 +335,14 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
 
             # Store the feature importance for the current fold
             fold_feature_importance.append(importance)
+
+            # # Create SHAP explainer and compute SHAP values for the test set
+            # explainer = shap.TreeExplainer(best_model)
+            # shap_values = explainer.shap_values(X_test)
+
+            # # Store SHAP values and feature importance for the current fold
+            # shap_values_per_fold[outer_fold] = shap_values
+            # feature_importance_per_fold[outer_fold] = np.abs(shap_values).mean(axis=0)  # Mean importance per feature
 
         mol_id_for_fold = df.loc[train_idx_all, 'mol_id']
         y_train_average = y_train.groupby(mol_id_for_fold).mean()
@@ -332,8 +372,13 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         #get two series with idx and pki. every outerfold it adds the new test part.
         all_idx_ytrue_pki_series = pd.concat([all_idx_ytrue_pki_series, y_test]).sort_index() #pd Series of all true pki values
         all_idx_ypredicted_pki_series = pd.concat([all_idx_ypredicted_pki_series, pd.Series(y_pred, index=y_test.index)]).sort_index()
+    
     if pv.ML_MODEL.name != 'SVM':
+        # average_feature_importance = np.mean(list(feature_importance_per_fold.values()), axis=0)
+        # save_average_feature_importance_plot(average_feature_importance, X.columns, dfs_path, name)
         plot_feature_importance(X, fold_feature_importance, dfs_path, name)
+
+        # X_all = np.concatenate(X_all_folds, axis=0)
 
     mean_scores = {}
     #get once the the mean scores using all the predictions
@@ -375,8 +420,9 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
     df_existing.to_csv(output_file, index=False)
     print(f"Updated R² train scores saved to {output_file}")
 
-    create_true_pred_dataframe(name, df, dfs_path, all_idx_ytrue_pki_series, all_idx_ypredicted_pki_series)
-    
+    df_ytrue_ypred_pki = create_true_pred_dataframe(name, df, dfs_path, all_idx_ytrue_pki_series, all_idx_ypredicted_pki_series)
+    A_true_vs_pred_plotting.plot_avg_predicted_vs_real_pKi(df_ytrue_ypred_pki, name, dfs_path)
+
     # Store the results for the fold
     results_all = {}
     for metric, fold_list in fold_results.items():
@@ -400,7 +446,7 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     Modelresults_path.mkdir(parents=True, exist_ok=True)
     
     if not include_files:
-        include_files = ['0ns.csv','1ns.csv','3ns.csv','5ns.csv','7ns.csv','9ns.csv','c10.csv']
+        include_files = [0]
     #,'3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv',
     dfs_in_dict = dataframe_processing.csvfiles_to_dict_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
     print(dfs_in_dict)
@@ -440,8 +486,26 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     return
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
-    main(pv.dfs_MD_only_path_,include_files = ['CLt100_cl10_c10'])
+    include_files = [0,1,'c10','CLt50_cl10_c10']
+    hpset = ['small']
+    for x in hpset:
+        for model in Model_classic:
+            pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
+            main(pv.dfs_descriptors_only_path_,include_files = include_files)
+            pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
+            main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+            pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
+            main(pv.dfs_MD_only_path_,include_files = include_files)
+
+        pv.update_config(model_=Model_classic.XGB, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
+        main(pv.dfs_MD_only_path_,include_files = include_files)
+
+        pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
+        main(pv.dfs_descriptors_only_path_,include_files = include_files)
+        pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
+        main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+        pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
+        main(pv.dfs_MD_only_path_,include_files = include_files)
     # main(pv.dfs_descriptors_only_path_)
     # for model in Model_classic:
     #     print(model)

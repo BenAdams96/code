@@ -19,7 +19,7 @@ from global_files import dataframe_processing, csv_to_dictionary, public_variabl
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
-from MDfeatures import get_hbond_csv, get_rms, get_gyrate, get_dipoles, get_psa, get_sasa_psa, prepare_energy_files_from_MD, get_entropy
+from MDfeatures import get_hbond_csv, get_rms, get_gyrate, get_dipoles, get_sasa_psa, prepare_energy_files_from_MD
 
 
 def merge_csv_files_on_columns(energyfolder_path, csv_filenames):
@@ -65,12 +65,14 @@ def main(protein = pv.PROTEIN):
 
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
     main(pv.PROTEIN)
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
-    main(pv.PROTEIN)
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
-    main(pv.PROTEIN)
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    # main(pv.PROTEIN)
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    # main(pv.PROTEIN)
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # main(pv.PROTEIN)
     # MD_output_df = pd.read_csv(pv.MD_outputfile_)
     # MD_output_df = change_column_names(MD_output_df)
     # MD_output_df.to_csv(pv.energyfolder_path_ / 'MD_output.csv', index=False)

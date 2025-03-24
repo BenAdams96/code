@@ -345,7 +345,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
     fold_assignments_df = pd.DataFrame({"mol_id": df["mol_id"]})
 
     target_column = 'PKI'
-    
+    print(pv.ML_MODEL)
     if pv.ML_MODEL.name == 'SVM':
         print('this is SVM!')
         feature_cols = df.drop(columns=[target_column, 'mol_id', 'conformations (ns)'], errors='ignore').columns
@@ -480,9 +480,8 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
             fold_assignments_df.loc[fold_assignments_df["mol_id"].isin(train_inner_mol_ids), inner_col] = "train"
             fold_assignments_df.loc[fold_assignments_df["mol_id"].isin(val_mol_ids), inner_col] = "val"
             fold_assignments_df[inner_col] = None
-
         model_instance = pv.ML_MODEL.model #create random forest model for example
-        
+
         grid_search = hyperparameter_tuning(model_instance, X, y, pv.HYPERPARAMETER_GRID, cv=custom_inner_splits, scoring=scoring)
         df_results = pd.DataFrame(grid_search.cv_results_)
         all_best_params_outer.append(grid_search.best_params_)
@@ -656,10 +655,28 @@ def main(dfs_2D_path):  ###set as default, but can always change it to something
 
 if __name__ == "__main__":
     # for model in Model_classic:
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set='big')
-    main(pv.dfs_2D_path)
-    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set='big')
-    main(pv.dfs_2D_path)
+    hpset = ['small', 'big']
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1, hyperparameter_set='small')
+    # main(pv.dfs_2D_path)
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    # main(pv.dfs_2D_path)
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    # main(pv.dfs_2D_path)
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # main(pv.dfs_2D_path)
+    # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
+    # main(pv.dfs_2D_path)
+    for set in hpset:
+        for model in Model_classic:
+            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1, hyperparameter_set=set)
+            main(pv.dfs_2D_path)
+            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=set)
+            main(pv.dfs_2D_path)
+            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD, hyperparameter_set=set)
+            main(pv.dfs_2D_path)
+            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set=set)
+            main(pv.dfs_2D_path)
+
     # for protein in DatasetProtein:
     #     pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=protein, hyperparameter_set='big')
     #     main(pv.dfs_2D_path)

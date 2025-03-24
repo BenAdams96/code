@@ -293,17 +293,20 @@ def create_dfs_dict(totaldf_path, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,1
 def csvfiles_to_dict_include(dfs_path, include_files: list = []):
     '''xxx'''
     if include_files is None:
-        include_files = []
+        include_files = [0]
     
     dict = {}
     
     # Loop through the include_files list first
     for include_file in include_files:
         # Check if the file exists in the folder
-        csv_file = dfs_path / include_file
+        if isinstance(include_file, int):
+            csv_file = dfs_path / f"{include_file}ns.csv"
+        else:
+            csv_file = dfs_path / f"{include_file}.csv"
         if csv_file.exists():
-            dict[include_file] = pd.read_csv(csv_file)
-        elif include_file.startswith("CLt"):  # Additional check if it's in the "CLt" format
+            dict[csv_file.stem] = pd.read_csv(csv_file)
+        elif isinstance(include_file, str) and include_file.startswith("CLt"):  # Additional check if it's in the "CLt" format
             # Try to parse and read the corresponding cluster files
             print('true')
             try:
@@ -326,6 +329,32 @@ def csvfiles_to_dict_include(dfs_path, include_files: list = []):
                     dict[csv_file_stem] = pd.read_csv(cluster_file)
             except ValueError:
                 print(f"Skipping file with unexpected name format: {include_file}")
+        elif isinstance(include_file, str) and include_file.startswith("xCLt"):  # Additional check if it's in the "CLt" format
+            # Try to parse and read the corresponding cluster files
+            print('true')
+            try:
+                CLtarget, clusters, conformations = include_file.split('_')
+                CLtarget = int(CLtarget[4:])  # Extract number after 'xCLt'
+                clusters = int(clusters[2:])  # Extract number after 'cl'
+                conformations = int(conformations[1:])  # Extract number after 'c'
+                csv_file_stem = f'CLt{CLtarget}_cl{clusters}x_c{conformations}'
+                cluster_file = dfs_path / 'clustering folder' / (csv_file_stem + '.csv')
+                print(cluster_file)
+                if cluster_file.exists():
+                    dict[csv_file_stem] = pd.read_csv(cluster_file)
+            except ValueError:
+                print(f"Skipping file with unexpected name format: {include_file}")
+        elif isinstance(include_file, str) and include_file.startswith("ta"):
+            bins, conformations_part = include_file.split('c')
+            num_conformations = int(conformations_part)
+            total_time = int(bins[2:])
+            stepsize_outer = 1
+            for i in np.arange(0,total_time,stepsize_outer):
+                start_time = i
+                end_time = i+stepsize_outer
+                csv_file = dfs_path / f"t{start_time}_{end_time}c{num_conformations}.csv"
+                if csv_file.exists():
+                    dict[csv_file.stem] = pd.read_csv(csv_file)
         else:
             print(f"File not found in folder: {include_file}")
 

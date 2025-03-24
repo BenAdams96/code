@@ -11,19 +11,19 @@ class Model_classic(Enum):
     RF = ('RF', RandomForestRegressor, 
           {'small': {'n_estimators': [100], 'max_depth': [5], 'min_samples_split': [5], 
                      'min_samples_leaf': [5], 'max_features': ['sqrt']},
-           'big': {'n_estimators': [100, 200], 'max_depth': [3, 5, 10], 
+           'big': {'n_estimators': [200], 'max_depth': [3, 5, 10], 
                      'min_samples_split': [2, 5, 10], 'min_samples_leaf': [2, 5, 10], 
-                     'max_features': ['sqrt', 'log2']}})
+                     'max_features': ['sqrt']}})
 
     XGB = ('XGB', XGBRegressor, 
            {'small': {"n_estimators": [100], "max_depth": [3, 5]},
-            'big': {"n_estimators": [100, 200], "max_depth": [3, 6, 10], 
+            'big': {"n_estimators": [200], "max_depth": [3, 6, 10], 
                       "learning_rate": [0.01, 0.1, 0.3]}})
 
     SVM = ('SVM', SVR, 
            {'small': {"C": [0.1], "kernel": ["linear", "rbf"], "gamma": ['scale']},
-            'big': {"C": [0.01, 0.1, 1, 10], "kernel": ["linear", "rbf", "poly"], 
-                      "gamma": ['scale', 'auto']}})
+            'big': {"C": [0.01, 0.1, 1, 10], "kernel": ["linear", "rbf"], 
+                      "gamma": ['scale']}})
 
     model: Union[RandomForestRegressor, XGBRegressor, SVR]
     hyperparameter_grid: dict
@@ -51,9 +51,9 @@ class Model_classic(Enum):
         return self.value  # Ensure `str()` outputs the model name
 
 class Model_deep(Enum):
-    DNN = 'DNN' ,   {"lr": [0.002, 0.001],
+    DNN = 'DNN' ,   {"lr": [0.001],
                     "hidden_layers": [[128, 64, 32],[64, 32, 16],[128, 64],[256, 128, 64]],
-                    "dropout": [0.1, 0.3],#, 0.2, 0.4],
+                    "dropout": [0.3],#, 0.2, 0.4],
                     } #20 in total
                     #{"lr": [0.001],
                     #"hidden_layers": [[128, 64, 32]],
@@ -166,10 +166,11 @@ class DatasetProtein(Enum):
     JAK1 = 'JAK1', 615, 4
     GSK3 = 'GSK3', 856, 4 
     pparD = 'pparD', 1125, 4
+    CLK4 = 'CLK4', 731, 4
 
     ABL1 = 'ABL1', 794, 4
     AR = 'AR', 659, 4 
-    CLK4 = 'CLK4', 731, 4
+    
     FXR = 'FXR', 631, 4 
     GHSR = 'GHSR', 682, 4
     GR = 'GR', 750, 4 

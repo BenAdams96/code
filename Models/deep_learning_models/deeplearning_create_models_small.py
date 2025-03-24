@@ -21,6 +21,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
 from sklearn.model_selection import StratifiedKFold, KFold, StratifiedGroupKFold
+from plotting import A_true_vs_pred_plotting
 import random
 
 from Models.LSTM.LSTM_class import LSTM
@@ -283,7 +284,6 @@ def deeplearning_function(name, df, dfs_path, random_splitting = False):
         else:
             print('kfold_outer splitting')
             train_outer_mol_ids, test_mol_ids, val_outer_mol_ids = kfold_outer_splitting(outer_fold_idx,outer_folds, grouped_df,grouped_binned_y, unique_mol_ids)
-        print(len(sorted(train_outer_mol_ids)))
         # print(sorted(val_outer_mol_ids))
 
         # print(sorted(test_mol_ids))
@@ -471,6 +471,7 @@ def deeplearning_function(name, df, dfs_path, random_splitting = False):
         'Predicted_pKi': all_predictions
     })
     df_true_predicted = df_true_predicted.sort_values(by='mol_id', ascending=True)
+    A_true_vs_pred_plotting.plot_avg_predicted_vs_real_pKi(df_true_predicted, name, dfs_path)
     save_path = dfs_path / pv.true_predicted
     save_path.mkdir(parents = True, exist_ok=True)
     df_true_predicted.to_csv(save_path / f'{name}_{folding}_true_predicted.csv', index=False)
@@ -656,7 +657,9 @@ if __name__ == "__main__":
     #     main(path, random_splitting = True, include_files = ['conformations_10.csv','conformations_50.csv','conformations_100.csv'])
     
     pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
-    main(pv.dfs_descriptors_only_path_, random_splitting = False, include_files = ['0ns.csv','1ns.csv','5ns.csv','conformations_10.csv'])
+    main(pv.dfs_2D_path, random_splitting = False, include_files = [f'2D_ECFP_{pv.PROTEIN}'])
+    # main(pv.dfs_reduced_and_MD_path_, random_splitting = False, include_files = [0,1,2,3,4,'c10'])
+    # main(pv.dfs_MD_only_path_, random_splitting = False, include_files = [0,1,2,3,4,'c10'])
 
     # main(pv.dfs_reduced_PCA_path_, random_splitting = False, include_files = ['0ns.csv','1ns.csv','5ns.csv','conformations_10.csv'])
     # main(pv.dfs_reduced_MD_PCA_path_, random_splitting = False, include_files = ['0ns.csv','1ns.csv','5ns.csv','conformations_10.csv'])
