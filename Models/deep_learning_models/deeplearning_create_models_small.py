@@ -655,9 +655,14 @@ if __name__ == "__main__":
     #     print(path)
     #     main(path, random_splitting = False, include_files = ['conformations_10.csv','conformations_50.csv','conformations_100.csv'])
     #     main(path, random_splitting = True, include_files = ['conformations_10.csv','conformations_50.csv','conformations_100.csv'])
-    
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
-    main(pv.dfs_2D_path, random_splitting = False, include_files = [f'2D_ECFP_{pv.PROTEIN}'])
+    include_files = [0,2,'c10','xCLt50_cl10_c10']
+    for protein in list(DatasetProtein)[:4]:
+        pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=protein)
+        main(pv.dfs_descriptors_only_path_, random_splitting = False,include_files = include_files)
+        main(pv.dfs_reduced_and_MD_path_, random_splitting = False,include_files = include_files)
+        main(pv.dfs_MD_only_path_, random_splitting = False,include_files = include_files)
+        main(pv.dfs_dPCA_MD_path_, random_splitting = False,include_files = include_files)
+    # main(pv.dfs_2D_path, random_splitting = False, include_files = [f'2D_ECFP_{pv.PROTEIN}'])
     # main(pv.dfs_reduced_and_MD_path_, random_splitting = False, include_files = [0,1,2,3,4,'c10'])
     # main(pv.dfs_MD_only_path_, random_splitting = False, include_files = [0,1,2,3,4,'c10'])
 

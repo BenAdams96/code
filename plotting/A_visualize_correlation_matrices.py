@@ -108,9 +108,9 @@ def main(dfs_path = pv.dfs_descriptors_only_path_):
     return
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
     # main(dfs_path = pv.dataframes_master_ / 'dPCA MD2')
-    main(dfs_path = pv.dataframes_master_ / 'MD_new onlyall')
+    main(dfs_path = pv.dfs_reduced_and_MD_path_)
     # main(dfs_path = pv.dfs_descriptors_only_path_)
     # main(dfs_path = pv.dfs_reduced_path_)
     # main(dfs_path = pv.dfs_reduced_and_MD_path_)

@@ -93,7 +93,8 @@ def update_config(model_: Union[Model_classic, Model_deep] = None,
         HYPERPARAMETER_SET = hyperparameter_set
         # Access the correct hyperparameter grid from the model enum
         HYPERPARAMETER_GRID = ML_MODEL._hyperparameter_grid[hyperparameter_set]
-
+    print('update paths')
+    print(PROTEIN)
     # Recalculate dependent paths
     update_paths()
 

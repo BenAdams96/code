@@ -672,16 +672,20 @@ if __name__ == "__main__":
 
 
 
-    for set in hpset:
+    # for set in hpset:
         # for model in Model_classic:
-        pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set=set)
-        main(pv.dfs_2D_path)
-            # pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=set)
-            # main(pv.dfs_2D_path)
-            # pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD, hyperparameter_set=set)
-            # main(pv.dfs_2D_path)
-            # pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set=set)
-            # main(pv.dfs_2D_path)
+    models = [Model_classic.RF, Model_classic.XGB]
+    for protein in DatasetProtein:
+        print(protein)
+        for model in models:
+            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein, hyperparameter_set='big')
+            main(pv.dfs_2D_path)
+    # pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=set)
+    # main(pv.dfs_2D_path)
+    # pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD, hyperparameter_set=set)
+    # main(pv.dfs_2D_path)
+    # pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4, hyperparameter_set=set)
+    # main(pv.dfs_2D_path)
 
 
 

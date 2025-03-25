@@ -6,19 +6,18 @@ from sklearn.svm import SVR
 from typing import Union
 from itertools import product
 
-
 class Model_classic(Enum):
     RF = ('RF', RandomForestRegressor, 
-          {'small': {'n_estimators': [100], 'max_depth': [5], 'min_samples_split': [5], 
-                     'min_samples_leaf': [5], 'max_features': ['sqrt']},
-           'big': {'n_estimators': [200], 'max_depth': [3, 5, 10], 
-                     'min_samples_split': [2, 5, 10], 'min_samples_leaf': [2, 5, 10], 
+          {'small': {'n_estimators': [100], 'max_depth': [3], 'min_samples_split': [8], 
+                     'min_samples_leaf': [8], 'max_features': ['sqrt']},
+           'big': {'n_estimators': [200], 'max_depth': [5,10], 
+                     'min_samples_split': [2,5], 'min_samples_leaf': [2,5], 
                      'max_features': ['sqrt']}})
 
     XGB = ('XGB', XGBRegressor, 
-           {'small': {"n_estimators": [100], "max_depth": [3, 5]},
-            'big': {"n_estimators": [200], "max_depth": [3, 6, 10], 
-                      "learning_rate": [0.01, 0.1, 0.3]}})
+           {'small': {"n_estimators": [100], "max_depth": [3]},
+            'big': {"n_estimators": [100], "max_depth": [3, 6], 
+                      "learning_rate": [0.1]}})
 
     SVM = ('SVM', SVR, 
            {'small': {"C": [0.1], "kernel": ["linear", "rbf"], "gamma": ['scale']},
@@ -63,9 +62,9 @@ class Model_deep(Enum):
     
     LSTM = 'LSTM' , {"hidden_size": [32,64],  # Number of LSTM units per layer
                     "num_layers": [1,2,3],  # Number of stacked LSTM layers
-                    "dropout": [0.1,0.3],  # Dropout to prevent overfitting
-                    "learning_rate": [1e-3, 1e-4],  # Learning rate for Adam/SGD
-                    "weight_decay": [1e-4, 1e-5],  # L2 regularization
+                    "dropout": [0.1],  # Dropout to prevent overfitting
+                    "learning_rate": [1e-4],  # Learning rate for Adam/SGD
+                    "weight_decay": [1e-5],  # L2 regularization
                     } #108 in total
     
     hyperparameter_grid: dict

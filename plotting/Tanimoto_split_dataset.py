@@ -91,12 +91,18 @@ def main():
     # smiles_list = df["smiles"].tolist()
     # print(smiles_list)
     # 
-    for protein in DatasetProtein:
-        pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=protein)
-        df = pd.read_csv(pv.dataset_path_)
-        smiles_list = [(f"{mol_id:03d}", smiles) for mol_id, smiles in zip(df['mol_id'], df['smiles'])]
-        sim_matrix = tanimoto_similarity_matrix(smiles_list)
-        plot_tanimoto_density(sim_matrix, valid=False)
+
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    df = pd.read_csv(pv.dataset_path_)
+    smiles_list = [(f"{mol_id:03d}", smiles) for mol_id, smiles in zip(df['mol_id'], df['smiles'])]
+    sim_matrix = tanimoto_similarity_matrix(smiles_list)
+    plot_tanimoto_density(sim_matrix, valid=False)
+    # for protein in DatasetProtein:
+    #     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=protein)
+    #     df = pd.read_csv(pv.dataset_path_)
+    #     smiles_list = [(f"{mol_id:03d}", smiles) for mol_id, smiles in zip(df['mol_id'], df['smiles'])]
+    #     sim_matrix = tanimoto_similarity_matrix(smiles_list)
+    #     plot_tanimoto_density(sim_matrix, valid=False)
     # csv_file_path = pv.dataset_path_
     # df = pd.read_csv(csv_file_path)
     # all_molecules_list, valid_mols, invalid_mols = trj_to_pdbfiles.get_molecules_lists(pv.MDsimulations_path_)

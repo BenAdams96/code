@@ -62,9 +62,11 @@ def plot_column_distribution(csv_file, bin_size=0.1):
     # plt.show()
 
 if __name__ == "__main__":
-    for protein in DatasetProtein:
-        pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=protein)
-        plot_column_distribution(pv.dataset_path_, bin_size=0.1)
+    # for protein in DatasetProtein:
+    #     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=protein)
+    #     plot_column_distribution(pv.dataset_path_, bin_size=0.1)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    plot_column_distribution(pv.dataset_path_, bin_size=0.1)
     # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
     # # Example usage
     # csv_file_path = pv.dataset_path_

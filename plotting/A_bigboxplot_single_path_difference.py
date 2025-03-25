@@ -8,6 +8,7 @@ from global_files import public_variables
 from collections import defaultdict
 import math
 import re
+
 from global_files import csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
@@ -225,26 +226,33 @@ def plot_boxplots_compare_ns(data_for_plot, sorted_subfolders,ordered_row_names,
 
 
 
-def nested_data_dict(dfs_path, modelresults_dict, idlist_include_files: list = None):
+def nested_data_dict(dfs_path1, dfs_path2_min, modelresults_dict, idlist_include_files: list = None):
     outer_dict = defaultdict(lambda: defaultdict(), modelresults_dict)
     
-    model_results_folder = dfs_path / pv.Modelresults_folder_
-    print(model_results_folder)
-    if model_results_folder.exists():
-        for csv_file in model_results_folder.glob("*.csv"): #csv_file = results_k10_r2 etc. of 'descriptors only' for example. whole path
-            if not csv_file.name.endswith("temp.csv") and "R2" in csv_file.name and not "train" in csv_file.name:
-                print(csv_file)
-                print('#########################################')
-                try:
-                        df = pd.read_csv(csv_file)
-                        row_data_dict = modelresults_to_dict(df, idlist_include_files)
-                        outer_dict[csv_file.name][dfs_path.name] = row_data_dict
-                        
-                except Exception as e:
-                    print(f"Error reading {csv_file}: {e}")
+    model_results_folder1 = dfs_path1 / pv.Modelresults_folder_
+    model_results_folder2_min = dfs_path2_min / pv.Modelresults_folder_
+
+    if model_results_folder1.exists() and model_results_folder2_min:
+        for csv_file in model_results_folder1.glob("*.csv"): #csv_file = results_k10_r2 etc. of 'descriptors only' for example. whole path
+            csv_file2_min = model_results_folder2_min / csv_file.name
+            if csv_file2_min.exists():
+                print(model_results_folder2_min / csv_file.name)
+                if not csv_file.name.endswith("temp.csv") and "R2" in csv_file.name and not "train" in csv_file.name:
+                    print(csv_file)
+                    print('#########################################')
+                    # try:
+                    df1 = pd.read_csv(csv_file)
+                    df2 = pd.read_csv(csv_file2_min)
+                    print(df1)
+                    row_data_dict = modelresults_to_dict(df1, df2, idlist_include_files)
+                    print(f'{dfs_path1.name}__{dfs_path2_min.name}')
+                    outer_dict[csv_file.name][f'{dfs_path1.name}__{dfs_path2_min.name}'] = row_data_dict
+                            
+                    # except Exception as e:
+                    #     print(f"Error reading {csv_file}: {e}")
     return outer_dict
 
-def modelresults_to_dict(modelresult_df, idlist_include_files: list = None):
+def modelresults_to_dict(df1,df2_min, idlist_include_files: list = None):
     """
     """
     # If exclude_files is None, initialize it as an empty list
@@ -253,15 +261,58 @@ def modelresults_to_dict(modelresult_df, idlist_include_files: list = None):
     
     # Filter the DataFrame to exclude rows based on the 'id' column if specified
     if idlist_include_files:
-        modelresult_df = modelresult_df[modelresult_df['mol_id'].isin(idlist_include_files)]
+        df1 = df1[df1['mol_id'].isin(idlist_include_files)]
+        df2_min = df2_min[df2_min['mol_id'].isin(idlist_include_files)]
 
-    # Get the columns that start with 'split' and end with '_test_score'
-    split_columns = [col for col in modelresult_df.columns if col.startswith('split') and col.endswith('_test_score')]
+    # Ensure both DataFrames have the same mol_id order
+    df1 = df1.set_index('mol_id')
+    df2_min = df2_min.set_index('mol_id')
 
-    # Convert the filtered DataFrame to a dictionary
-    row_data_dict = modelresult_df.set_index('mol_id')[split_columns].T.to_dict('list')
-    print(row_data_dict)
-    return row_data_dict
+    print(df1)
+    print(df2_min)
+    # Identify common test score columns
+    test_score_columns = [col for col in df1.columns if 'split' in col and 'test_score' in col]
+    common_columns = list(set(test_score_columns) & set(df2_min.columns))
+    # Sort the values in each row for both DataFrames
+    sorted_values_df1 = df1[common_columns].apply(lambda row: sorted(row, reverse=True), axis=1)
+    sorted_values_df2 = df2_min[common_columns].apply(lambda row: sorted(row, reverse=True), axis=1)
+    print(sorted_values_df1)
+    print(sorted_values_df2)
+
+    # Row-wise subtraction
+    # Subtract the sorted values element-wise and create a DataFrame
+    # Check if '2D' exists in df2_min and handle the subtraction accordingly
+    if '2D' in sorted_values_df2.index:
+        # Get the row with index '2D' from df2_min
+        row_2D = sorted_values_df2.loc['2D']
+        print(row_2D)
+        # Create a DataFrame where the '2D' row is repeated across all rows of sorted_values_df1
+        repeated_2D = pd.Series([row_2D] * len(sorted_values_df1), index=sorted_values_df1.index)
+        print(repeated_2D)
+        # Subtract the '2D' row from each row in sorted_values_df1 using combine
+        result = sorted_values_df1.combine(
+            repeated_2D, 
+            lambda s1, s2: [a - b for a, b in zip(s1, s2)], 
+            fill_value=0
+        )
+    else:
+        # If '2D' doesn't exist, proceed with the usual element-wise subtraction
+        result = sorted_values_df1.combine(
+            sorted_values_df2, 
+            lambda s1, s2: [a - b for a, b in zip(s1, s2)], 
+            fill_value=0
+        )
+    # Convert the result into a dictionary
+    result_dict = {}
+    for index, row in result.items():  # Using .items() to iterate over Series
+        result_dict[index] = row
+
+    # Print the dictionary for debugging purposes
+    print(result_dict)
+
+
+    # Return the dictionary
+    return result_dict
 
 def boxplots_compare_individuals(master_folder, csv_filename, modelresults_dict):
     """
@@ -412,29 +463,10 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
         pv.dfs_reduced_and_MD_path_.name: 'lightcoral',
         pv.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
         pv.dfs_dPCA_MD_path_.name: 'orchid',
-        "PCA": "salmon",
-        "2D": 'goldenrod',
-        'descriptors only scaled mw': 'salmon',
-        "reduced_t0.9": 'teal',
-        "reduced_t0.75": 'goldenrod',
-        "custom_dataframes": 'mediumorchid',
-
-        # New keys with assigned colors
-        "(DescMD)PCA_10": "darkorange",
-        "(DescMD)PCA_20": "tomato",
-        "desc_PCA10": "dodgerblue",
-        "desc_PCA20": "deepskyblue",
-        "DescPCA20 MDnewPCA": "darkviolet",
-        "DescPCA20 MDnewPCA minus PC1": "orchid",
-        "DescPCA20 MDnewPCA minus PCMD1": "plum",
-        "MD_new only": "forestgreen",
-        "MD_old only": 'lightgray',
-        "MD_new only reduced": "mediumseagreen",
-        "MD_old only reduced": "forestgreen",
-        "MDnewPCA": "mediumseagreen",
-        "red MD_new": "limegreen",
-        "red MD_new reduced": "crimson",
-        "red MD_old": 'lightcoral'
+        f'{pv.dfs_reduced_and_MD_path_.name}__{pv.dfs_2D_path.name}': 'goldenrod',
+        f'{pv.dfs_reduced_and_MD_path_.name}__{pv.dfs_descriptors_only_path_.name}': 'lightcoral',
+        f'{pv.dfs_MD_only_path_.name}__{pv.dfs_descriptors_only_path_.name}': 'lightgray',
+        f'{pv.dfs_dPCA_MD_path_.name}__{pv.dfs_descriptors_only_path_.name}': 'orchid',
     }
 
     labels = {
@@ -444,73 +476,48 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
         pv.dfs_reduced_and_MD_path_.name: 'RDkit Descriptors Red. + MD features',
         pv.dfs_MD_only_path_.name: 'MD features',  # Added label for "MD only"
         pv.dfs_dPCA_MD_path_.name: 'desc PCA + MD',
-        # pv.dfs_reduced_PCA_path_.name: 'PCA desc',
-        # pv.dfs_reduced_MD_PCA_path_.name: f'PCA MD',
-        # pv.dfs_reduced_and_MD_combined_PCA_path_.name: 'PCA desc + PCA MD',
-        # pv.dfs_all_PCA.name: 'PCDA desc+MD',  # Added label for "MD only"
-        # New keys with assigned colors
-        "(DescMD)PCA_10": "(DescMD)PCA_10",
-        "(DescMD)PCA_20": "(DescMD)PCA_20",
-        "desc_PCA10": "desc_PCA10",
-        "desc_PCA20": "desc_PCA20",
-        "DescPCA20 MDnewPCA": "DescPCA20 MDnewPCA",
-        "DescPCA20 MDnewPCA minus PC1": "DescPCA20 MDnewPCA minus PC1",
-        "DescPCA20 MDnewPCA minus PCMD1": "DescPCA20 MDnewPCA minusPCMD1",
-        "MD_new only": "MD_new only",
-        "MD_old only": "MD_old only",
-        "MD_new only reduced": "MD_new only reduced",
-        "MD_old only reduced": "MD_old only reduced",
-        "MDnewPCA": "MDnewPCA",
-        "red MD_new": "red MD_new",
-        "red MD_new reduced": "red MD_new reduced",
-        "red MD_old": "red MD_old"
+        f'{pv.dfs_reduced_and_MD_path_.name}__{pv.dfs_2D_path.name}': 'difference red_MD - WHIM',
+        f'{pv.dfs_reduced_and_MD_path_.name}__{pv.dfs_descriptors_only_path_.name}': 'difference red_MD - WHIM',
+        f'{pv.dfs_MD_only_path_.name}__{pv.dfs_descriptors_only_path_.name}': 'difference MD - WHIM',
+        f'{pv.dfs_dPCA_MD_path_.name}__{pv.dfs_descriptors_only_path_.name}': 'difference dPCA_MD - WHIM',
+        
     }
 
     filtered_colors = {key: colors[key] for key in modelresults_dict.keys() if key in colors}
     filtered_labels = {key: labels[key] for key in modelresults_dict.keys() if key in labels}
     
-    # Define parameters
     box_width = 3
     group_gap = 1
     group_spacing = 5  # Increased spacing to separate different subgroups clearly
     border = 2
-
-    # Get the group with the most values directly
-    group_with_most_values = max(modelresults_dict, key=lambda k: len(modelresults_dict[k]))
-
-    # Get all subgroups from that group
-    all_subgroups = list(modelresults_dict[group_with_most_values].keys())
     
-    positions = []
-    box_data = []
-    box_colors = []
-    widths = []
     base_position = 0
+    group_spacing = 3  # Space between big groups
+    bar_width = 0.6  # Width of bars within a group
+    positions = []
+    means = []
+    stds = []
+    bar_colors = []
     xtick_labels = []
-
-    min_value = float('inf')  # Set to positive infinity
-    max_value = float('-inf')  # Set to negative infinity
-
+    
     for group_idx, (group_name, color) in enumerate(filtered_colors.items()):
-        num_rows = len(modelresults_dict[group_name].values())
-        print(group_name)
-        for row_idx, subgroup in enumerate(modelresults_dict[group_name].keys()):
+        subgroups = list(modelresults_dict[group_name].keys())
+        num_subgroups = len(subgroups)
+        
+        for row_idx, subgroup in enumerate(subgroups):
+            values = modelresults_dict[group_name][subgroup]
+            mean_value = np.mean(values)
+            std_value = np.std(values)
             
-            split_scores = modelresults_dict[group_name][subgroup]
-            
-             #using group_idx/num_rows will make it assume that all groups have same length!
-            min_value = min(min_value, min(split_scores))
-            max_value = max(max_value, max(split_scores))
-
-            pos = base_position + row_idx * (box_width + group_gap)
-
+            pos = base_position + row_idx * (bar_width + 0.2)  # Small gap within group
             positions.append(pos)
-            box_data.append(split_scores)
-            box_colors.append(color)
-            widths.append(box_width)
+            means.append(mean_value)
+            stds.append(std_value)
+            bar_colors.append(color)
+            # Check if 'subgroup' starts with 'CLt' and contains an integer at the end
             if subgroup.startswith('CLt'):
                 # Use regular expression to find the last integer after 'CLt'
-                match = re.search(r'c(\d+)', subgroup)
+                match = re.search(r'CLt(\d+)', subgroup)
                 if match:
                     integer_value = match.group(1)
                     xtick_labels.append(f'{integer_value} clusters conf. ')
@@ -521,110 +528,40 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
                 xtick_labels.append(
                     'minimized' if subgroup == '0ns' else 
                     '10 conf.' if subgroup == 'c10' else 
-                    '1 conformation' if 'ns' in subgroup and not subgroup.startswith('0') else
                     subgroup
                 )
-        base_position = base_position + ((num_rows * (box_width + group_gap) - group_gap) + group_spacing)
-    
-    # # Add individual data points
-    # for pos, split_scores in zip(positions, box_data):
-    #     plt.scatter([pos] * len(split_scores), split_scores, color='black', alpha=0.8, s=10, zorder=3)  # Smaller, darker dots
-
-    # # Draw lines connecting individual scores within the same subgroup across different groups
-    # for subgroup_idx in range(len(all_subgroups)):
-    #     # Get scores for the current subgroup from all groups
-    #     scores_per_group = []
-    #     x_positions = []
         
-    #     for group_idx in range(len(filtered_colors)):
-    #         group_name = list(filtered_colors.keys())[group_idx]
-    #         subgroup_name = all_subgroups[subgroup_idx]
-    #         scores = modelresults_dict[group_name][subgroup_name]
-    #         scores_per_group.append(scores)
-    #         x_pos = positions[group_idx * len(all_subgroups) + subgroup_idx]
-    #         x_positions.append(x_pos)
-
-    #         # Check if the number of scores is consistent across groups
-    #         if len(scores) != len(scores_per_group[0]):
-    #             print(f"Warning: Inconsistent number of scores for subgroup '{subgroup_name}' in group '{group_name}'")
-
-    #     # Draw lines connecting each pair of scores for this subgroup
-    #     for i in range(len(scores_per_group[0])):  # Assuming scores_per_group has same length
-    #         y_values = [scores_per_group[group_idx][i] for group_idx in range(len(filtered_colors))]
-    #         plt.plot(x_positions, y_values, color='black', alpha=0.5, zorder=2)
-    # print(all_subgroups)
-    # for group_idx, group_name in enumerate(filtered_colors.keys()):
-    #     print('group_idx')
-    #     print(group_idx)
-
-    #     y_values = []
-    #     x_positions = []
-
-    #     for subgroup_idx in range(len(all_subgroups)):
-    #         subgroup_name = all_subgroups[subgroup_idx]
-    #         scores = modelresults_dict[group_name][subgroup_name]
-    #         y_values.append(scores)
-    #         x_pos = positions[group_idx * len(all_subgroups) + subgroup_idx]
-    #         x_positions.append(x_pos)
-
-    #     # Draw lines connecting each pair of scores for this subgroup within all groups
-    #     for i in range(len(y_values[0])):  # Assuming all y_values have the same length
-    #         plt.plot(x_positions, [y[i] for y in y_values], color='black', alpha=0.5, zorder=2)
-    boxplot_dict = plt.boxplot(box_data, positions=positions, patch_artist=True,
-                                widths=widths,  # Set box widths
-                                medianprops=dict(color='red'))
+        base_position += num_subgroups * (bar_width + 0.2) + group_spacing  # Space between groups
     
-    # Apply colors to each box
-    for patch, color in zip(boxplot_dict['boxes'], box_colors):
-        patch.set_facecolor(color)
-    
-    if pv.PROTEIN == DatasetProtein.JAK1:
-        min_value = 0.5
-        max_value = 0.9
-    elif pv.PROTEIN == DatasetProtein.GSK3:
-        min_value = -0.1
-        max_value = 0.6
-    elif pv.PROTEIN == DatasetProtein.pparD:
-        min_value = -0.1
-        max_value = 0.6
-    elif pv.PROTEIN == DatasetProtein.CLK4:
-        min_value = -0.4
-        max_value = 0.6
-    else:
-        # Round min_value down to the nearest number with 1 decimal place
-        min_value = (math.floor(min_value * 10) / 10) - 0.1
-
-        # Round max_value up to the nearest number with 1 decimal place
-        max_value = (math.ceil(max_value * 10) / 10)+0.1
-    # Add a legend
+    # Create the legend
     handles = [plt.Line2D([0], [0], color=color, lw=4) for color in filtered_colors.values()]
     plt.legend(handles=handles, labels=filtered_labels.values(), loc='best')
 
-    plt.title(f"{pv.ML_MODEL} ; {pv.PROTEIN}: Boxplot results for Kfold=10 using {pv.DESCRIPTOR} 3D descriptors") #
-    plt.xlabel("conformations group")
-    plt.ylabel("R²-score")
-    
-    # Adjust x-axis limits
-    plt.xlim(-(box_width/2) - border, positions[-1] + (box_width/2) + border)
-    # Set y-axis limits between 0.4 and 0.9
-    plt.ylim(min_value, max_value)
+    # Create the bar plot
+    plt.bar(positions, means, yerr=stds, capsize=5, color=bar_colors, width=bar_width, edgecolor='black')
+    plt.ylim(-0.4, 0.4)
+    # Set y-ticks at the desired intervals (e.g., 0.2, 0.3, 0.4, etc.)
+    y_ticks = np.arange(-0.4, 0.4, 0.1)  # Adjust the range and interval as needed
+    plt.yticks(y_ticks)
 
-    # Set xticks and labels
-    # xtick_labels = [
-    # 'minimized' if label == '0ns' else '10 conf.' if label == 'c10' else label
-    # for group in modelresults_dict.values() for label in group.keys()
-    # ]
-    
-    print(xtick_labels)
-    print(positions)
-    plt.xticks(ticks=positions, labels=xtick_labels, rotation=45, ha='right')
+    # Add a thick line at y=0
+    plt.axhline(y=0, color='black', linewidth=1)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
+    # Set the x-ticks
+    plt.xticks(ticks=positions, labels=xtick_labels, rotation=45, ha='right')
+
+    # Set axis labels and title
+    plt.ylabel("R²-score Difference")
+    plt.title(f"{pv.ML_MODEL} Barplot - Difference between groups")
+    plt.xlabel("Conformations Group")
+
     # Save the plot
-    plot_file_path = save_plot_folder / f'{pv.ML_MODEL}_{csv_filename}_{len(modelresults_dict)}.png'
+    plot_file_path = save_plot_folder / f'{pv.ML_MODEL}_DIFF_{len(modelresults_dict)}.png'
     plt.tight_layout()
     plt.savefig(plot_file_path)
     plt.close()
+
     return
 
  ####################################################################################################################
@@ -635,8 +572,10 @@ def main(dfs_paths = [pv.dfs_descriptors_only_path_]):
 
     all_modelresults_dict = {}
 
-    for dfs_path, list_to_include in dfs_paths:
-        print(dfs_path)
+    for dfs_path1, dfs_path2_min, list_to_include in dfs_paths:
+        print(dfs_path1)
+        print(dfs_path2_min)
+
         # print(dfs_entry)
         # Check if the entry is a tuple (path, list) or just a path
         # if isinstance(dfs_entry, tuple):
@@ -652,12 +591,13 @@ def main(dfs_paths = [pv.dfs_descriptors_only_path_]):
         #     # print(f"Error: The path '{dfs_path}' does not exist.")
         #     continue
         print(all_modelresults_dict)
-        all_modelresults_dict = nested_data_dict(dfs_path, all_modelresults_dict, list_to_include)
+        all_modelresults_dict = nested_data_dict(dfs_path1, dfs_path2_min,all_modelresults_dict, list_to_include)
         print(all_modelresults_dict)
         print('test')
         print(all_modelresults_dict)
     for csvfile_name, modelresults_dict in all_modelresults_dict.items(): #loop over k10_r2 etc.
         # boxplots_compare_individuals(master_folder, csvfile_name, modelresults_dict)
+        print(csvfile_name) #ModelResults_R2_WHIM.csv
         boxplots_compare_groups(path=pv.dataframes_master_, csv_filename=csvfile_name, modelresults_dict=modelresults_dict)
     return
 
@@ -668,9 +608,7 @@ if __name__ == "__main__":
     exclude_stable2 = ['stable_conformations']
     exclude_stable = ['stable_conformations','conformations_10','conformations_20','minimized_conformations_10']
     include_files=['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_50']
-    include_files=['2D','0ns','2ns','c10','CLt50_cl10x_c10']
-    include_files=['c10','CLt50_cl10x_c10']
-
+    include_files=['2D','0ns','1ns','2ns','c10','CLt50_cl10x_c10']
 
     # dfs_paths.append((public_variables.dataframes_master_ / '2D', []))
     # dfs_paths.append((public_variables.dfs_descriptors_only_path_, exclude_files_clusters + exclude_stable))
@@ -688,19 +626,14 @@ if __name__ == "__main__":
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters30 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters40 + exclude_files_other))
     for model in Model_classic:
-        for protein in list(DatasetProtein)[:4]:
-            dfs_paths = []
-            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein, hyperparameter_set='big')
-            # include_files=['0ns','1ns','3ns','5ns','conformations_10']
-            # for path in pv.get_paths():
-            dfs_paths.append((pv.dfs_2D_path, include_files))
-            dfs_paths.append((pv.dfs_descriptors_only_path_, include_files))
-            # dfs_paths.append((pv.dfs_reduced_path_, include_files))
-            dfs_paths.append((pv.dfs_reduced_and_MD_path_, include_files))
-            dfs_paths.append((pv.dfs_MD_only_path_, include_files))
-            # dfs_paths.append((pv.dfs_dPCA_path_, include_files))
-            dfs_paths.append((pv.dfs_dPCA_MD_path_, include_files))
-            main(dfs_paths)
+        dfs_paths = []
+        pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set='big')
+        dfs_paths.append((pv.dfs_reduced_and_MD_path_, pv.dfs_2D_path, include_files))
+        dfs_paths.append((pv.dfs_reduced_and_MD_path_, pv.dfs_descriptors_only_path_, include_files))
+        dfs_paths.append((pv.dfs_MD_only_path_, pv.dfs_descriptors_only_path_, include_files))
+        dfs_paths.append((pv.dfs_dPCA_MD_path_, pv.dfs_descriptors_only_path_, include_files))
+
+        main(dfs_paths)
 
     # dfs_paths.append((pv.dataframes_master_ / 'MD_new only', include_files))
 

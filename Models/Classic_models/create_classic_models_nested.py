@@ -486,26 +486,34 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     return
 
 if __name__ == "__main__":
-    include_files = [0,1,'c10','CLt50_cl10_c10']
-    hpset = ['small']
+    include_files = ['xCLt50_cl10_c10']
+    hpset = ['big']
+    models = [Model_classic.RF]
     for x in hpset:
-        for model in Model_classic:
-            pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
-            main(pv.dfs_descriptors_only_path_,include_files = include_files)
-            pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
-            main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
-            pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
-            main(pv.dfs_MD_only_path_,include_files = include_files)
+        for model in models:
+            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1, hyperparameter_set=x)
+            # main(pv.dfs_descriptors_only_path_,include_files = include_files)
+            # main(pv.dfs_reduced_path_,include_files = include_files)
+            # main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+            # main(pv.dfs_MD_only_path_,include_files = include_files)
+            main(pv.dfs_dPCA_MD_path_,include_files = include_files)
 
-        pv.update_config(model_=Model_classic.XGB, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
-        main(pv.dfs_MD_only_path_,include_files = include_files)
+            # pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1, hyperparameter_set=x)
+            # main(pv.dfs_descriptors_only_path_,include_files = include_files)
+            # main(pv.dfs_reduced_path_,include_files = include_files)
+            # main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+            # main(pv.dfs_MD_only_path_,include_files = include_files)
+            # main(pv.dfs_dPCA_MD_path_,include_files = include_files)
 
-        pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
-        main(pv.dfs_descriptors_only_path_,include_files = include_files)
-        pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
-        main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
-        pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
-        main(pv.dfs_MD_only_path_,include_files = include_files)
+        # pv.update_config(model_=Model_classic.XGB, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
+        # main(pv.dfs_MD_only_path_,include_files = include_files)
+
+        # pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
+        # main(pv.dfs_descriptors_only_path_,include_files = include_files)
+        # pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
+        # main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+        # pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=x)
+        # main(pv.dfs_MD_only_path_,include_files = include_files)
     # main(pv.dfs_descriptors_only_path_)
     # for model in Model_classic:
     #     print(model)

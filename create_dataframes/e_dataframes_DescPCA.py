@@ -54,16 +54,16 @@ def PCA_for_dfs(dfs_dictionary, components):
 
     return dfs_in_dict_pca
 
-def main(components = 10, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20'], write_out = True):
+def main(savefolder_name = 'desc_PCA MD', components = 10, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20'], write_out = True):
     if write_out:
         new_name = f"desc_PCA{components}"
         dfs_dPCA_path = pv.dataframes_master_ / new_name
         dfs_dPCA_path.mkdir(parents=True, exist_ok=True)
 
     dfs_in_dict = dataframe_processing.create_dfs_dict(pv.initial_dataframe_, include = include)
-    print(dfs_in_dict['1ns'])
+    # print(dfs_in_dict['1ns'])
     dfs_in_dict = dataframe_processing.remove_constant_columns_from_dict_of_dfs(dfs_in_dict)
-    print(dfs_in_dict['1ns'])
+    # print(dfs_in_dict['1ns'])
 
     dfs_in_dic_pca = PCA_for_dfs(dfs_in_dict, components)
     if write_out:

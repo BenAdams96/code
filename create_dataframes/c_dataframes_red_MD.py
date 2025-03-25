@@ -44,8 +44,8 @@ def main(savefolder_name = pv.dfs_reduced_and_MD_path_, include=[], threshold=0.
     reduced_dfs_in_dict = b_dataframes_reduced.main(threshold, include = include, write_out = False)
     MD_dfs_in_dict = d_dataframes_MD_only.main(to_keep=to_keep, include = include, write_out = False)
 
-    print(reduced_dfs_in_dict['0ns'])
-    print(MD_dfs_in_dict['0ns'])
+    # print(reduced_dfs_in_dict['0ns'])
+    # print(MD_dfs_in_dict['0ns'])
 
     merged_dfs_dict = {}
 
