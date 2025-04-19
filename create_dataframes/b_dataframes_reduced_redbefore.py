@@ -2,7 +2,7 @@ from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
-
+from plotting import A_visualize_correlation_matrices
 import random
 from sklearn.preprocessing import StandardScaler
 from collections import Counter
@@ -58,8 +58,20 @@ def identify_columns_to_drop_2_keep_lowest(correlation_matrix, df, variances, th
                     columns_to_drop.add(df.columns[j])  # Drop column j (higher index)
                 else:
                     columns_to_drop.add(df.columns[i])  # Drop column i (higher index)
-    
+
     return columns_to_drop
+
+def reduce_features_of_initial_df(correlation_matrix, initial_df, threshold):
+    non_feature_columns = ['mol_id','PKI','conformations (ns)']
+    existing_non_features = [col for col in non_feature_columns if col in initial_df.columns]
+    features_initial_df = initial_df.drop(columns=existing_non_features, axis=1)
+    variances = features_initial_df.var()
+    columns_to_drop = identify_columns_to_drop(correlation_matrix, features_initial_df, variances, threshold)
+
+    reduced_initial_df = pd.concat([initial_df[existing_non_features], features_initial_df], axis=1)
+    reduced_initial_df = reduced_initial_df.drop(columns=columns_to_drop, axis=1)
+    return reduced_initial_df
+
 
 def reduce_features_of_dfs_in_dict(correlation_matrices_dict, dfs_in_dict, threshold):
     """
@@ -79,19 +91,17 @@ def reduce_features_of_dfs_in_dict(correlation_matrices_dict, dfs_in_dict, thres
     for key in correlation_matrices_dict.keys():
         # Calculate variances for the non-standardized dataframe
         
-        
         # Identify non-feature columns to retain
         non_feature_columns = ['mol_id','PKI','conformations (ns)']
         existing_non_features = [col for col in non_feature_columns if col in dfs_in_dict[key].columns]
-        print(existing_non_features)
+        
         # Drop only the features for correlation analysis
         features_df = dfs_in_dict[key].drop(columns=existing_non_features, axis=1)
-        print(features_df)
         variances = features_df.var()
-        print(variances)
+
         # Identify columns to drop based on high correlation and variance
         columns_to_drop = identify_columns_to_drop_2_keep_lowest(correlation_matrices_dict[key], features_df, variances, threshold)
-        print(columns_to_drop)
+        
         # Create the reduced dataframe by including the retained non-feature columns
         reduced_df = pd.concat([dfs_in_dict[key][existing_non_features], features_df], axis=1)
         reduced_df = reduced_df.drop(columns=columns_to_drop, axis=1)
@@ -108,20 +118,25 @@ def main(threshold = pv.correlation_threshold_, include = [0,1,2,3,4,5,6,7,8,9,1
     if write_out:
         dfs_reduced_path = pv.dataframes_master_ / f'reduced_t{threshold}'  # e.g., 'dataframes_JAK1_WHIM
         dfs_reduced_path.mkdir(parents=True, exist_ok=True)
+    
+    initial_df = pd.read_csv(pv.initial_dataframe_)
+    #first do correlation treshold
+    initial_df_cleaned = dataframe_processing.remove_constant_columns_from_df(initial_df, 'initial_df')
+    st_df, correlation_matrix = dataframe_processing.correlation_matrix_single_df(initial_df_cleaned) #st_df contains pki etc, corr not
 
-    dfs_in_dict = dataframe_processing.create_dfs_dict(pv.initial_dataframe_, include = include)
-    dfs_in_dict = dataframe_processing.remove_constant_columns_from_dict_of_dfs(dfs_in_dict)
-    std_dfs_dict, correlation_matrices_dic = dataframe_processing.correlation_matrices_of_dfs_in_dict(dfs_in_dict)
+    reduced_features_initial_df = reduce_features_of_initial_df(correlation_matrix, initial_df, threshold)
+    A_visualize_correlation_matrices.visualize_matrix(correlation_matrix, pv.dataframes_master_, 'initial', title_suffix="")
 
-    # Reduce the dataframes based on correlation
-    reduced_dfs_in_dict = reduce_features_of_dfs_in_dict(correlation_matrices_dic, dfs_in_dict, threshold)
-
+    red_st_df, red_correlation_matrix = dataframe_processing.correlation_matrix_single_df(reduced_features_initial_df)
+    A_visualize_correlation_matrices.visualize_matrix(red_correlation_matrix, dfs_reduced_path, 'initial_reduced', title_suffix="")
+    print(reduced_features_initial_df)
     #reduced dataframes including mol_ID and PKI. so for 0ns 1ns etc.
+    reduced_dfs_in_dict = dataframe_processing.create_dfs_dict(reduced_features_initial_df, include = include)
     if write_out:
         dataframe_processing.save_dict_with_dfs(reduced_dfs_in_dict, save_path=dfs_reduced_path)
     return reduced_dfs_in_dict
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
     main()
 

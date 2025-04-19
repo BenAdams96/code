@@ -19,7 +19,7 @@ from global_files import dataframe_processing, csv_to_dictionary, public_variabl
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
-from MDfeatures import get_hbond_csv, get_rms, get_gyrate, get_dipoles, get_sasa_psa, prepare_energy_files_from_MD
+from MDfeatures import get_hbond_csv, get_gyrate, get_dipoles, get_rmsd, get_sasa_psa, prepare_energy_files_from_MD
 
 def make_index_files(MD_path):
     ''' function'''
@@ -236,13 +236,13 @@ def main(protein = pv.PROTEIN):
     make_index_files(MDsimulations_path) #make index files
 
     #create hbond csv #1
-    hbond_df = get_hbond_csv.calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path) #1 #use this one i guess. make sure export is okay
-    hbond_df.to_csv(pv.energyfolder_path_ / 'hbonds.csv', index=False)
+    hbond_df = get_hbond_csv.calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path,write_out=True) #1 #use this one i guess. make sure export is okay
+    
 
     # # create RMSD #2
     RMSD_xvg_dir = energyfolder_path / 'RMSD_xvg'
-    get_rms.run_gmx_rms(MDsimulations_path, RMSD_xvg_dir) #creates the files
-    data = get_rms.rms_xvg_files_to_csvfiles(RMSD_xvg_dir) #3
+    get_rmsd.run_gmx_rmsd(MDsimulations_path, RMSD_xvg_dir) #creates the files
+    data = get_rmsd.rms_xvg_files_to_csvfiles(RMSD_xvg_dir) #3
     data.to_csv(energyfolder_path / 'rmsd.csv', index=False)
 
     # #gyration #3

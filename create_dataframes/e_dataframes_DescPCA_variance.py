@@ -13,7 +13,7 @@ import itertools
 from typing import List
 import numpy as np
 from pathlib import Path
-
+from global_files import dataframe_processing
 # Project-specific imports
 from global_files import csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
@@ -124,6 +124,62 @@ def identify_columns_to_drop_2_keep_lowest(correlation_matrix, df, variances, th
     
     return columns_to_drop
 
+def plot_scree_for_dfs_in_dict(dfs_in_dict, dfs_dPCA_path):
+    for name, df in dfs_in_dict.items():
+        plot_scree(name, df, threshold=0.98, title='Scree Plot', save_path=dfs_dPCA_path, max_components_to_plot=30)
+    return
+
+def plot_scree(name, df, threshold=0.98, title='Scree Plot', save_path=None, max_components_to_plot=30):
+    """
+    Creates a scree plot with an optional threshold line for cumulative explained variance.
+
+    Parameters:
+    - data: pandas DataFrame or NumPy array
+    - threshold: float, cumulative variance cutoff (e.g., 0.98 for 98%)
+    - title: str, plot title
+    - save_path: str or Path, where to save the plot (optional)
+    """
+    # Standardize the dataframe
+    standardized_df = standardize_dataframe(df)
+    features_df = standardized_df.drop(columns=['mol_id', 'PKI', 'conformations (ns)'], errors='ignore')
+
+    # Apply PCA
+    pca = PCA(n_components=None)
+    pca.fit(features_df)
+
+    explained_var = pca.explained_variance_ratio_
+    cum_var = np.cumsum(explained_var)
+
+    # Determine number of components to retain based on threshold
+    n_keep = np.argmax(cum_var >= threshold) + 1
+
+    # Limit the number of components to plot
+    num_to_plot = min(max_components_to_plot, len(explained_var))
+    x_range = range(1, num_to_plot + 1)
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(x_range, cum_var[:num_to_plot] * 100, marker='o', color='royalblue', label='Cumulative Variance')
+
+    if n_keep <= num_to_plot:
+        plt.axvline(x=n_keep, color='green', linestyle='--', label=f'{n_keep} Components')
+    plt.axhline(y=threshold * 100, color='red', linestyle='--', label=f'{int(threshold * 100)}% Threshold')
+
+    plt.title(f'{title} - {name}')
+    plt.xlabel('Number of Components')
+    plt.ylabel('Cumulative Explained Variance (%)')
+    plt.xticks(x_range)
+    plt.grid(True)
+    plt.legend(loc='best')
+
+    if save_path:
+        plt.tight_layout()
+        plt.savefig(save_path / f'{name}_screeplot.png')
+    else:
+        plt.show()
+
+    plt.close()
+    return n_keep
+
 def get_reduced_features_for_dataframes_in_dic(correlation_matrices_dic, dfs_dictionary, threshold):
     """
     Reduce dataframes based on correlation and visualize the reduced matrices.
@@ -191,7 +247,9 @@ def remove_constant_columns_from_dfs(dfs_dictionary):
     for key, df in dfs_dictionary.items():
         # Identify constant columns, excluding 'picoseconds' and 'conformations (ns)'
         constant_columns = df.columns[(df.nunique() <= 1) & ~df.columns.isin(['picoseconds', 'conformations (ns)'])]
-        
+        print(key)
+        print(dfs_dictionary[key])
+        print(constant_columns)
         if len(constant_columns) > 0:
             print(f"In '{key}', the following constant columns were removed: {', '.join(constant_columns)}")
         
@@ -201,7 +259,7 @@ def remove_constant_columns_from_dfs(dfs_dictionary):
     return cleaned_dfs
 
 
-def PCA_for_dfs(dfs_dictionary, variance=0.80):
+def PCA_for_dfs(dfs_dictionary, variance=0.90):
     dfs_dictionary_pca = {}
     for key, df in dfs_dictionary.items():
         
@@ -241,29 +299,29 @@ def PCA_for_dfs(dfs_dictionary, variance=0.80):
 
     return dfs_dictionary_pca
 
-def main(name = 'dPCA', variance = 0.90):
-    new_name = f"{name}_{variance}"
-    dfs_dPCA_path = pv.dataframes_master_ / new_name
-    dfs_dPCA_path.mkdir(parents=True, exist_ok=True)
+def main(save_foldername = 'dPCA', variance = 0.90, include = [0,1,'c10','c20'], write_out = True):
+    if write_out:
+        new_name = f"{save_foldername}_v{variance}"
+        dfs_dPCA_path = pv.dataframes_master_ / new_name
+        dfs_dPCA_path.mkdir(parents=True, exist_ok=True)
 
     # dfs_dictionary = csv_to_dictionary.csvfiles_to_dic_include(pv.dfs_descriptors_only_path_,include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_10.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
-    dfs_dictionary = csv_to_dictionary.create_dfs_dic(total_df=pv.initial_dataframe_,include=[1,2,3,4,5,6,7,8,9,10,'c10','c20'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
-    print(dfs_dictionary.keys())
-
-    dfs_dictionary = remove_constant_columns_from_dfs(dfs_dictionary)
+    dfs_in_dict = csv_to_dictionary.create_dfs_dic(total_df=pv.initial_dataframe_,include=[1,2,3,4,'c10','c20'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
+    dfs_in_dict = dataframe_processing.remove_constant_columns_from_dict_of_dfs(dfs_in_dict)
     
-    dfs_dictionary_pca = PCA_for_dfs(dfs_dictionary, variance)
-    
+    dfs_in_dict_pca = PCA_for_dfs(dfs_in_dict, variance)
+    plot_scree_for_dfs_in_dict(dfs_in_dict, dfs_dPCA_path)
     # Reduce the dataframes based on correlation
     # reduced_dfs_in_dic = get_reduced_features_for_dataframes_in_dic(correlation_matrices_dic, dfs_dictionary, threshold)
-    #reduced dataframes including mol_ID and PKI. so for 0ns 1ns etc. 
-    save_dataframes_to_csv(dfs_dictionary_pca, save_path=dfs_dPCA_path)
+    #reduced dataframes including mol_ID and PKI. so for 0ns 1ns etc.
+    if write_out:
+        save_dataframes_to_csv(dfs_in_dict_pca, save_path=dfs_dPCA_path)
     return
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
 
-    main(name = 'dPCA', variance = 0.95)
+    main(save_foldername = 'dPCA', variance = 0.98)
     
     # bigdf = pd.read_csv(public_variables.initial_dataframe)
     # dic = {}

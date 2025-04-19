@@ -19,7 +19,7 @@ from global_files import csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
-def calculate_hbond_dataframe_trajectory(MD_path):
+def calculate_hbond_dataframe_trajectory(MD_path,write_out):
     '''Function to compute hydrogen bonds using gmx hbond.'''
 
     # Change the directory to MD_path once before the loop
@@ -29,7 +29,7 @@ def calculate_hbond_dataframe_trajectory(MD_path):
     result_list = []
 
     # Iterate through the padded range of numbers
-    for mol in (f"{i:03}" for i in range(1, pv.PROTEIN.dataset_length+1)):  # Adjust the range as needed pv.PROTEIN.dataset_length
+    for mol in (f"{i:03}" for i in range(1, 2)):  # Adjust the range as needed pv.PROTEIN.dataset_length+1
         # Define file paths
         xtc_file = MD_path / mol / f'{mol}_prod.xtc'
         tpr_file = MD_path / mol / f'{mol}_prod.tpr'
@@ -52,8 +52,8 @@ def calculate_hbond_dataframe_trajectory(MD_path):
                     # Append results to the result_list for each timestep
                     # Append results efficiently
                     result_list.extend([
-                        {'mol_id': mol, 'picoseconds': index * 10, 'num_of_hbonds': num_of_hbonds_df.at[index], 
-                        'within_distance': within_distance.at[index]}
+                        {'mol_id': mol, 'picoseconds': index * 10, 'num_of_hbonds': num_of_hbonds_df.at[index]} 
+                        # 'non_bonding within 0.35': within_distance.at[index]}
                         for index in num_of_hbonds_df.index
                     ])
 
@@ -68,6 +68,8 @@ def calculate_hbond_dataframe_trajectory(MD_path):
 
     # Create a DataFrame from the result_list after processing all molecules
     final_df = pd.DataFrame(result_list)
+    if write_out:
+        final_df.to_csv(pv.energyfolder_path_ / 'hbonds.csv', index=False)
     return final_df
 
 # def calculate_hbond_dataframe_trajectory(MD_path):
@@ -130,10 +132,10 @@ def read_out_hbnum(xvg_file):
     return num_of_hbonds, within_distance
 
 def main(MDsimulations_path = pv.MDsimulations_path_):
-    hbond_df = calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path) #1 #use this one i guess. make sure export is okay
+    hbond_df = calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path,write_out=True) #1 #use this one i guess. make sure export is okay
     return hbond_df
 
 
 if __name__ == "__main__":
     pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
-    main(pv.ML_MODEL)
+    main(pv.MDsimulations_path_)

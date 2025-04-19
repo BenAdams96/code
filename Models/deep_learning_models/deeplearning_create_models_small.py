@@ -276,7 +276,7 @@ def deeplearning_function(name, df, dfs_path, random_splitting = False):
     all_predictions = []
     all_true_values = []
 
-    outer_folds = 10
+    outer_folds = 2
     for outer_fold_idx in range(outer_folds):
         if random_splitting:
             print('random splitting')
@@ -304,8 +304,10 @@ def deeplearning_function(name, df, dfs_path, random_splitting = False):
         for inner_fold_idx in range(inner_folds):
             inner_col = f"outer_{outer_fold_idx}_inner_{inner_fold_idx}"
             print(inner_col)
+            train_inner_mol_ids, val_inner_mol_ids = inner_fold_splitting(inner_folds, inner_fold_idx, train_outer_mol_ids, grouped_binned_y)
 
-            train_inner_mol_ids, val_inner_mol_ids = random_inner_splitting(inner_fold_idx, grouped_binned_y, train_outer_mol_ids)
+
+            # train_inner_mol_ids, val_inner_mol_ids = random_inner_splitting(inner_fold_idx, grouped_binned_y, train_outer_mol_ids)
             # bin_distribution = pd.value_counts(grouped_binned_y[train_inner_mol_ids], sort=True)
             # print(bin_distribution)
             # bin_distribution = pd.value_counts(grouped_binned_y[train_outer_mol_ids], sort=True)
@@ -414,9 +416,9 @@ def deeplearning_function(name, df, dfs_path, random_splitting = False):
                 outputs = final_model(inputs)
 
                 fold_predictions.extend(outputs.cpu().numpy().flatten())
-                fold_true_values.extend(targets.numpy())
+                fold_true_values.extend(targets.numpy().flatten().tolist())
                 all_predictions.extend(outputs.cpu().numpy().flatten())
-                all_true_values.extend(targets.numpy())
+                all_true_values.extend(targets.numpy().flatten().tolist())
             mol_ids.extend(df.loc[test_idx_all, 'mol_id'].unique())
         # Calculate metrics for this epoch
         r2_value = r2_score(fold_true_values, fold_predictions)
@@ -428,7 +430,7 @@ def deeplearning_function(name, df, dfs_path, random_splitting = False):
         fold_results['MSE'].append(mse_value)
         fold_results['MAE'].append(mae_value)
 
-
+    print(all_true_values)
     mean_scores = {}
     #get once the the mean scores using all the predictions
     r2_value = r2_score(all_true_values, all_predictions)

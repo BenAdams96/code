@@ -5,7 +5,7 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.tree import export_text
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-import shap
+
 from global_files import dataframe_processing, csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
@@ -18,6 +18,8 @@ from typing import List
 from typing import Dict
 import numpy as np
 
+import shap
+import joblib
 
 import pandas as pd
 import math
@@ -191,7 +193,8 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
     X = df.drop(columns=[target_column, 'mol_id', 'conformations (ns)'], axis=1, errors='ignore')
     y = df[target_column]  # Target (pKi values)
     # Stratified outer loop
-    bins, binned_y = bin_pki_values(y, num_bins=5)  # Bin pKi values for stratification, still a dataframe: all molecules with an index of which bin they are in
+    num_of_bins = 5
+    bins, binned_y = bin_pki_values(y, num_bins=num_of_bins)  # Bin pKi values for stratification, still a dataframe: all molecules with an index of which bin they are in
     unique, counts = np.unique(binned_y, return_counts=True)
     print("bins:", bins)
     print("counts in bin:", counts)
@@ -200,13 +203,13 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
 
     #have 5 bins of equal lengths, and bin the molecule based on pki in the correct group
     #series with index: mol_id and as value the bin index (ranging from 0 to 4)
-    grouped_binned_y = bin_pki_values(grouped_df[target_column], num_bins=5)[1]
+    grouped_binned_y = bin_pki_values(grouped_df[target_column], num_bins=num_of_bins)[1]
 
     unique_mol_ids = grouped_df.index  # Index([1,2,3,4,6,...,615]) array of all mol_id
     # print(grouped_df)
     # print(grouped_binned_y)
     # print(all_mol_ids)
-
+    
     fold_results = {
         'R2': [],
         'MSE': [],
@@ -225,7 +228,8 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
     all_idx_ypredicted_pki_series = pd.Series(dtype=float)
     outer_cv = StratifiedGroupKFold(n_splits=outer_folds,shuffle=True, random_state=10)
     test_molid_ytrue_pki_series = pd.Series(dtype=float)
-
+    all_splits = list(outer_cv.split(X=grouped_df, y=grouped_binned_y, groups=unique_mol_ids))
+    print(all_splits)
     for outer_fold, (train_idx, test_idx) in enumerate(outer_cv.split(X=grouped_df, y=grouped_binned_y, groups=unique_mol_ids)):
         print(f'Outer fold: {outer_fold}')
         outer_col = f"outer_{outer_fold}"
@@ -235,7 +239,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         # map train_idx to the actual mol ids (so back to the range of 1 to 615 (for JAK1))
         train_mol_ids = grouped_df.iloc[train_idx].index  # Train molecule IDs
         test_mol_ids = grouped_df.iloc[test_idx].index  # Test molecule IDs
-
+        
         # map the mol ids back to all instances of it, and then get the indexes
         # so when 10 conformations, 1 mol id gives the indexes of those 10
         # (same as train_idx and test_idx if there is only 1 conformation)
@@ -276,12 +280,13 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         true_pki_inner_idx_all = []
         predicted_pki_inner_idx_all = []
         inner_cv = StratifiedGroupKFold(n_splits=inner_folds, shuffle=True, random_state=10)
-
+        
         # Group `X_train` by `mol_id` (X_train is different size dependent on how many conformations)
         # grouped_X_train is always the same size df since it groups based on mol_id
         grouped_X_train = X_train.groupby(groups_train).first()  # One row per molecule (groups_train because needs to be same size i guess)
         grouped_binned_y_train = binned_y_train.groupby(groups_train).first() #same as grouped_binned_y but now only the train molecules
-
+        all_splits = list(inner_cv.split(grouped_X_train, grouped_binned_y_train, groups=grouped_X_train.index))
+        print(all_splits)
         #group_X_train has as index mol_id, so grouped_X_train.index are all unique train molecule ids
         for inner_fold, (train_inner_idx, val_idx) in enumerate(inner_cv.split(grouped_X_train, grouped_binned_y_train, groups=grouped_X_train.index)):
             # print(f'  Inner fold: {inner_fold}')
@@ -319,7 +324,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         #back to outerfold
         model_instance = pv.ML_MODEL.model #create random forest model for example
 
-        grid_search = hyperparameter_tuning(model_instance, X, y, pv.HYPERPARAMETER_GRID, cv=custom_inner_splits, scoring=scoring)
+        grid_search = hyperparameter_tuning(model_instance, X, y, pv.ML_MODEL.hyperparameter_grid, cv=custom_inner_splits, scoring=scoring)
         df_results = pd.DataFrame(grid_search.cv_results_)
         print(df_results)
         all_best_params_outer.append(grid_search.best_params_)
@@ -329,21 +334,57 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         best_model = grid_search.best_estimator_
         best_model.fit(X_train, y_train)
         print(pv.ML_MODEL.name)
-        if pv.ML_MODEL.name != 'SVM':
-            print('no svm')
-            importance = best_model.feature_importances_
 
-            # Store the feature importance for the current fold
-            fold_feature_importance.append(importance)
+        shap_base_path = dfs_path / pv.Modelresults_folder_ / 'shap_info' / name / f'fold{outer_fold}' #create Modelresults folder
+        shap_base_path.mkdir(parents=True, exist_ok=True)
+        # if pv.ML_MODEL.name != 'SVM':
+        #     print('no svm')
+        #     importance = best_model.feature_importances_
+        #     # SHAP
+        #     explainer = shap.TreeExplainer(best_model)
+        #     shap_values = explainer(X_test)
 
-            # # Create SHAP explainer and compute SHAP values for the test set
-            # explainer = shap.TreeExplainer(best_model)
-            # shap_values = explainer.shap_values(X_test)
+        #     # Save everything
+        #     joblib.dump(best_model, shap_base_path / f'model_fold{outer_fold}.pkl')
+        #     joblib.dump(shap_values, shap_base_path / f'shap_values_fold{outer_fold}.pkl')
+        #     joblib.dump(X_test, shap_base_path / f'X_test_fold{outer_fold}.pkl')
 
-            # # Store SHAP values and feature importance for the current fold
-            # shap_values_per_fold[outer_fold] = shap_values
-            # feature_importance_per_fold[outer_fold] = np.abs(shap_values).mean(axis=0)  # Mean importance per feature
+        # elif pv.ML_MODEL.name == 'SVM':
+        #     print('svm')
+        #     # Check if the SVM model is linear or non-linear
+        #     if best_model.kernel == 'linear':
+        #         print('Linear SVM')
+        #         X_train_temp = X_train.set_index(df.loc[X_train.index, 'mol_id'])   
+        #         X_test_temp = X_test.set_index(df.loc[X_test.index, 'mol_id'])
 
+        #         X_train_mean = X_train_temp.groupby(X_train_temp.index).mean()  # Mean across features
+        #         X_test_mean = X_test_temp.groupby(X_test_temp.index).mean()  # Mean across features
+
+        #         explainer = shap.KernelExplainer(best_model.predict, X_train_mean)
+        #         shap_values = explainer.shap_values(X_test_mean)
+        #     else:
+        #         print('Non-linear SVM')
+        #         X_train_temp = X_train.set_index(df.loc[X_train.index, 'mol_id'])   
+        #         X_test_temp = X_test.set_index(df.loc[X_test.index, 'mol_id'])            
+
+        #         # SHAP for Non-linear SVM (e.g., RBF kernel): Use mean of X_train as the background data
+        #         X_train_mean = X_train_temp.groupby(X_train_temp.index).mean()  # Mean across features
+        #         X_test_mean = X_test_temp.groupby(X_test_temp.index).mean()  # Mean across features
+        #         print(X_train_mean)
+
+        #         print(X_test_mean)
+        #         explainer = shap.KernelExplainer(best_model.predict, X_train_mean)
+        #         print('start shap')
+        #         shap_values = explainer.shap_values(X_test_mean)
+        #         print('end shap')
+
+        #         print(shap_values)
+        #         print(shap_values)
+
+        #     # Save everything
+        #     joblib.dump(best_model, shap_base_path / f'model_fold{outer_fold}.pkl')
+        #     joblib.dump(shap_values, shap_base_path / f'shap_values_fold{outer_fold}.pkl')
+        #     joblib.dump(X_test, shap_base_path / f'X_test_fold{outer_fold}.pkl')
         mol_id_for_fold = df.loc[train_idx_all, 'mol_id']
         y_train_average = y_train.groupby(mol_id_for_fold).mean()
         y_pred_train = pd.Series(best_model.predict(X_train), index=y_train.index, name='Predicted_pKi')
@@ -452,7 +493,7 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     print(dfs_in_dict)
     outer_folds = 10
     inner_folds = 5
-    scoring = 'r2'
+    scoring = 'neg_mean_squared_error'
     ModelResults = {'R2': [], 'MSE': [], 'MAE': []}
 
     for name, df in dfs_in_dict.items():
@@ -486,17 +527,14 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     return
 
 if __name__ == "__main__":
-    include_files = ['xCLt50_cl10_c10']
-    hpset = ['big']
-    models = [Model_classic.RF]
-    for x in hpset:
-        for model in models:
-            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1, hyperparameter_set=x)
+    include_files = [0]
+   
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
             # main(pv.dfs_descriptors_only_path_,include_files = include_files)
             # main(pv.dfs_reduced_path_,include_files = include_files)
             # main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
             # main(pv.dfs_MD_only_path_,include_files = include_files)
-            main(pv.dfs_dPCA_MD_path_,include_files = include_files)
+    main(pv.dfs_descriptors_only_path_,include_files = include_files)
 
             # pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1, hyperparameter_set=x)
             # main(pv.dfs_descriptors_only_path_,include_files = include_files)

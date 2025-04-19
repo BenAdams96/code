@@ -19,7 +19,7 @@ from global_files import dataframe_processing, csv_to_dictionary, public_variabl
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
-from MDfeatures import get_hbond_csv, get_rms, get_gyrate, get_dipoles, get_sasa_psa, prepare_energy_files_from_MD
+from MDfeatures import get_hbond_csv, get_gyrate, get_dipoles, get_rmsd, get_sasa_psa, prepare_energy_files_from_MD
 
 
 def merge_csv_files_on_columns(energyfolder_path, csv_filenames):

@@ -34,5 +34,7 @@ if __name__ == "__main__":
     main()
     pv.update_config(model_= Model_classic.RF, protein_=DatasetProtein.pparD)
     main()
+    pv.update_config(model_= Model_classic.RF, protein_=DatasetProtein.CLK4)
+    main()
 
     

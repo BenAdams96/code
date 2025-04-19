@@ -34,7 +34,7 @@ def standardize_dataframe(df):
     # Identify which non-feature columns to keep
     non_feature_columns = ['mol_id','PKI','conformations (ns)','picoseconds']
     existing_non_features = [col for col in non_feature_columns if col in df_cleaned.columns]
-    print(existing_non_features)
+    
     # Drop non-numeric target columns if necessary
     features_df = df_cleaned.drop(columns=existing_non_features, axis=1, errors='ignore')
     
@@ -154,7 +154,10 @@ def get_targets(dataset):
 
 def create_dfs_dict(totaldf_path, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20']):
     print(f'create dfs in dict for {totaldf_path}')
-    totaldf = pd.read_csv(totaldf_path)
+    if isinstance(totaldf_path, pd.DataFrame):
+        totaldf = totaldf_path
+    else:
+        totaldf = pd.read_csv(totaldf_path)
     target_df = get_targets(pv.dataset_path_)
     # Check if conformations or picoseconds
     dfs_in_dict = {}

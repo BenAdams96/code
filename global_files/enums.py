@@ -7,22 +7,15 @@ from typing import Union
 from itertools import product
 
 class Model_classic(Enum):
-    RF = ('RF', RandomForestRegressor, 
-          {'small': {'n_estimators': [100], 'max_depth': [3], 'min_samples_split': [8], 
-                     'min_samples_leaf': [8], 'max_features': ['sqrt']},
-           'big': {'n_estimators': [200], 'max_depth': [5,10], 
+    RF = 'RF', RandomForestRegressor, {'n_estimators': [200], 'max_depth': [5,10], 
                      'min_samples_split': [2,5], 'min_samples_leaf': [2,5], 
-                     'max_features': ['sqrt']}})
+                     'max_features': ['sqrt']}
 
-    XGB = ('XGB', XGBRegressor, 
-           {'small': {"n_estimators": [100], "max_depth": [3]},
-            'big': {"n_estimators": [100], "max_depth": [3, 6], 
-                      "learning_rate": [0.1]}})
+    XGB = 'XGB', XGBRegressor, {"n_estimators": [100], "max_depth": [3, 6], 
+                                "learning_rate": [0.1]}
 
-    SVM = ('SVM', SVR, 
-           {'small': {"C": [0.1], "kernel": ["linear", "rbf"], "gamma": ['scale']},
-            'big': {"C": [0.01, 0.1, 1], "kernel": ["linear", "rbf"], 
-                      "gamma": ['scale']}})
+    SVM = 'SVM', SVR, {"C": [0.01, 0.1, 1], "kernel": ["linear", "rbf"], 
+                        "gamma": ['scale']}
 
     model: Union[RandomForestRegressor, XGBRegressor, SVR]
     hyperparameter_grid: dict
@@ -162,20 +155,10 @@ class Descriptor(Enum):
 #         return self.value[0]
 
 class DatasetProtein(Enum):
-    JAK1 = 'JAK1', 615, 4
-    GSK3 = 'GSK3', 856, 4 
-    pparD = 'pparD', 1125, 4
-    CLK4 = 'CLK4', 731, 4
-
-    ABL1 = 'ABL1', 794, 4
-    AR = 'AR', 659, 4 
-    
-    FXR = 'FXR', 631, 4 
-    GHSR = 'GHSR', 682, 4
-    GR = 'GR', 750, 4 
-    HRH1 = 'HRH1', 973, 4
-    JAK2 = 'JAK2', 976, 4
-    PIK3CA = 'PIK3CA', 960, 4
+    JAK1 = 'JAK1', 615, 5
+    GSK3 = 'GSK3', 856, 5
+    pparD = 'pparD', 1125, 5
+    CLK4 = 'CLK4', 731, 5
 
 
 

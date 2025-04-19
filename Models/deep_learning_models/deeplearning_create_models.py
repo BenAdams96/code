@@ -1,4 +1,4 @@
-from global_files import csv_to_dictionary, public_variables as pv
+from global_files import dataframe_processing, csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
@@ -174,7 +174,6 @@ def random_outer_splitting(outer_fold_number, grouped_df, grouped_binned_y, uniq
     train_outer_mol_ids, val_outer_mol_ids = train_test_split(val_train_mol_ids, test_size=1/16, stratify=grouped_binned_y[val_train_mol_ids], random_state=random_state_value)
     return train_outer_mol_ids, test_mol_ids, val_outer_mol_ids
 
-
 def kfold_outer_splitting(outer_fold_number, outer_folds, grouped_df,grouped_binned_y, unique_mol_ids):
 
     outer_cv = StratifiedGroupKFold(n_splits=outer_folds, shuffle=True, random_state=10)
@@ -184,7 +183,6 @@ def kfold_outer_splitting(outer_fold_number, outer_folds, grouped_df,grouped_bin
         (grouped_df.index[train_idx].tolist(), grouped_df.index[val_idx].tolist())
         for train_idx, val_idx in all_outer_indices
     ]
-
     val_outer_fold = ((outer_fold_number+1) % outer_folds) #remainder of numerator and denominator, gives index of another outer_split
     val_outer_mol_ids = all_outer_mol_ids[val_outer_fold][1]
 
@@ -354,7 +352,7 @@ def deeplearning_function(name, df, dfs_path, random_splitting = False):
         
         results = {}
         nums_of_epochs = 2000
-        patience = 250
+        patience = 200
         set_random_seed(42)
         if pv.ML_MODEL == Model_deep.LSTM:
             final_model, train_outer_losses, val_outer_losses = build_LSTM_model(train_outer_loader, val_outer_loader, input_size, nums_of_epochs, patience, hyperparameter_set)
@@ -395,7 +393,7 @@ def deeplearning_function(name, df, dfs_path, random_splitting = False):
         fold_results['MSE'].append(mse_value)
         fold_results['MAE'].append(mae_value)
 
-
+    print(all_true_values)
     mean_scores = {}
     #get once the the mean scores using all the predictions
     r2_value = r2_score(all_true_values, all_predictions)
@@ -584,6 +582,14 @@ def save_fold_results(results, metric, ModelResults, Modelresults_path, random_s
     updated_results_df.to_csv(csv_filepath, index=False)
     return
 
+
+
+
+
+
+
+
+
 def main(dfs_path = pv.dfs_descriptors_only_path_, random_splitting = False ,include_files = []):
     print(dfs_path)
     
@@ -591,10 +597,9 @@ def main(dfs_path = pv.dfs_descriptors_only_path_, random_splitting = False ,inc
     Modelresults_path.mkdir(parents=True, exist_ok=True)
 
     if not include_files:
-        include_files = ['conformations_10.csv']
+        include_files = ['c10']
     
-    dfs_in_dic = csv_to_dictionary.csvfiles_to_dic_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
-    
+    dfs_in_dic = dataframe_processing.csvfiles_to_dict_include(dfs_path, include_files=include_files) #get all the created csvfiles from e.g. 'dataframes_JAK1_WHIM' into a dictionary
     sorted_keys_list = csv_to_dictionary.get_sorted_columns(list(dfs_in_dic.keys())) #RDKIT first
     dfs_in_dic_sorted = {key: dfs_in_dic[key] for key in sorted_keys_list if key in dfs_in_dic} #order
     print(dfs_in_dic_sorted.keys())
@@ -626,7 +631,7 @@ if __name__ == "__main__":
     #     main(path, random_splitting = False, include_files = ['conformations_10.csv','conformations_50.csv','conformations_100.csv'])
     #     main(path, random_splitting = True, include_files = ['conformations_10.csv','conformations_50.csv','conformations_100.csv'])
     
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
 
     #12 uur per ding
     main(pv.dfs_descriptors_only_path_, random_splitting = False, include_files = ['0ns.csv','2ns.csv','4ns.csv','6ns.csv','8ns.csv','10ns.csv','conformations_10.csv','conformations_20.csv','minimized_conformations_10.csv'])

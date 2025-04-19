@@ -660,8 +660,6 @@ def create_subplots():
     plt.savefig(pv.dataframes_master_.parent / 'subplot_good_all.png')  # Save with .png extension
     plt.close()
 
-
-
 def main():
     create_subplots()
 

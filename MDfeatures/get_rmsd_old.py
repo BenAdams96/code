@@ -19,14 +19,14 @@ from global_files import csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
-def run_gmx_rms(MD_path, output_path):
+def run_gmx_rmsd(MD_path, output_path):
     ''' create the 'xvg_files' folder to store the xvg files
         run the gmx energy command for every molecule
         !!! NEEDS TO BE RUN ON LINUX/BASH !!!
     '''
     output_path.mkdir(parents=True, exist_ok=True)
     # create the path for the xvg file to be stored
-    for padded_num in (f"{i:03}" for i in range(1, pv.PROTEIN.dataset_length+1)): #pv.PROTEIN.dataset_length
+    for padded_num in (f"{i:03}" for i in range(1, 2)): #pv.PROTEIN.dataset_length
         print(padded_num)
         combined_path = MD_path / padded_num
         if combined_path.exists() and combined_path.is_dir():
@@ -35,8 +35,11 @@ def run_gmx_rms(MD_path, output_path):
             xtc_file = MD_path / padded_num / f'{padded_num}_prod.xtc'
             tpr_file = MD_path / padded_num / f'{padded_num}_prod.tpr'
             ndx_file = MD_path / padded_num / f'{padded_num}_index.ndx'
+            average_pdb =  f'{padded_num}_average.pdb'
+            
             # If the file already exists, modify the filename to avoid overwriting
             if tpr_file.exists():
+                # create_average_pdb(tpr_file,xtc_fileaverage_pdb)
             # Generate a new folder for the xvg files with a suffix to avoid overwriting
                 command = f'gmx rms -f {xtc_file} -s {tpr_file} -n {ndx_file} -o {rmsd_file}'
                 user_input = '2\n2\n'
@@ -45,6 +48,13 @@ def run_gmx_rms(MD_path, output_path):
             else:
                 continue
     return
+
+# def create_average_pdb(tpr_file,xtc_file,average_pdb):
+#     command = f'gmx rms -f {xtc_file} -s {tpr_file} -n {ndx_file} -o {rmsd_file}'
+#     user_input = '2\n2\n'
+#     #run the command which creates the xvg files
+#     subprocess.run(command, shell=True, input=user_input,capture_output=True, text=True)
+#     return
 
 def rms_xvg_files_to_csvfiles(rmsd_xvgfolder_path):
     ''' go over all the xvg files in chronical order and create one big csv file which 
@@ -93,7 +103,7 @@ def rms_xvg_files_to_csvfiles(rmsd_xvgfolder_path):
 
 def main(MDsimulations_path = pv.MDsimulations_path_):
     RMSD_xvg_dir = pv.energyfolder_path_ / 'RMSD_xvg'
-    run_gmx_rms(MDsimulations_path, RMSD_xvg_dir)
+    run_gmx_rmsd(MDsimulations_path, RMSD_xvg_dir)
     rmsd_df = rms_xvg_files_to_csvfiles(RMSD_xvg_dir)
     return rmsd_df
 
