@@ -7,15 +7,23 @@ from typing import Union
 from itertools import product
 
 class Model_classic(Enum):
-    RF = 'RF', RandomForestRegressor, {'n_estimators': [200], 'max_depth': [5,10], 
+    RF = 'RF', RandomForestRegressor, {'n_estimators': [100], 'max_depth': [5,10], 
                      'min_samples_split': [2,5], 'min_samples_leaf': [2,5], 
                      'max_features': ['sqrt']}
 
-    XGB = 'XGB', XGBRegressor, {"n_estimators": [100], "max_depth": [3, 6], 
-                                "learning_rate": [0.1]}
+    XGB = 'XGB', XGBRegressor, {
+                                    'n_estimators': [100],             # Number of boosting rounds
+                                    'max_depth': [3, 5, 7],                 # Tree depth (controls complexity)
+                                    'learning_rate': [0.05, 0.1],           # Learning rate (smaller = more robust)
+                                    'subsample': [0.7, 0.9],                # % of rows used per boosting round
+                                    'colsample_bytree': [0.6, 0.8],         # % of columns used per tree
+                                    'gamma': [0.8],                         # Minimum loss reduction to split
+                                }
 
-    SVM = 'SVM', SVR, {"C": [0.01, 0.1, 1], "kernel": ["linear", "rbf"], 
-                        "gamma": ['scale']}
+    SVM = 'SVM', SVR, {
+                        'C': [0.1,1,10],                    # Regularization parameter
+                        'kernel': ['linear', 'rbf', 'poly'],          # Kernel types: 'linear' and 'rbf'
+                    }
 
     model: Union[RandomForestRegressor, XGBRegressor, SVR]
     hyperparameter_grid: dict

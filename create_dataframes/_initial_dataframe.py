@@ -100,7 +100,14 @@ def create_full_dfs(molID_PKI_df, output_file):
     # Convert rows list to DataFrame
     print("Sorting full CSV...")
     full_df = pd.read_csv(output_file)
+
+    # Convert 'conformations (ns)' to float for correct sorting
+    full_df['conformations (ns)'] = full_df['conformations (ns)'].astype(float)
+
+    # Now sort the full dataframe by 'mol_id' and 'conformations (ns)'
     full_df_sorted = full_df.sort_values(by=['mol_id', 'conformations (ns)']).reset_index(drop=True)
+
+    # Write the sorted DataFrame back to the CSV file
     full_df_sorted.to_csv(output_file, index=False)  # Overwrite with sorted version
     return
 

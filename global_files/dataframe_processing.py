@@ -192,6 +192,7 @@ def create_dfs_dict(totaldf_path, to_keep=None, include = [0,1,2,3,4,5,6,7,8,9,1
             dfs_in_dict[str(x) + 'ns'] = filtered_df
         elif isinstance(x, str) and x.startswith("c"):
             num_conformations = int(x[1:])
+            totaldf['conformations (ns)'] = totaldf['conformations (ns)'].astype(float)
             total_time = totaldf['conformations (ns)'].max()
             
             target_conformations = [round(i * (total_time / num_conformations),1) for i in range(1, num_conformations + 1)]

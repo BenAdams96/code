@@ -108,7 +108,7 @@ def hyperparameter_tuning(model, X, y, param_grid, cv, scoring='r2'):
         param_grid=param_grid,
         cv=cv,
         scoring=scoring,
-        verbose=1,
+        verbose=3,
         n_jobs=-1
     )
     
@@ -148,6 +148,7 @@ def plot_feature_importance(X, fold_feature_importance, dfs_path, name):
     # Assuming 'best_model' is fitted after hyperparameter tuning
 
     # After all outer folds are completed
+    print(fold_feature_importance)
     average_importance = np.mean(fold_feature_importance, axis=0)
 
     # Create a DataFrame for better visualization
@@ -228,7 +229,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
     outer_cv = StratifiedGroupKFold(n_splits=outer_folds,shuffle=True, random_state=10)
     test_molid_ytrue_pki_series = pd.Series(dtype=float)
     all_splits = list(outer_cv.split(X=grouped_df, y=grouped_binned_y, groups=unique_mol_ids))
-    print(all_splits)
+    # print(all_splits)
     for outer_fold, (train_idx, test_idx) in enumerate(outer_cv.split(X=grouped_df, y=grouped_binned_y, groups=unique_mol_ids)):
         print(f'Outer fold: {outer_fold}')
         outer_col = f"outer_{outer_fold}"
@@ -285,7 +286,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         grouped_X_train = X_train.groupby(groups_train).first()  # One row per molecule (groups_train because needs to be same size i guess)
         grouped_binned_y_train = binned_y_train.groupby(groups_train).first() #same as grouped_binned_y but now only the train molecules
         all_splits = list(inner_cv.split(grouped_X_train, grouped_binned_y_train, groups=grouped_X_train.index))
-        print(all_splits)
+        # print(all_splits)
         #group_X_train has as index mol_id, so grouped_X_train.index are all unique train molecule ids
         for inner_fold, (train_inner_idx, val_idx) in enumerate(inner_cv.split(grouped_X_train, grouped_binned_y_train, groups=grouped_X_train.index)):
             # print(f'  Inner fold: {inner_fold}')
@@ -334,8 +335,8 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         best_model.fit(X_train, y_train)
         print(pv.ML_MODEL.name)
 
-        shap_base_path = dfs_path / pv.Modelresults_folder_ / 'shap_info' / name / f'fold{outer_fold}' #create Modelresults folder
-        shap_base_path.mkdir(parents=True, exist_ok=True)
+        # shap_base_path = dfs_path / pv.Modelresults_folder_ / 'shap_info' / name / f'fold{outer_fold}' #create Modelresults folder
+        # shap_base_path.mkdir(parents=True, exist_ok=True)
         # if pv.ML_MODEL.name != 'SVM':
         #     print('no svm')
         #     importance = best_model.feature_importances_
@@ -413,10 +414,10 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
         all_idx_ytrue_pki_series = pd.concat([all_idx_ytrue_pki_series, y_test]).sort_index() #pd Series of all true pki values
         all_idx_ypredicted_pki_series = pd.concat([all_idx_ypredicted_pki_series, pd.Series(y_pred, index=y_test.index)]).sort_index()
     
-    if pv.ML_MODEL.name != 'SVM':
-        # average_feature_importance = np.mean(list(feature_importance_per_fold.values()), axis=0)
-        # save_average_feature_importance_plot(average_feature_importance, X.columns, dfs_path, name)
-        plot_feature_importance(X, fold_feature_importance, dfs_path, name)
+    # if pv.ML_MODEL.name != 'SVM':
+    #     # average_feature_importance = np.mean(list(feature_importance_per_fold.values()), axis=0)
+    #     # save_average_feature_importance_plot(average_feature_importance, X.columns, dfs_path, name)
+    #     plot_feature_importance(X, fold_feature_importance, dfs_path, name)
 
         # X_all = np.concatenate(X_all_folds, axis=0)
 
@@ -527,8 +528,11 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
 
 if __name__ == "__main__":
     include_files = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20','c50']
-    include_files = ['c50']
+    include_files = [1]
+    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    main(pv.dfs_descriptors_only_path_,include_files = include_files)
 
+    main(pv.dfs_descriptors_only_path_,include_files = include_files)
     for model in Model_classic:
         for descriptor in Descriptor:
             print(model)
