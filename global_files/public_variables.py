@@ -15,6 +15,7 @@ DESCRIPTOR: Descriptor = Descriptor.WHIM
 PROTEIN: DatasetProtein = DatasetProtein.JAK1
 correlation_threshold_ = 0.85
 components = 15
+variance = 0.98
 MDfeatures = ["Bond","U-B","Proper-Dih.","Coul-SR:Other-Other","LJ-SR:Other-Other","Coul-14:Other-Other","LJ-14:Other-Other","Coul-SR:Other-SOL","LJ-SR:Other-SOL"]
 # rerun_MD_features = ["Coul-SR:Other-Other","LJ-SR:Other-Other","Coul-14:Other-Other","LJ-14:Other-Other","Coul-SR:Other-SOL","LJ-SR:Other-SOL"]
 
@@ -24,7 +25,7 @@ def update_paths():
             dfs_2D_path, dfs_descriptors_only_path_, dfs_reduced_path_, dfs_dPCA_path_ ,dfs_reduced_and_MD_path_, dfs_dPCA_MD_path_, dfs_MD_only_path_, \
             Modelresults_folder_, true_predicted , Inner_train_Val_losses, Outer_train_Val_losses, Modelresults_plots, \
             MDsimulations_folder_, MDsimulations_path_, ligand_conformations_folder_, ligand_conformations_system_folder_, ligand_conformations_path_, ligand_conformations_system_path_, \
-            energyfolder_path_, edrfolder_path_, xvgfolder_path_, MD_outputfile_, MDfeatures_allmol_csvfile
+            energyfolder_path_, edrfolder_path_, xvgfolder_path_, MD_outputfile_, MDfeatures_allmol_csvfile, dfs_dPCA_var_path_, dfs_dPCA_var_MD_path_
 
     #Protein dataset
     dataset_path_ = base_path_ / 'dataZ/datasets' / f"{PROTEIN}_dataset.csv"
@@ -42,6 +43,9 @@ def update_paths():
     dfs_dPCA_MD_path_ = dataframes_master_ / f'dPCA_{components}_MD'
     dfs_MD_only_path_ = dataframes_master_ / 'MD only'
     
+    dfs_dPCA_var_path_ = dataframes_master_ / f'dPCA_v{variance}'
+    dfs_dPCA_var_MD_path_ = dataframes_master_ / f'dPCA_v{variance}_MD'
+
     #folder for results
     Modelresults_folder_ = Path(f'ModelResults_{ML_MODEL}') #not a path because can be in different paths
     true_predicted = Modelresults_folder_ / 'true_predicted'

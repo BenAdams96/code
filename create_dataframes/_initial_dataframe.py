@@ -26,7 +26,7 @@ def get_targets(dataset):
     df['PKI'] = -np.log10(df['exp_mean [nM]'] * 1e-9)
     return df[['mol_id','PKI']]
     
-def create_full_dfs(molID_PKI_df):
+def create_full_dfs(molID_PKI_df, output_file):
     ''' Create the WHIM dataframes for every molecule for every timestep (xdirs)
         First goes over the timesteps, then every molecule within that timestep
         Output: total_df_conf_order - dataframe with the descriptors of the molecule for every timestep including mol_id and PKI
@@ -34,22 +34,25 @@ def create_full_dfs(molID_PKI_df):
     print(pv.ligand_conformations_path_)
     sorted_ns_folders = get_sorted_folders(pv.ligand_conformations_path_)  # Sorted from 0ns to 10ns
     print(len(sorted_ns_folders))
+    print(sorted_ns_folders)
     filtered_paths = [path for path in sorted_ns_folders if round(float(path.name.replace('ns', '')) * 100) % 1 == 0] #only use stepsize of 0.1 instead of 0.01 (if so change 10 to 100)
+    
     print(len(filtered_paths))
-    rows = []
-
+    
+    bad_mols = []
+    first_write = True
     for idx, dir_path in enumerate(filtered_paths):  # dir_path = 0ns, 0.1ns, 0.2ns folder etc.
         print(dir_path.name)
-        
+        frame_rows = []
         if os.path.isdir(dir_path):
             filtered_sorted_pdbfiles_list = sorted(
-                (file for file in os.listdir(dir_path) if file.endswith('.pdb') and int(file.split('_')[0]) <= pv.PROTEIN.dataset_length),
+                (file for file in os.listdir(dir_path) if file.endswith('.pdb') and int(file.split('_')[0]) <= pv.PROTEIN.dataset_length+1),
                 key=lambda x: int(x.split('_')[0])
             )
 
             # print(filtered_sorted_list)
             for pdb_file in filtered_sorted_pdbfiles_list:
-                
+                # print(pdb_file)
                 pdb_file_path = os.path.join(dir_path, pdb_file)
                 mol = Chem.MolFromPDBFile(pdb_file_path, removeHs=False, sanitize=False)
                 
@@ -58,7 +61,7 @@ def create_full_dfs(molID_PKI_df):
                         Chem.SanitizeMol(mol)
                     except ValueError as e:
                         print(f"Sanitization error: {e}")
-                        print(pdb_file)
+                        bad_mols.append(pdb_file_path)
                         
                 else:
                     print("Invalid molecule:")
@@ -67,12 +70,10 @@ def create_full_dfs(molID_PKI_df):
                 
                 # Calculate descriptors
                 if pv.DESCRIPTOR == Descriptor.WHIM:
-                    
                     mol_descriptors = rdMolDescriptors.CalcWHIM(mol)
                 elif pv.DESCRIPTOR == Descriptor.GETAWAY:
-                    
                     mol_descriptors = rdMolDescriptors.CalcGETAWAY(mol)
-                
+
                 # index_to_insert = int(pdb_file[:3]) + int((float(dir_path.name.rstrip('ns')) / 10) * (len(sorted_folders) - 1) * len(all_molecules_list))
                 molecule_number = int(pdb_file.split('_')[0])
                 pki_value = molID_PKI_df.loc[molID_PKI_df['mol_id'] == molecule_number, 'PKI'].values[0]
@@ -82,15 +83,26 @@ def create_full_dfs(molID_PKI_df):
                     conformation_value = int(conformation_value)
                 
                 # Collect the row data
-                rows.append([molecule_number, pki_value, conformation_value] + mol_descriptors)
+
+                frame_rows.append([molecule_number, pki_value, conformation_value] + mol_descriptors)
+
+            # Write this frame to CSV
+            if frame_rows:
+                frame_df = pd.DataFrame(frame_rows, columns=['mol_id', 'PKI', 'conformations (ns)'] + list(range(pv.DESCRIPTOR.descriptor_length)))
+                frame_df.dropna(inplace=True)
+                frame_df.to_csv(output_file, mode='a', index=False, header=first_write)
+                first_write = False  # Only write header once
         else:
             print('not a path')
 
-    # Convert rows list to DataFrame
-    columns = ['mol_id', 'PKI', 'conformations (ns)'] + list(range(pv.DESCRIPTOR.descriptor_length))
-    total_df_conf_order = pd.DataFrame(rows, columns=columns).dropna().reset_index(drop=True)
+    print("Bad molecules:", bad_mols)
 
-    return total_df_conf_order
+    # Convert rows list to DataFrame
+    print("Sorting full CSV...")
+    full_df = pd.read_csv(output_file)
+    full_df_sorted = full_df.sort_values(by=['mol_id', 'conformations (ns)']).reset_index(drop=True)
+    full_df_sorted.to_csv(output_file, index=False)  # Overwrite with sorted version
+    return
 
 def get_sorted_folders(base_path):
     '''The folder with CSV files 'dataframes_JAK1_WHIM' is the input and these CSV files will be
@@ -155,17 +167,23 @@ def main():
     
     # Create the dataframes, which eventually will be placed in 'dataframes_JAK1_WHIM'
     # and also add the targets to the dataframes.
-    df_sorted_by_configuration = create_full_dfs(df_targets)
+    pv.dataframes_master_.mkdir(parents=True, exist_ok=True)
+    df_sorted_by_configuration = create_full_dfs(df_targets, pv.initial_dataframe_)
     # df_sorted_by_molid = df_sorted_by_configuration.sort_values(by=['mol_id', 'conformations (ns)']).reset_index(drop=True)
 
     # Save the dataframes
-    pv.dataframes_master_.mkdir(parents=True, exist_ok=True)
-    df_sorted_by_configuration.to_csv(pv.initial_dataframe_, index=False)
+    # chunk_size = 10000  # You can adjust this size based on your system's memory
+    # for start in range(0, len(df_sorted_by_configuration), chunk_size):
+    #     df_sorted_by_configuration.iloc[start:start+chunk_size].to_csv(pv.initial_dataframe_, mode='a', header=start==0, index=False)
     # df_sorted_by_molid.to_csv(pv.dataframes_master_ / 'initial_dataframe_mol_id.csv', index=False)
 
 if __name__ == "__main__":
     # Update public variables
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+
+    # Call main
+    main()
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.GETAWAY, protein_=DatasetProtein.GSK3)
 
     # Call main
     main()

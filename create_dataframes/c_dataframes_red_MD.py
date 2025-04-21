@@ -2,7 +2,7 @@
 from global_files import dataframe_processing, csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
-from create_dataframes import b_dataframes_reduced, d_dataframes_MD_only
+from create_dataframes import b_dataframes_reduced, d_dataframes_MD_only, b_dataframes_reduced_redbefore
 
 from pathlib import Path
 import shutil
@@ -14,7 +14,7 @@ def MD_features_implementation(savefolder_name, include, threshold, to_keep = ['
     destination_folder = pv.dataframes_master_ / savefolder_name
     destination_folder.mkdir(parents=True, exist_ok=True)
     
-    reduced_dfs_in_dict = b_dataframes_reduced.main(threshold, include = include, write_out = False)
+    reduced_dfs_in_dict = b_dataframes_reduced_redbefore.main(threshold, include = include, write_out = False)
     MD_dfs_in_dict = d_dataframes_MD_only.main(to_keep=to_keep, include = include, write_out = False)
 
     print(reduced_dfs_in_dict['0ns'])
@@ -41,7 +41,7 @@ def main(savefolder_name = pv.dfs_reduced_and_MD_path_, include=[], threshold=0.
     destination_folder = pv.dataframes_master_ / savefolder_name
     destination_folder.mkdir(parents=True, exist_ok=True)
     
-    reduced_dfs_in_dict = b_dataframes_reduced.main(threshold, include = include, write_out = False)
+    reduced_dfs_in_dict = b_dataframes_reduced_redbefore.main(threshold, include = include, write_out = False)
     MD_dfs_in_dict = d_dataframes_MD_only.main(to_keep=to_keep, include = include, write_out = False)
 
     # print(reduced_dfs_in_dict['0ns'])

@@ -18,7 +18,6 @@ from typing import List
 from typing import Dict
 import numpy as np
 
-import shap
 import joblib
 
 import pandas as pd
@@ -527,14 +526,22 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     return
 
 if __name__ == "__main__":
-    include_files = [0]
-   
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
-            # main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    include_files = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20','c50']
+    include_files = ['c50']
+
+    for model in Model_classic:
+        for descriptor in Descriptor:
+            print(model)
+            print(descriptor)
+    
+            pv.update_config(model_=model, descriptor_=descriptor, protein_=DatasetProtein.GSK3)
+            main(pv.dfs_descriptors_only_path_,include_files = include_files)
             # main(pv.dfs_reduced_path_,include_files = include_files)
+            # #add pca
             # main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+            # #add pca+MD
             # main(pv.dfs_MD_only_path_,include_files = include_files)
-    main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    
 
             # pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1, hyperparameter_set=x)
             # main(pv.dfs_descriptors_only_path_,include_files = include_files)

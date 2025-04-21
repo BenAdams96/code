@@ -299,14 +299,13 @@ def PCA_for_dfs(dfs_dictionary, variance=0.90):
 
     return dfs_dictionary_pca
 
-def main(save_foldername = 'dPCA', variance = 0.90, include = [0,1,'c10','c20'], write_out = True):
+def main(savefolder_name = pv.dfs_dPCA_var_path_, variance = 0.90, include = [0,1,'c10','c20'], write_out = True):
     if write_out:
-        new_name = f"{save_foldername}_v{variance}"
-        dfs_dPCA_path = pv.dataframes_master_ / new_name
-        dfs_dPCA_path.mkdir(parents=True, exist_ok=True)
+        dfs_dPCA_path = savefolder_name
+        savefolder_name.mkdir(parents=True, exist_ok=True)
 
     # dfs_dictionary = csv_to_dictionary.csvfiles_to_dic_include(pv.dfs_descriptors_only_path_,include_files=['0ns.csv','1ns.csv','2ns.csv','3ns.csv','4ns.csv','5ns.csv','6ns.csv','7ns.csv','8ns.csv','9ns.csv','10ns.csv','conformations_10.csv'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
-    dfs_in_dict = csv_to_dictionary.create_dfs_dic(total_df=pv.initial_dataframe_,include=[1,2,3,4,'c10','c20'])#,'conformations_1000.csv','conformations_1000_molid.csv'])
+    dfs_in_dict = csv_to_dictionary.create_dfs_dic(total_df=pv.initial_dataframe_,include=include)#,'conformations_1000.csv','conformations_1000_molid.csv'])
     dfs_in_dict = dataframe_processing.remove_constant_columns_from_dict_of_dfs(dfs_in_dict)
     
     dfs_in_dict_pca = PCA_for_dfs(dfs_in_dict, variance)

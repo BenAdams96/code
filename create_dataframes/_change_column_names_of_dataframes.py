@@ -12,7 +12,7 @@ def main():
 
     column_mapping = {
         'Total': 'SASA',
-        'num_of_hbonds': 'num of H-bonds',
+        'num of H-bonds': 'H-bonds',
         'within_distance': 'H-bonds within 0.35A',
         'Mtot': 'Total dipole moment',
         'Bond': 'Ligand Bond energy',
@@ -24,6 +24,7 @@ def main():
         'LJ-14:Other-Other': 'LJ-14: Lig-Lig',
         'Coul-SR:Other-SOL': 'Coul-SR: Lig-Sol',
         'LJ-SR:Other-SOL': 'LJ-SR: Lig-Sol',
+        'RMSD (nm)': 'RMSD'
         # Add more mappings as needed
     }
 
@@ -32,12 +33,12 @@ def main():
     MD_output_df.to_csv(pv.energyfolder_path_ / 'MD_output.csv', index=False)
 if __name__ == "__main__":
     # Update public variables
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
-    main()
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    # main()
     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
     main()
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
-    main()
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # main()
     # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
 
     # # Call main

@@ -77,34 +77,62 @@ def check_which_0ns(MD_path):
                             if nsteps == 5000000:
                                 ten_ns_sim.append(padded_num)
 
-                            elif nsteps == 500000:
+                            else:
                                 one_ns_sim.append(padded_num)
                             break
     return one_ns_sim, ten_ns_sim
 
+def print_missing_file(MD_path):
+    for padded_num in (f"{i:03}" for i in range(1, pv.PROTEIN.dataset_length+1)): #pv.PROTEIN.dataset_length
+        combined_path = MD_path / padded_num
+        if combined_path.exists() and combined_path.is_dir():
+            continue
+        else:
+            print(f'{padded_num} doesnt exist')
+    return
+
+def stopped_early(MD_path):
+    mols_stopped_early = []
+    for padded_num in (f"{i:03}" for i in range(1, pv.PROTEIN.dataset_length+1)): #pv.PROTEIN.dataset_length
+        combined_path = MD_path / padded_num
+        if combined_path.exists() and combined_path.is_dir():
+            os.chdir(MD_path / f'{padded_num}')
+            prod_log_file = combined_path / f"{padded_num}_prod.log"
+            if prod_log_file.exists():
+                with open(prod_log_file, 'r') as f:
+                    for line in f:
+                        if 'stopping within' in line:
+                            print(padded_num)
+                            mols_stopped_early.append(padded_num)
+                            break
+    return mols_stopped_early
+
 def main():
     # delete_hash(Path("/home/ben/Download/runMDsimulations_CLK4/alloutputsFinal"))
     # delete_hash(pv.MDsimulations_path_)
-    # one_ns_sim, ten_ns_sim = check_which_0ns(pv.MDsimulations_path_)
-    # print('one ns')
-    # print(one_ns_sim)
-    # print('10 ns')
-    # print(ten_ns_sim)
-
+    mols_stopped_early = stopped_early(pv.MDsimulations_path_)
+    print(mols_stopped_early)
+    one_ns_sim, ten_ns_sim = check_which_0ns(pv.MDsimulations_path_)
+    print('one ns')
+    print(one_ns_sim)
+    print('10 ns')
+    print(ten_ns_sim)
+    
     seg_error_molecules, invalid_molecules = check_minfile_but_no_prodfile(pv.MDsimulations_path_)
     not_converged_molecules = check_if_converged(pv.MDsimulations_path_)
     molecules_list, valid_mols, invalid_mols = global_functions.get_molecules_lists(pv.MDsimulations_path_)
+    print_missing_file(pv.MDsimulations_path_)
     print('not converged')
     print(not_converged_molecules)
     print('seg error molecules')
     print(seg_error_molecules)
     print('invalid molecules')
     print(invalid_molecules)
-
+    print(molecules_list, valid_mols, invalid_mols, len(invalid_mols))
     return
 
 if __name__ == "__main__":
-    pv.update_config(protein_=DatasetProtein.pparD)
+    pv.update_config(protein_=DatasetProtein.CLK4)
     main()
     # pv.update_config(model_= Model_classic.RF, protein_=DatasetProtein.GSK3)
     # main()

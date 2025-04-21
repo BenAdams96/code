@@ -19,7 +19,7 @@ from global_files import dataframe_processing, csv_to_dictionary, public_variabl
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 
-from MDfeatures import get_hbond_csv, get_gyrate, get_dipoles, get_rmsd, get_sasa_psa, prepare_energy_files_from_MD
+from MDfeatures import get_hbond_csv, get_gyrate, get_dipoles, get_rmsd, get_sasa_psa, prepare_energy_files_from_MD, get_potential
 
 def make_index_files(MD_path):
     ''' function'''
@@ -152,138 +152,138 @@ def concatenate_csv_files(folder_path, csv_filenames):
 
 
 
-def calculate_psa_from_trajectory(MD_path, output_file=None, interval_ns=1):
-    # Load the topology and trajectory into an MDAnalysis Universe
+# def calculate_psa_from_trajectory(MD_path, output_file=None, interval_ns=1):
+#     # Load the topology and trajectory into an MDAnalysis Universe
 
-    interval_ps = interval_ns * 1000
+#     interval_ps = interval_ns * 1000
 
-    sorted_files = sorted(MD_path.iterdir(), key=lambda x: int(x.stem))
-    for molecule_path in sorted_files:
-        xtc_files = list(molecule_path.glob("*.xtc"))
-        if xtc_files: #check if valid MD simulation has run
-            molecule_number = molecule_path.name
+#     sorted_files = sorted(MD_path.iterdir(), key=lambda x: int(x.stem))
+#     for molecule_path in sorted_files:
+#         xtc_files = list(molecule_path.glob("*.xtc"))
+#         if xtc_files: #check if valid MD simulation has run
+#             molecule_number = molecule_path.name
 
-            topology_file = molecule_path / f'{molecule_number}_prod.tpr'
-            trajectory_file = molecule_path / f'{molecule_number}_prod.xtc'
+#             topology_file = molecule_path / f'{molecule_number}_prod.tpr'
+#             trajectory_file = molecule_path / f'{molecule_number}_prod.xtc'
             
-            if molecule_number == '021':
-                l = []
-                print('molecule')
-                u = mda.Universe(topology_file, trajectory_file)
-                # for res in u.residues:
-                #     l.append(res.resname)
-                polar_atoms = u.select_atoms('resid 1 and (name O* or name N*)')
-                psa_results = []
+#             if molecule_number == '021':
+#                 l = []
+#                 print('molecule')
+#                 u = mda.Universe(topology_file, trajectory_file)
+#                 # for res in u.residues:
+#                 #     l.append(res.resname)
+#                 polar_atoms = u.select_atoms('resid 1 and (name O* or name N*)')
+#                 psa_results = []
 
-                for ts in u.trajectory:
-                    if ts.time % 1000 == 0:
-                        print(mda.__version__)
-                        # sasa_calculator = sasa.SASA(u, selection=f'resname {ligand_resname} and (name O or name N)')
-                # print(polar_atoms)
-                # for atom in u.select_atoms('resid 1'):
-                #     print(atom.name)
-                # print(l)
-                # print(len(l))
+#                 for ts in u.trajectory:
+#                     if ts.time % 1000 == 0:
+#                         print(mda.__version__)
+#                         # sasa_calculator = sasa.SASA(u, selection=f'resname {ligand_resname} and (name O or name N)')
+#                 # print(polar_atoms)
+#                 # for atom in u.select_atoms('resid 1'):
+#                 #     print(atom.name)
+#                 # print(l)
+#                 # print(len(l))
 
 
-                # # Initialize a list to store all frames and their corresponding times
-                # frames = []
-                # frame_times = []
+#                 # # Initialize a list to store all frames and their corresponding times
+#                 # frames = []
+#                 # frame_times = []
 
-                # # Iterate over all frames in the trajectory
-                # for frame in u.trajectory:
-                #     frames.append(frame)            # Store the frame (if needed)
-                #     frame_times.append(frame.time)
-                # print(frame_times)
-    # # Convert the desired timestamps into MDAnalysis time units (usually picoseconds)
-    # trajectory_times = np.array([ts for ts in u.trajectory.times])
+#                 # # Iterate over all frames in the trajectory
+#                 # for frame in u.trajectory:
+#                 #     frames.append(frame)            # Store the frame (if needed)
+#                 #     frame_times.append(frame.time)
+#                 # print(frame_times)
+#     # # Convert the desired timestamps into MDAnalysis time units (usually picoseconds)
+#     # trajectory_times = np.array([ts for ts in u.trajectory.times])
     
-    # # Initialize dictionary to store results
-    # psa_results = {}
+#     # # Initialize dictionary to store results
+#     # psa_results = {}
 
-    # # Loop over desired timestamps
-    # for timestamp in timestamps:
-    #     # Find the frame closest to the desired timestamp
-    #     closest_frame_idx = np.abs(trajectory_times - timestamp).argmin()
+#     # # Loop over desired timestamps
+#     # for timestamp in timestamps:
+#     #     # Find the frame closest to the desired timestamp
+#     #     closest_frame_idx = np.abs(trajectory_times - timestamp).argmin()
         
-    #     # Set the trajectory to that frame
-    #     u.trajectory[closest_frame_idx]
+#     #     # Set the trajectory to that frame
+#     #     u.trajectory[closest_frame_idx]
         
-    #     # Calculate PSA
-    #     psa_calculator = PSA.PSAnalysis(u)
-    #     psa_calculator.run()
+#     #     # Calculate PSA
+#     #     psa_calculator = PSA.PSAnalysis(u)
+#     #     psa_calculator.run()
 
-    #     # Store the PSA result
-    #     psa_results[timestamp] = psa_calculator.results.psa
-    #     print(f"PSA at {timestamp} ps: {psa_calculator.results.psa} Å²")
+#     #     # Store the PSA result
+#     #     psa_results[timestamp] = psa_calculator.results.psa
+#     #     print(f"PSA at {timestamp} ps: {psa_calculator.results.psa} Å²")
 
-    # # Optionally save results to a file
-    # if output_file:
-    #     with open(output_file, 'w') as f:
-    #         for timestamp, psa in psa_results.items():
-    #             f.write(f"{timestamp}, {psa}\n")
+#     # # Optionally save results to a file
+#     # if output_file:
+#     #     with open(output_file, 'w') as f:
+#     #         for timestamp, psa in psa_results.items():
+#     #             f.write(f"{timestamp}, {psa}\n")
 
-    return #psa_results
+#     return #psa_results
 
 import pandas as pd
 
-def main(protein = pv.PROTEIN):
+def main(protein):
     pv.update_config(protein_= protein)
     MDsimulations_path = pv.MDsimulations_path_
     energyfolder_path = pv.energyfolder_path_
     energyfolder_path.mkdir(parents=True, exist_ok=True)
     # create ndx files
-    make_index_files(MDsimulations_path) #make index files
+    # make_index_files(MDsimulations_path) #make index files
 
     #create hbond csv #1
-    hbond_df = get_hbond_csv.calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path,write_out=True) #1 #use this one i guess. make sure export is okay
-    
+    hbond_df = get_hbond_csv.calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path,write_out=True) #1 (is slow)
 
-    # # create RMSD #2
-    RMSD_xvg_dir = energyfolder_path / 'RMSD_xvg'
-    get_rmsd.run_gmx_rmsd(MDsimulations_path, RMSD_xvg_dir) #creates the files
-    data = get_rmsd.rms_xvg_files_to_csvfiles(RMSD_xvg_dir) #3
-    data.to_csv(energyfolder_path / 'rmsd.csv', index=False)
+    # # # create RMSD #2
+    # RMSD_xvg_dir = energyfolder_path / 'RMSD_xvg'
+    # get_rmsd.run_gmx_rmsd(MDsimulations_path, RMSD_xvg_dir) #creates the files
+    # data = get_rmsd.rms_xvg_files_to_csvfiles(RMSD_xvg_dir) #3
+    # data.to_csv(energyfolder_path / 'rmsd.csv', index=False)
 
-    # #gyration #3
-    gyration_xvg_dir = energyfolder_path / 'gyration_xvg'
-    get_gyrate.run_gmx_gyrate(MDsimulations_path, gyration_xvg_dir)
-    data = get_gyrate.gyration_xvg_files_to_csvfiles(gyration_xvg_dir) #3
-    data.to_csv(energyfolder_path / 'gyration.csv', index=False)
+    # # #gyration #3
+    # # gyration_xvg_dir = energyfolder_path / 'gyration_xvg'
+    # # get_gyrate.run_gmx_gyrate(MDsimulations_path, gyration_xvg_dir)
+    # # data = get_gyrate.gyration_xvg_files_to_csvfiles(gyration_xvg_dir) #3
+    # # data.to_csv(energyfolder_path / 'gyration.csv', index=False)
 
-    # #total dipole moment & epsilon #4 & 5
-    TDM_xvg_dir = energyfolder_path / 'Total_dipole_moment_xvg'
-    epsilon_xvg_dir = energyfolder_path / 'epsilon_xvg'
-    get_dipoles.run_gmx_dipoles(MDsimulations_path, TDM_xvg_dir, epsilon_xvg_dir)
-    data = get_dipoles.Total_dipole_moment_xvg_files_to_csvfiles(energyfolder_path, TDM_xvg_dir)
-    data.to_csv(energyfolder_path / 'total_dipole_moment.csv', index=False)
-    data = get_dipoles.epsilon_xvg_files_to_csvfiles(energyfolder_path, epsilon_xvg_dir)
-    data.to_csv(energyfolder_path / 'epsilon.csv', index=False)
+    # # #total dipole moment & epsilon #4 & 5
+    # TDM_xvg_dir = energyfolder_path / 'Total_dipole_moment_xvg'
+    # epsilon_xvg_dir = energyfolder_path / 'epsilon_xvg'
+    # get_dipoles.run_gmx_dipoles(MDsimulations_path, TDM_xvg_dir, epsilon_xvg_dir)
+    # data = get_dipoles.Total_dipole_moment_xvg_files_to_csvfiles(energyfolder_path, TDM_xvg_dir)
+    # data.to_csv(energyfolder_path / 'total_dipole_moment.csv', index=False)
+    # data = get_dipoles.epsilon_xvg_files_to_csvfiles(energyfolder_path, epsilon_xvg_dir)
+    # data.to_csv(energyfolder_path / 'epsilon.csv', index=False)
 
+    # # #SASA & PSA
+    # SASA_xvg_dir = pv.energyfolder_path_ / 'SASA_xvg'
+    # PSA_xvg_dir = pv.energyfolder_path_ / 'PSA_xvg'
 
-    # #SASA & PSA
-    SASA_xvg_dir = pv.energyfolder_path_ / 'SASA_xvg'
-    PSA_xvg_dir = pv.energyfolder_path_ / 'PSA_xvg'
+    # get_sasa_psa.make_PSA_index_files(MDsimulations_path)
 
-    get_sasa_psa.make_PSA_index_files(MDsimulations_path)
+    # get_sasa_psa.run_gmx_sasa(MDsimulations_path, SASA_xvg_dir)
+    # sasa_df = get_sasa_psa.sasa_xvg_files_to_csvfiles(energyfolder_path, SASA_xvg_dir)
 
-    get_sasa_psa.run_gmx_sasa(MDsimulations_path, SASA_xvg_dir)
-    sasa_df = get_sasa_psa.sasa_xvg_files_to_csvfiles(energyfolder_path, SASA_xvg_dir)
+    # get_sasa_psa.run_gmx_psa_sasa(MDsimulations_path, PSA_xvg_dir)
+    # psa_df = get_sasa_psa.psa_xvg_files_to_csvfiles(energyfolder_path, PSA_xvg_dir)
 
-    get_sasa_psa.run_gmx_psa_sasa(MDsimulations_path, PSA_xvg_dir)
-    psa_df = get_sasa_psa.psa_xvg_files_to_csvfiles(energyfolder_path, PSA_xvg_dir)
+    # psa_df.to_csv(energyfolder_path / 'psa.csv', index=False)
+    # sasa_df.to_csv(energyfolder_path / 'sasa.csv', index=False)
 
-    psa_df.to_csv(energyfolder_path / 'psa.csv', index=False)
-    sasa_df.to_csv(energyfolder_path / 'sasa.csv', index=False)
+    # get_potential.main(MDsimulations_path)
 
-    # # energy files
-    prepare_energy_files_from_MD.main(MDsimulations_path)
+    # # # energy files
+    # prepare_energy_files_from_MD.main(MDsimulations_path)
     
     return
 
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
+    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
     main(pv.PROTEIN)
     # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
     # main(pv.PROTEIN)

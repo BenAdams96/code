@@ -59,7 +59,7 @@ def create_df_multiple_conformations(df, interval=1):
     
     return reduced_df
 
-def main(time_interval = 1, include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20'], write_out = True):
+def main(include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20'], write_out = True):
     initial_df = pd.read_csv(pv.initial_dataframe_)
 
     # dfs_in_dict = create_dfs_dic(initial_df, time_interval) #only single conformations

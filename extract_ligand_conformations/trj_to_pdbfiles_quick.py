@@ -71,7 +71,6 @@ def trj_to_pdb(valid_molecules_list, frames_to_extract,base_path, MDsimulations_
 
     #go over all the valid molecules and get the right snapshot of the trajectory into the right folders of 'ligand_conformations_for_every_ns'
     for mol in valid_molecules_list:
-        print(mol)
         mol_path = MDsimulations_path / mol
         print(mol_path)
         if mol_path.exists() and mol_path.is_dir():
@@ -157,7 +156,7 @@ def main(MDsimulations_path = pv.MDsimulations_path_, output_folder = pv.ligand_
     print(invalid_mols)
     print('done getting molecules')
     #Define frames to extract
-    frames_to_extract = list(range(0,frames+1,1)) #101 frames
+    frames_to_extract = list(range(0,frames+1,1)) #1001 frames
     valid_mols_sorted = sorted(valid_mols, key=int)
     print(frames_to_extract)
     print(valid_mols_sorted)
@@ -174,8 +173,8 @@ if __name__ == "__main__":
     print('trj_to_pdbfiles')
     pv.update_config(model_=Model_classic, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
     MDsimulations_path = pv.MDsimulations_path_ #the folder containing all the MD simulations {001,002..615}
-    length_xtc = 4 #in ns
-    frames = 400
+    length_xtc = 10 #in ns
+    frames = 1000
     main(MDsimulations_path, pv.ligand_conformations_path_, frames, length_xtc)
 
     # pv.update_config(model_=Model_classic, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)

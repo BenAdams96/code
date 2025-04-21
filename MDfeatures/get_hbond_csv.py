@@ -29,7 +29,7 @@ def calculate_hbond_dataframe_trajectory(MD_path,write_out):
     result_list = []
 
     # Iterate through the padded range of numbers
-    for mol in (f"{i:03}" for i in range(1, 2)):  # Adjust the range as needed pv.PROTEIN.dataset_length+1
+    for mol in (f"{i:03}" for i in range(1, pv.PROTEIN.dataset_length+1)):  # Adjust the range as needed pv.PROTEIN.dataset_length+1
         # Define file paths
         xtc_file = MD_path / mol / f'{mol}_prod.xtc'
         tpr_file = MD_path / mol / f'{mol}_prod.tpr'

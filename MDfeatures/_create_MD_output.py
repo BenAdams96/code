@@ -57,7 +57,7 @@ def main(protein = pv.PROTEIN):
     energyfolder_path = pv.energyfolder_path_
     energyfolder_path.mkdir(parents=True, exist_ok=True)
 
-    file_list = ['hbonds.csv', 'rmsd.csv', 'gyration.csv', 'epsilon.csv','total_dipole_moment.csv', 'sasa.csv', 'psa.csv', f'MD_features_{pv.PROTEIN}.csv']
+    file_list = ['potential.csv','hbonds.csv', 'rmsd.csv', 'epsilon.csv','total_dipole_moment.csv', 'sasa.csv', 'psa.csv', f'MD_features_{pv.PROTEIN}.csv']
     MD_output_df = merge_csv_files_on_columns(energyfolder_path, file_list)
     MD_output_df = dataframe_processing.change_MD_column_names(MD_output_df)
     MD_output_df.to_csv(energyfolder_path / 'MD_output.csv', index=False)
@@ -65,7 +65,7 @@ def main(protein = pv.PROTEIN):
 
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
+    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
     main(pv.PROTEIN)
     # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
     # main(pv.PROTEIN)
