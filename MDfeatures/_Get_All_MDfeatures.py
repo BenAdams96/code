@@ -233,57 +233,57 @@ def main(protein):
     energyfolder_path = pv.energyfolder_path_
     energyfolder_path.mkdir(parents=True, exist_ok=True)
     # create ndx files
-    # make_index_files(MDsimulations_path) #make index files
+    make_index_files(MDsimulations_path) #make index files
 
     #create hbond csv #1
-    hbond_df = get_hbond_csv.calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path,write_out=True) #1 (is slow)
+    # hbond_df = get_hbond_csv.calculate_hbond_dataframe_trajectory(MD_path=MDsimulations_path,write_out=True) #1 (is slow)
 
-    # # # create RMSD #2
-    # RMSD_xvg_dir = energyfolder_path / 'RMSD_xvg'
-    # get_rmsd.run_gmx_rmsd(MDsimulations_path, RMSD_xvg_dir) #creates the files
-    # data = get_rmsd.rms_xvg_files_to_csvfiles(RMSD_xvg_dir) #3
-    # data.to_csv(energyfolder_path / 'rmsd.csv', index=False)
+    # # create RMSD #2
+    RMSD_xvg_dir = energyfolder_path / 'RMSD_xvg'
+    get_rmsd.run_gmx_rmsd(MDsimulations_path, RMSD_xvg_dir) #creates the files
+    data = get_rmsd.rms_xvg_files_to_csvfiles(RMSD_xvg_dir) #3
+    data.to_csv(energyfolder_path / 'rmsd.csv', index=False)
 
-    # # #gyration #3
-    # # gyration_xvg_dir = energyfolder_path / 'gyration_xvg'
-    # # get_gyrate.run_gmx_gyrate(MDsimulations_path, gyration_xvg_dir)
-    # # data = get_gyrate.gyration_xvg_files_to_csvfiles(gyration_xvg_dir) #3
-    # # data.to_csv(energyfolder_path / 'gyration.csv', index=False)
+    # #gyration #3
+    # gyration_xvg_dir = energyfolder_path / 'gyration_xvg'
+    # get_gyrate.run_gmx_gyrate(MDsimulations_path, gyration_xvg_dir)
+    # data = get_gyrate.gyration_xvg_files_to_csvfiles(gyration_xvg_dir) #3
+    # data.to_csv(energyfolder_path / 'gyration.csv', index=False)
 
-    # # #total dipole moment & epsilon #4 & 5
-    # TDM_xvg_dir = energyfolder_path / 'Total_dipole_moment_xvg'
-    # epsilon_xvg_dir = energyfolder_path / 'epsilon_xvg'
-    # get_dipoles.run_gmx_dipoles(MDsimulations_path, TDM_xvg_dir, epsilon_xvg_dir)
-    # data = get_dipoles.Total_dipole_moment_xvg_files_to_csvfiles(energyfolder_path, TDM_xvg_dir)
-    # data.to_csv(energyfolder_path / 'total_dipole_moment.csv', index=False)
-    # data = get_dipoles.epsilon_xvg_files_to_csvfiles(energyfolder_path, epsilon_xvg_dir)
-    # data.to_csv(energyfolder_path / 'epsilon.csv', index=False)
+    # #total dipole moment & epsilon #4 & 5
+    TDM_xvg_dir = energyfolder_path / 'Total_dipole_moment_xvg'
+    epsilon_xvg_dir = energyfolder_path / 'epsilon_xvg'
+    get_dipoles.run_gmx_dipoles(MDsimulations_path, TDM_xvg_dir, epsilon_xvg_dir)
+    data = get_dipoles.Total_dipole_moment_xvg_files_to_csvfiles(energyfolder_path, TDM_xvg_dir)
+    data.to_csv(energyfolder_path / 'total_dipole_moment.csv', index=False)
+    data = get_dipoles.epsilon_xvg_files_to_csvfiles(energyfolder_path, epsilon_xvg_dir)
+    data.to_csv(energyfolder_path / 'epsilon.csv', index=False)
 
-    # # #SASA & PSA
-    # SASA_xvg_dir = pv.energyfolder_path_ / 'SASA_xvg'
-    # PSA_xvg_dir = pv.energyfolder_path_ / 'PSA_xvg'
+    # #SASA & PSA
+    SASA_xvg_dir = pv.energyfolder_path_ / 'SASA_xvg'
+    PSA_xvg_dir = pv.energyfolder_path_ / 'PSA_xvg'
 
-    # get_sasa_psa.make_PSA_index_files(MDsimulations_path)
+    get_sasa_psa.make_PSA_index_files(MDsimulations_path)
 
-    # get_sasa_psa.run_gmx_sasa(MDsimulations_path, SASA_xvg_dir)
-    # sasa_df = get_sasa_psa.sasa_xvg_files_to_csvfiles(energyfolder_path, SASA_xvg_dir)
+    get_sasa_psa.run_gmx_sasa(MDsimulations_path, SASA_xvg_dir)
+    sasa_df = get_sasa_psa.sasa_xvg_files_to_csvfiles(energyfolder_path, SASA_xvg_dir)
 
-    # get_sasa_psa.run_gmx_psa_sasa(MDsimulations_path, PSA_xvg_dir)
-    # psa_df = get_sasa_psa.psa_xvg_files_to_csvfiles(energyfolder_path, PSA_xvg_dir)
+    get_sasa_psa.run_gmx_psa_sasa(MDsimulations_path, PSA_xvg_dir)
+    psa_df = get_sasa_psa.psa_xvg_files_to_csvfiles(energyfolder_path, PSA_xvg_dir)
 
-    # psa_df.to_csv(energyfolder_path / 'psa.csv', index=False)
-    # sasa_df.to_csv(energyfolder_path / 'sasa.csv', index=False)
+    psa_df.to_csv(energyfolder_path / 'psa.csv', index=False)
+    sasa_df.to_csv(energyfolder_path / 'sasa.csv', index=False)
 
-    # get_potential.main(MDsimulations_path)
+    get_potential.main(MDsimulations_path)
 
-    # # # energy files
-    # prepare_energy_files_from_MD.main(MDsimulations_path)
+    # # energy files
+    prepare_energy_files_from_MD.main(MDsimulations_path)
     
     return
 
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
     main(pv.PROTEIN)
     # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
     # main(pv.PROTEIN)

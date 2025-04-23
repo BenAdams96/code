@@ -132,7 +132,7 @@ def main():
     return
 
 if __name__ == "__main__":
-    pv.update_config(protein_=DatasetProtein.CLK4)
+    pv.update_config(protein_=DatasetProtein.pparD)
     main()
     # pv.update_config(model_= Model_classic.RF, protein_=DatasetProtein.GSK3)
     # main()

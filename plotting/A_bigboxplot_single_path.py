@@ -412,6 +412,7 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
         pv.dfs_reduced_and_MD_path_.name: 'lightcoral',
         pv.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
         pv.dfs_dPCA_MD_path_.name: 'orchid',
+        pv.dfs_dPCA_var_MD_path_.name: 'salmon',
         "PCA": "salmon",
         "2D": 'goldenrod',
         'descriptors only scaled mw': 'salmon',
@@ -444,6 +445,7 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
         pv.dfs_reduced_and_MD_path_.name: 'RDkit Descriptors Red. + MD features',
         pv.dfs_MD_only_path_.name: 'MD features',  # Added label for "MD only"
         pv.dfs_dPCA_MD_path_.name: 'desc PCA + MD',
+        pv.dfs_dPCA_var_MD_path_.name: 'PCA + MD',
         # pv.dfs_reduced_PCA_path_.name: 'PCA desc',
         # pv.dfs_reduced_MD_PCA_path_.name: f'PCA MD',
         # pv.dfs_reduced_and_MD_combined_PCA_path_.name: 'PCA desc + PCA MD',
@@ -585,8 +587,8 @@ def boxplots_compare_groups(path, csv_filename, modelresults_dict):
         min_value = -0.1
         max_value = 0.6
     elif pv.PROTEIN == DatasetProtein.pparD:
-        min_value = -0.1
-        max_value = 0.6
+        min_value = 0.0
+        max_value = 0.7
     elif pv.PROTEIN == DatasetProtein.CLK4:
         min_value = -0.4
         max_value = 0.6
@@ -671,7 +673,7 @@ if __name__ == "__main__":
     include_files=['2D','0ns','2ns','c10','CLt50_cl10x_c10']
     include_files=['c10','CLt50_cl10x_c10']
 
-
+    include_files=['0ns','1ns','c10']
     # dfs_paths.append((public_variables.dataframes_master_ / '2D', []))
     # dfs_paths.append((public_variables.dfs_descriptors_only_path_, exclude_files_clusters + exclude_stable))
     # dfs_paths.append((public_variables.dfs_reduced_path_, exclude_files_clusters+ exclude_stable))
@@ -687,20 +689,43 @@ if __name__ == "__main__":
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters10+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters40 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters30 + exclude_files_other))
     # dfs_paths.append((public_variables.dfs_reduced_and_MD_path_, exclude_files_clusters30 + exclude_files_clusters20+ exclude_files_clusters50+ exclude_files_clusters40 + exclude_files_other))
-    for model in Model_classic:
-        for protein in list(DatasetProtein)[:4]:
-            dfs_paths = []
-            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein, hyperparameter_set='big')
-            # include_files=['0ns','1ns','3ns','5ns','conformations_10']
-            # for path in pv.get_paths():
-            dfs_paths.append((pv.dfs_2D_path, include_files))
-            dfs_paths.append((pv.dfs_descriptors_only_path_, include_files))
-            # dfs_paths.append((pv.dfs_reduced_path_, include_files))
-            dfs_paths.append((pv.dfs_reduced_and_MD_path_, include_files))
-            dfs_paths.append((pv.dfs_MD_only_path_, include_files))
-            # dfs_paths.append((pv.dfs_dPCA_path_, include_files))
-            dfs_paths.append((pv.dfs_dPCA_MD_path_, include_files))
-            main(dfs_paths)
+    
+    variance = 0.95
+    threshold = 0.8
+    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=threshold, variance=variance)
+    dfs_paths.append((pv.dfs_descriptors_only_path_, include_files))
+    dfs_paths.append((pv.dfs_reduced_path_, include_files))
+    dfs_paths.append((pv.dfs_reduced_and_MD_path_, include_files))
+    dfs_paths.append((pv.dfs_dPCA_var_MD_path_, include_files))
+    dfs_paths.append((pv.dfs_MD_only_path_, include_files))
+    main(dfs_paths)
+
+    variance = 0.85
+    threshold = 0.7
+    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.GETAWAY, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=threshold, variance=variance)
+    dfs_paths.append((pv.dfs_descriptors_only_path_, include_files))
+    dfs_paths.append((pv.dfs_reduced_path_, include_files))
+    dfs_paths.append((pv.dfs_reduced_and_MD_path_, include_files))
+    dfs_paths.append((pv.dfs_dPCA_var_MD_path_, include_files))
+    dfs_paths.append((pv.dfs_MD_only_path_, include_files))
+    main(dfs_paths)
+
+    # for model in Model_classic:
+    #     for protein in list(DatasetProtein)[:4]:
+    #         dfs_paths = []
+    #         pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein, hyperparameter_set='big')
+    #         # include_files=['0ns','1ns','3ns','5ns','conformations_10']
+    #         # for path in pv.get_paths():
+    #         dfs_paths.append((pv.dfs_2D_path, include_files))
+    #         dfs_paths.append((pv.dfs_descriptors_only_path_, include_files))
+    #         # dfs_paths.append((pv.dfs_reduced_path_, include_files))
+    #         dfs_paths.append((pv.dfs_reduced_and_MD_path_, include_files))
+    #         dfs_paths.append((pv.dfs_MD_only_path_, include_files))
+    #         # dfs_paths.append((pv.dfs_dPCA_path_, include_files))
+    #         dfs_paths.append((pv.dfs_dPCA_MD_path_, include_files))
+    #         main(dfs_paths)
 
     # dfs_paths.append((pv.dataframes_master_ / 'MD_new only', include_files))
 

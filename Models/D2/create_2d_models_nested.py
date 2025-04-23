@@ -482,7 +482,7 @@ def nested_cross_validation(name, df, dfs_path, outer_folds=10, inner_folds=5, s
             fold_assignments_df[inner_col] = None
         model_instance = pv.ML_MODEL.model #create random forest model for example
 
-        grid_search = hyperparameter_tuning(model_instance, X, y, pv.HYPERPARAMETER_GRID, cv=custom_inner_splits, scoring=scoring)
+        grid_search = hyperparameter_tuning(model_instance, X, y, pv.ML_MODEL.hyperparameter_grid, cv=custom_inner_splits, scoring=scoring)
         df_results = pd.DataFrame(grid_search.cv_results_)
         all_best_params_outer.append(grid_search.best_params_)
         # print(df_results)
@@ -667,19 +667,23 @@ if __name__ == "__main__":
     # pv.update_config(model_=Model_deep.DNN, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
     # main(pv.dfs_2D_path)
 
+    pv.update_config(model_=Model_classic.XGB, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    main(pv.dfs_2D_path)
+    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    main(pv.dfs_2D_path)
 
-
-
+    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # main(pv.dfs_2D_path)
 
 
     # for set in hpset:
         # for model in Model_classic:
-    models = [Model_classic.RF, Model_classic.XGB]
-    for protein in DatasetProtein:
-        print(protein)
-        for model in models:
-            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein, hyperparameter_set='big')
-            main(pv.dfs_2D_path)
+    # models = [Model_classic.RF, Model_classic.XGB]
+    # for protein in DatasetProtein:
+    #     print(protein)
+    #     for model in models:
+    #         pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein, hyperparameter_set='big')
+    #         main(pv.dfs_2D_path)
     # pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3, hyperparameter_set=set)
     # main(pv.dfs_2D_path)
     # pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD, hyperparameter_set=set)

@@ -7,22 +7,25 @@ from typing import Union
 from itertools import product
 
 class Model_classic(Enum):
-    RF = 'RF', RandomForestRegressor, {'n_estimators': [100], 'max_depth': [5,10], 
-                     'min_samples_split': [2,5], 'min_samples_leaf': [2,5], 
+    RF = 'RF', RandomForestRegressor, {'n_estimators': [100,150], 'max_depth': [3,5,10,15], 
+                     'min_samples_split': [2,5,10], 'min_samples_leaf': [2,5], 
                      'max_features': ['sqrt']}
 
     XGB = 'XGB', XGBRegressor, {
-                                    'n_estimators': [100],             # Number of boosting rounds
-                                    'max_depth': [3, 5, 7],                 # Tree depth (controls complexity)
-                                    'learning_rate': [0.05, 0.1],           # Learning rate (smaller = more robust)
-                                    'subsample': [0.7, 0.9],                # % of rows used per boosting round
-                                    'colsample_bytree': [0.6, 0.8],         # % of columns used per tree
-                                    'gamma': [0.8],                         # Minimum loss reduction to split
-                                }
+                                'n_estimators': [100],             # Number of boosting rounds
+                                'max_depth': [3, 5, 7, 10, 15],    # Tree depth (controls complexity)
+                                'learning_rate': [0.05, 0.1],      # Learning rate (smaller = more robust)
+                                'subsample': [0.7, 0.9],           # % of rows used per boosting round
+                                'colsample_bytree': [0.6, 0.8],    # % of columns used per tree
+                                'gamma': [0.8],                    # Minimum loss reduction to split
+                            }
 
     SVM = 'SVM', SVR, {
-                        'C': [0.1,1,10],                    # Regularization parameter
-                        'kernel': ['linear', 'rbf', 'poly'],          # Kernel types: 'linear' and 'rbf'
+                        'C': [0.1, 1, 10],                    # Regularization parameter
+                        'kernel': ['rbf'],  # Kernel types: 'linear', 'rbf', and 'poly'
+                     # Degree of the polynomial kernel (relevant for 'poly' kernel)
+                        'gamma': ['scale', 'auto'],           # Kernel coefficient for 'rbf' and 'poly' kernels
+                    # Independent term in kernel function (relevant for 'poly' and 'sigmoid' kernels)
                     }
 
     model: Union[RandomForestRegressor, XGBRegressor, SVR]

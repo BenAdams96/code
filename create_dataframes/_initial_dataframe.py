@@ -34,81 +34,94 @@ def create_full_dfs(molID_PKI_df, output_file):
     print(pv.ligand_conformations_path_)
     sorted_ns_folders = get_sorted_folders(pv.ligand_conformations_path_)  # Sorted from 0ns to 10ns
     print(len(sorted_ns_folders))
-    print(sorted_ns_folders)
+    # print(sorted_ns_folders)
     filtered_paths = [path for path in sorted_ns_folders if round(float(path.name.replace('ns', '')) * 100) % 1 == 0] #only use stepsize of 0.1 instead of 0.01 (if so change 10 to 100)
     
     print(len(filtered_paths))
-    
-    bad_mols = []
-    first_write = True
-    for idx, dir_path in enumerate(filtered_paths):  # dir_path = 0ns, 0.1ns, 0.2ns folder etc.
-        print(dir_path.name)
-        frame_rows = []
-        if os.path.isdir(dir_path):
-            filtered_sorted_pdbfiles_list = sorted(
-                (file for file in os.listdir(dir_path) if file.endswith('.pdb') and int(file.split('_')[0]) <= pv.PROTEIN.dataset_length+1),
-                key=lambda x: int(x.split('_')[0])
-            )
+    # if os.path.exists(output_file):
+    #     os.remove(output_file)
+    # bad_mols = []
+    # first_write = True
+    # for idx, dir_path in enumerate(filtered_paths):  # dir_path = 0ns, 0.1ns, 0.2ns folder etc.
+    #     print(dir_path.name)
+    #     frame_rows = []
+    #     if os.path.isdir(dir_path):
+    #         filtered_sorted_pdbfiles_list = sorted(
+    #             (file for file in os.listdir(dir_path) if file.endswith('.pdb') and int(file.split('_')[0]) <= pv.PROTEIN.dataset_length+1),
+    #             key=lambda x: int(x.split('_')[0])
+    #         )
 
-            # print(filtered_sorted_list)
-            for pdb_file in filtered_sorted_pdbfiles_list:
-                # print(pdb_file)
-                pdb_file_path = os.path.join(dir_path, pdb_file)
-                mol = Chem.MolFromPDBFile(pdb_file_path, removeHs=False, sanitize=False)
+    #         # print(filtered_sorted_list)
+    #         for pdb_file in filtered_sorted_pdbfiles_list:
+    #             # print(pdb_file)
+    #             pdb_file_path = os.path.join(dir_path, pdb_file)
+    #             mol = Chem.MolFromPDBFile(pdb_file_path, removeHs=False, sanitize=False)
                 
-                if mol is not None:
-                    try:
-                        Chem.SanitizeMol(mol)
-                    except ValueError as e:
-                        print(f"Sanitization error: {e}")
-                        bad_mols.append(pdb_file_path)
-                        
-                else:
-                    print("Invalid molecule:")
-                    print(pdb_file)
-                    continue
+    #             if mol is not None:
+    #                 try:
+    #                     Chem.SanitizeMol(mol)
+    #                 except ValueError as e:
+    #                     print(f"Sanitization error: {e}")
+    #                     bad_mols.append(pdb_file_path) 
+    #             else:
+    #                 print("Invalid molecule:")
+    #                 print(pdb_file)
+    #                 continue
                 
-                # Calculate descriptors
-                if pv.DESCRIPTOR == Descriptor.WHIM:
-                    mol_descriptors = rdMolDescriptors.CalcWHIM(mol)
-                elif pv.DESCRIPTOR == Descriptor.GETAWAY:
-                    mol_descriptors = rdMolDescriptors.CalcGETAWAY(mol)
+    #             # Calculate descriptors
+    #             if pv.DESCRIPTOR == Descriptor.WHIM:
+    #                 mol_descriptors = rdMolDescriptors.CalcWHIM(mol)
+    #             elif pv.DESCRIPTOR == Descriptor.GETAWAY:
+    #                 mol_descriptors = rdMolDescriptors.CalcGETAWAY(mol)
 
-                # index_to_insert = int(pdb_file[:3]) + int((float(dir_path.name.rstrip('ns')) / 10) * (len(sorted_folders) - 1) * len(all_molecules_list))
-                molecule_number = int(pdb_file.split('_')[0])
-                pki_value = molID_PKI_df.loc[molID_PKI_df['mol_id'] == molecule_number, 'PKI'].values[0]
+    #             # index_to_insert = int(pdb_file[:3]) + int((float(dir_path.name.rstrip('ns')) / 10) * (len(sorted_folders) - 1) * len(all_molecules_list))
+    #             molecule_number = int(pdb_file.split('_')[0])
+    #             pki_value = molID_PKI_df.loc[molID_PKI_df['mol_id'] == molecule_number, 'PKI'].values[0]
 
-                conformation_value = float(dir_path.name.rstrip('ns'))
-                if conformation_value.is_integer():
-                    conformation_value = int(conformation_value)
+    #             conformation_value = float(dir_path.name.rstrip('ns'))
+    #             if conformation_value.is_integer():
+    #                 conformation_value = int(conformation_value)
                 
-                # Collect the row data
+    #             # Collect the row data
 
-                frame_rows.append([molecule_number, pki_value, conformation_value] + mol_descriptors)
+    #             frame_rows.append([molecule_number, pki_value, conformation_value] + mol_descriptors)
 
-            # Write this frame to CSV
-            if frame_rows:
-                frame_df = pd.DataFrame(frame_rows, columns=['mol_id', 'PKI', 'conformations (ns)'] + list(range(pv.DESCRIPTOR.descriptor_length)))
-                frame_df.dropna(inplace=True)
-                frame_df.to_csv(output_file, mode='a', index=False, header=first_write)
-                first_write = False  # Only write header once
-        else:
-            print('not a path')
+    #         # Write this frame to CSV
+    #         if frame_rows:
+    #             frame_df = pd.DataFrame(frame_rows, columns=['mol_id', 'PKI', 'conformations (ns)'] + list(range(pv.DESCRIPTOR.descriptor_length)))
+    #             frame_df.dropna(inplace=True)
+    #             frame_df.to_csv(output_file, mode='a', index=False, header=first_write)
+    #             first_write = False  # Only write header once
+    #     else:
+    #         print('not a path')
 
-    print("Bad molecules:", bad_mols)
+    # print("Bad molecules:", bad_mols)
 
-    # Convert rows list to DataFrame
+        # Convert rows list to DataFrame
     print("Sorting full CSV...")
     full_df = pd.read_csv(output_file)
 
     # Convert 'conformations (ns)' to float for correct sorting
     full_df['conformations (ns)'] = full_df['conformations (ns)'].astype(float)
 
-    # Now sort the full dataframe by 'mol_id' and 'conformations (ns)'
-    full_df_sorted = full_df.sort_values(by=['mol_id', 'conformations (ns)']).reset_index(drop=True)
+    # Sort the DataFrame first by 'mol_id' and then by 'conformations (ns)' in ascending order
+    full_df_sorted = full_df.sort_values(by=['mol_id', 'conformations (ns)'], ascending=[True, True]).reset_index(drop=True)
 
+    # Drop constant columns (columns where all values are the same)
+    nunique = full_df_sorted.nunique()
+    constant_columns = nunique[nunique <= 1].index
+    full_df_sorted.drop(columns=constant_columns, inplace=True)
+    print(f"Dropped constant columns: {list(constant_columns)}")
+    # Identify and print columns with variance lower than 1%
+    # Exclude non-numeric columns before checking variance
+    numeric_df = full_df_sorted.select_dtypes(include=[np.number])
+    low_variance_cols = numeric_df.var()[numeric_df.var() < 0.01].index
+    print(f"Columns with variance lower than 1%: {list(low_variance_cols)}")
+    print(len(list(low_variance_cols)))
+    full_df_sorted_low_variance_dropped = full_df_sorted.drop(columns=low_variance_cols, inplace=False)
+    full_df_sorted_low_variance_dropped.to_csv(output_file.parent / 'initial_dataframe_lv.csv', index=False)
     # Write the sorted DataFrame back to the CSV file
-    full_df_sorted.to_csv(output_file, index=False)  # Overwrite with sorted version
+    # full_df_sorted.to_csv(output_file, index=False)  # Overwrite with sorted version
     return
 
 def get_sorted_folders(base_path):

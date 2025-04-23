@@ -108,7 +108,7 @@ def hyperparameter_tuning(model, X, y, param_grid, cv, scoring='r2'):
         param_grid=param_grid,
         cv=cv,
         scoring=scoring,
-        verbose=3,
+        verbose=0,
         n_jobs=-1
     )
     
@@ -527,19 +527,99 @@ def main(dfs_path = pv.dfs_descriptors_only_path_,  include_files = []):
     return
 
 if __name__ == "__main__":
-    include_files = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20','c50']
-    include_files = [1]
-    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
+    include_files = [0,1,2,3,4,5,6,7,8,9,10,'c10']
+
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=0.8, variance=0.95)
+    
+    # main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    # main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    # main(pv.dfs_reduced_path_,include_files = include_files)
+    # main(pv.dfs_dPCA_var_path_,include_files = include_files)
+    # main(pv.dfs_dPCA_var_MD_path_,include_files = include_files)
+    # main(pv.dfs_MD_only_path_,include_files = include_files)
+
+    pv.update_config(model_=Model_classic.XGB, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=0.8, variance=0.95)
+
+    # main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    # main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    # main(pv.dfs_reduced_path_,include_files = include_files)
+    # include_files = ['c10']
+    # main(pv.dfs_dPCA_var_path_,include_files = include_files)
+    # include_files = [0,1,2,3,4,5,6,7,8,9,10,'c10']
+    # main(pv.dfs_dPCA_var_MD_path_,include_files = include_files)
+    # main(pv.dfs_MD_only_path_,include_files = include_files)
+
+    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=0.8, variance=0.95)
+
+    # main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    # main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    # main(pv.dfs_reduced_path_,include_files = include_files)
+    # main(pv.dfs_dPCA_var_path_,include_files = include_files)
+    # main(pv.dfs_dPCA_var_MD_path_,include_files = include_files)
+    # main(pv.dfs_MD_only_path_,include_files = include_files)
+    include_files = ['c10']
+
+    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.GETAWAY, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=0.7, variance=0.85)
+    # main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
     main(pv.dfs_descriptors_only_path_,include_files = include_files)
 
+
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.GETAWAY, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=0.7, variance=0.85)
+    main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+
+    pv.update_config(model_=Model_classic.XGB, descriptor_=Descriptor.GETAWAY, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=0.7, variance=0.85)
+    main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+
+    #######
+    include_files = [0,1,2,3,4,5,6,7,8,9,10,'c10']
+
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.GETAWAY, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=0.7, variance=0.85)
+
     main(pv.dfs_descriptors_only_path_,include_files = include_files)
-    for model in Model_classic:
-        for descriptor in Descriptor:
-            print(model)
-            print(descriptor)
+    main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    main(pv.dfs_reduced_path_,include_files = include_files)
+    main(pv.dfs_dPCA_var_path_,include_files = include_files)
+    main(pv.dfs_dPCA_var_MD_path_,include_files = include_files)
+
+    pv.update_config(model_=Model_classic.XGB, descriptor_=Descriptor.GETAWAY, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=0.7, variance=0.85)
+    include_files = [0,1,2,3,4,5,6,7,8,9,10]
+    main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    include_files = [0,1,2,3,4,5,6,7,8,9,10,'c10']
+    main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    main(pv.dfs_reduced_path_,include_files = include_files)
+    main(pv.dfs_dPCA_var_path_,include_files = include_files)
+    main(pv.dfs_dPCA_var_MD_path_,include_files = include_files)
+
+    pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.GETAWAY, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=0.7, variance=0.85)
+    main(pv.dfs_reduced_and_MD_path_,include_files = include_files)
+    main(pv.dfs_reduced_path_,include_files = include_files)
+    main(pv.dfs_dPCA_var_path_,include_files = include_files)
+    main(pv.dfs_dPCA_var_MD_path_,include_files = include_files)
+
+    pv.update_config(model_=Model_classic.XGB, descriptor_=Descriptor.GETAWAY, protein_=DatasetProtein.pparD)
+    pv.update_paths(correlation_threshold_=0.7, variance=0.85)
+    include_files = ['c10']
+    main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    # pv.update_config(model_=Model_classic.SVM, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
+    # main(pv.dfs_descriptors_only_path_,include_files = include_files)
+
+    # main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    # for model in Model_classic:
+    #     for descriptor in Descriptor:
+    #         print(model)
+    #         print(descriptor)
     
-            pv.update_config(model_=model, descriptor_=descriptor, protein_=DatasetProtein.GSK3)
-            main(pv.dfs_descriptors_only_path_,include_files = include_files)
+    #         pv.update_config(model_=model, descriptor_=descriptor, protein_=DatasetProtein.GSK3)
+    #         main(pv.dfs_descriptors_only_path_,include_files = include_files)
             # main(pv.dfs_reduced_path_,include_files = include_files)
             # #add pca
             # main(pv.dfs_reduced_and_MD_path_,include_files = include_files)

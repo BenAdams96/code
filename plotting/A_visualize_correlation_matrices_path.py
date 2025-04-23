@@ -101,20 +101,21 @@ def compute_and_visualize_correlation_matrices_dic(dfs_path, exclude_files: list
         processed_dic[name] = correlation_matrix
     return processed_dic
 
-def main(dfs_path = pv.dfs_descriptors_only_path_):
-    dic = csv_to_dictionary.main(dfs_path,exclude_files=['conformations_100.csv','conformations_200.csv','conformations_500.csv'])
+def main(path):
+    df = pd.read_csv(path)
+
+    st_df = preprocess_dataframe(df)
+    correlation_matrix = calculate_correlation_matrix(st_df)
+    visualize_matrix(correlation_matrix, path.parent, 'df_lv', title_suffix="Original")
     #just visualize the correlations matrices of the specified folder
 
-    processed_dic = {}
-    
-    for name, df in dic.items():
-        print('name')
     return
 
 if __name__ == "__main__":
     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
     # main(dfs_path = pv.dfs_descriptors_only_path_)
     # main(dfs_path = pv.dfs_reduced_path_)
-    main(dfs_path = pv.dfs_reduced_and_MD_path_)
+    path = Path('/home/ben/Afstuderen_project/Afstuderen/dataframes/dataframes_pparD_GETAWAY/initial_dataframe_lv.csv')
+    main(path)
     # main(dfs_path = pv.dfs_MD_only_path_)
 
