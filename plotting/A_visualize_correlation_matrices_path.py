@@ -55,13 +55,13 @@ def visualize_matrix(matrix, save_plot_path, idx, title_suffix=""):
     plt.colorbar()
     plt.title(f'Matrix Visualization {title_suffix}')
     
-    # Add value annotations only if |value| > 0.85
-    for i in range(len(matrix)):
-        for j in range(len(matrix.columns)):
-            value = matrix.iloc[i, j]
-            if abs(value) > 0.7:  # Only display if above 0.85
-                plt.text(j, i, f"{value:.2f}", ha='center', va='center', 
-                         color='black' if abs(value) < 0.5 else 'white')
+    # # Add value annotations only if |value| > 0.85
+    # for i in range(len(matrix)):
+    #     for j in range(len(matrix.columns)):
+    #         value = matrix.iloc[i, j]
+    #         if abs(value) > 0.85:  # Only display if above 0.85
+    #             plt.text(j, i, f"{value:.2f}", ha='center', va='center', 
+    #                      color='black' if abs(value) < 0.5 else 'white')
 
     plt.xticks(range(len(matrix.columns)), matrix.columns, rotation=90)
     plt.yticks(range(len(matrix.columns)), matrix.columns)
@@ -101,29 +101,24 @@ def compute_and_visualize_correlation_matrices_dic(dfs_path, exclude_files: list
         processed_dic[name] = correlation_matrix
     return processed_dic
 
-def main(dfs_path = pv.dfs_descriptors_only_path_):
+def main(path):
+    df = pd.read_csv(path)
 
+    st_df = preprocess_dataframe(df)
+    correlation_matrix = calculate_correlation_matrix(st_df)
+    visualize_matrix(correlation_matrix, path.parent, 'df_lv', title_suffix="Original")
     #just visualize the correlations matrices of the specified folder
-    processed_dic = compute_and_visualize_correlation_matrices_dic(dfs_path)
+
     return
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
-    # main(dfs_path = pv.dataframes_master_ / 'dPCA MD2')
-    main(dfs_path = pv.dfs_descriptors_only_path_)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
     # main(dfs_path = pv.dfs_descriptors_only_path_)
     # main(dfs_path = pv.dfs_reduced_path_)
-    # main(dfs_path = pv.dfs_reduced_and_MD_path_)
+    path = Path('/home/ben/Download/Afstuderen0/Afstuderen/dataframes/dataframes_GSK3_WHIM/initial_dataframe_lv.csv')
+    main(path)
+
+    path = Path('/home/ben/Download/Afstuderen0/Afstuderen/dataframes/dataframes_GSK3_GETAWAY/initial_dataframe_lv.csv')
+    main(path)
     # main(dfs_path = pv.dfs_MD_only_path_)
-
-    # main(dfs_path = pv.dfs_reduced_PCA_path_)
-    # main(dfs_path = pv.dfs_reduced_MD_PCA_path_)
-    # main(dfs_path = pv.dfs_reduced_and_MD_combined_path_)
-    # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
-    # main(dfs_path = pv.dataframes_master_ / 'MD_new only2')
-    # main(dfs_path = pv.dataframes_master_ / 'MD_new only3')
-
-
-
-
 

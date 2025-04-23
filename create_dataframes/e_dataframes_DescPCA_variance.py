@@ -309,13 +309,14 @@ def main(savefolder_name = pv.dfs_dPCA_var_path_, variance = 0.90, include = [0,
     dfs_in_dict = dataframe_processing.remove_constant_columns_from_dict_of_dfs(dfs_in_dict)
     
     dfs_in_dict_pca = PCA_for_dfs(dfs_in_dict, variance)
-    plot_scree_for_dfs_in_dict(dfs_in_dict, dfs_dPCA_path)
+
     # Reduce the dataframes based on correlation
     # reduced_dfs_in_dic = get_reduced_features_for_dataframes_in_dic(correlation_matrices_dic, dfs_dictionary, threshold)
     #reduced dataframes including mol_ID and PKI. so for 0ns 1ns etc.
     if write_out:
+        plot_scree_for_dfs_in_dict(dfs_in_dict, dfs_dPCA_path)
         save_dataframes_to_csv(dfs_in_dict_pca, save_path=dfs_dPCA_path)
-    return
+    return dfs_in_dict_pca
 
 if __name__ == "__main__":
     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)

@@ -30,24 +30,23 @@ def standardize_dataframe(df):
     """Preprocess the dataframe by handling NaNs and standardizing."""
     # Handle NaNs: drop rows with NaNs or fill them
     df_cleaned = df.dropna().reset_index(drop=True)  # or df.fillna(df.mean())
-    
     # Identify which non-feature columns to keep
     non_feature_columns = ['mol_id','PKI','conformations (ns)','picoseconds']
     existing_non_features = [col for col in non_feature_columns if col in df_cleaned.columns]
-    
     # Drop non-numeric target columns if necessary
     features_df = df_cleaned.drop(columns=existing_non_features, axis=1, errors='ignore')
-    
+
     # Standardize the dataframe
     scaler = StandardScaler()
     features_scaled_df = pd.DataFrame(scaler.fit_transform(features_df), columns=features_df.columns)
 
     # Create standardized DataFrame
-    standardized_df = df_cleaned.copy()  # Copy to preserve original structure
+    standardized_df = df_cleaned  # Copy to preserve original structure
+
     standardized_df.loc[:, features_df.columns] = features_scaled_df  # Replace feature columns
     # Concatenate the non-feature columns back into the standardized dataframe
     # standardized_df = pd.concat([df_cleaned[existing_non_features], features_scaled_df], axis=1)
-
+    
     return standardized_df
 
 def calculate_correlation_matrix(df):
@@ -58,8 +57,9 @@ def calculate_correlation_matrix(df):
 
 def correlation_matrix_single_df(df):
     # Preprocess the dataframe: handle NaNs and standardize
+
     st_df = standardize_dataframe(df)
-    
+
     # Calculate and visualize correlation matrix for the standardized dataframe
     correlation_matrix = calculate_correlation_matrix(st_df)
     return st_df, correlation_matrix
@@ -141,6 +141,8 @@ def remove_constant_columns_from_df(df, name):
     # Remove constant columns and keep only non-constant columns, excluding 'picoseconds' and 'conformations (ns)'
     non_constant_columns = df.loc[:, (df.nunique() > 1) | df.columns.isin(['picoseconds', 'conformations (ns)'])]
     return non_constant_columns
+
+
 ###############################################################################
 
 def get_targets(dataset):

@@ -62,10 +62,17 @@ def identify_columns_to_drop_2_keep_lowest(correlation_matrix, df, variances, th
     return columns_to_drop
 
 def reduce_features_of_initial_df(correlation_matrix, initial_df, threshold):
+    print('1')
     non_feature_columns = ['mol_id','PKI','conformations (ns)']
     existing_non_features = [col for col in non_feature_columns if col in initial_df.columns]
+    print('3')
+
     features_initial_df = initial_df.drop(columns=existing_non_features, axis=1)
+    print('2')
+
     variances = features_initial_df.var()
+    print('1')
+
     columns_to_drop = identify_columns_to_drop(correlation_matrix, features_initial_df, variances, threshold)
 
     reduced_initial_df = pd.concat([initial_df[existing_non_features], features_initial_df], axis=1)
@@ -118,17 +125,20 @@ def main(threshold = pv.correlation_threshold_, include = [0,1,2,3,4,5,6,7,8,9,1
     if write_out:
         dfs_reduced_path = pv.dataframes_master_ / f'reduced_t{threshold}'  # e.g., 'dataframes_JAK1_WHIM
         dfs_reduced_path.mkdir(parents=True, exist_ok=True)
-    
+
     initial_df = pd.read_csv(pv.initial_dataframe_)
     #first do correlation treshold
     initial_df_cleaned = dataframe_processing.remove_constant_columns_from_df(initial_df, 'initial_df')
+    # print(initial_df_cleaned)
     st_df, correlation_matrix = dataframe_processing.correlation_matrix_single_df(initial_df_cleaned) #st_df contains pki etc, corr not
+    print('initial red')
 
     reduced_features_initial_df = reduce_features_of_initial_df(correlation_matrix, initial_df, threshold)
-    A_visualize_correlation_matrices.visualize_matrix(correlation_matrix, pv.dataframes_master_, 'initial', title_suffix="")
+    if write_out:
+        A_visualize_correlation_matrices.visualize_matrix(correlation_matrix, pv.dataframes_master_, 'initial', title_suffix="")
 
-    red_st_df, red_correlation_matrix = dataframe_processing.correlation_matrix_single_df(reduced_features_initial_df)
-    A_visualize_correlation_matrices.visualize_matrix(red_correlation_matrix, dfs_reduced_path, 'initial_reduced', title_suffix="")
+        red_st_df, red_correlation_matrix = dataframe_processing.correlation_matrix_single_df(reduced_features_initial_df)
+        A_visualize_correlation_matrices.visualize_matrix(red_correlation_matrix, pv.dfs_reduced_path_, 'initial_reduced', title_suffix="")
     print(reduced_features_initial_df)
     #reduced dataframes including mol_ID and PKI. so for 0ns 1ns etc.
     reduced_dfs_in_dict = dataframe_processing.create_dfs_dict(reduced_features_initial_df, include = include)

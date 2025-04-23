@@ -25,8 +25,47 @@ def get_targets(dataset):
     df = pd.read_csv(dataset)
     df['PKI'] = -np.log10(df['exp_mean [nM]'] * 1e-9)
     return df[['mol_id','PKI']]
-    
-def create_full_dfs(molID_PKI_df, output_file):
+
+
+def process_large_csv(output_file):
+    chunk_size = 100000  # Set a chunk size depending on your available memory
+    first_write = True  # Flag to write header only once
+    drop_columns = []  # List to keep track of columns to drop (low variance or constant)
+
+    # Step 1: Read the file in chunks and process each column
+    with pd.read_csv(output_file, chunksize=chunk_size) as reader:
+        for chunk in reader:
+            # Process columns one by one
+            for col in chunk.select_dtypes(include=[np.number]).columns:
+                # Calculate variance for each numeric column
+                col_variance = chunk[col].var()
+
+                # If variance is very low or constant, add to drop list
+                if col_variance <= 0.01:  # 1% variance threshold
+                    if col not in drop_columns:
+                        drop_columns.append(col)
+
+    # After processing all chunks, we know which columns to drop
+    print(f"Columns to drop (low variance or constant): {drop_columns}")
+
+    # Step 2: Read the file again in chunks and remove low-variance/constant columns
+    with pd.read_csv(output_file, chunksize=chunk_size) as reader:
+        for i, chunk in enumerate(reader):
+            print(f"Processing chunk {i + 1}")
+
+            # Drop the identified columns
+            chunk_cleaned = chunk.drop(columns=drop_columns, errors='ignore')
+
+            # Write the cleaned chunk back to CSV (appending for subsequent chunks)
+            mode = 'a' if i > 0 else 'w'  # Append if not the first chunk
+            header = first_write  # Write header only for the first chunk
+            chunk_cleaned.to_csv(output_file.parent / 'initial_dataframe_lv.csv', mode=mode, header=header, index=False)
+
+            first_write = False  # Ensure header is written only once
+
+    print("Processing completed.")
+
+def create_full_dfs(molID_PKI_df, output_file, leave_out_molecules):
     ''' Create the WHIM dataframes for every molecule for every timestep (xdirs)
         First goes over the timesteps, then every molecule within that timestep
         Output: total_df_conf_order - dataframe with the descriptors of the molecule for every timestep including mol_id and PKI
@@ -34,11 +73,12 @@ def create_full_dfs(molID_PKI_df, output_file):
     print(pv.ligand_conformations_path_)
     sorted_ns_folders = get_sorted_folders(pv.ligand_conformations_path_)  # Sorted from 0ns to 10ns
     print(len(sorted_ns_folders))
-    print(sorted_ns_folders)
+    # print(sorted_ns_folders)
     filtered_paths = [path for path in sorted_ns_folders if round(float(path.name.replace('ns', '')) * 100) % 1 == 0] #only use stepsize of 0.1 instead of 0.01 (if so change 10 to 100)
     
     print(len(filtered_paths))
-    
+    # if os.path.exists(output_file):
+    #     os.remove(output_file)
     bad_mols = []
     first_write = True
     for idx, dir_path in enumerate(filtered_paths):  # dir_path = 0ns, 0.1ns, 0.2ns folder etc.
@@ -49,13 +89,15 @@ def create_full_dfs(molID_PKI_df, output_file):
                 (file for file in os.listdir(dir_path) if file.endswith('.pdb') and int(file.split('_')[0]) <= pv.PROTEIN.dataset_length+1),
                 key=lambda x: int(x.split('_')[0])
             )
+            # print(filtered_sorted_pdbfiles_list)
+            # print(len(filtered_sorted_pdbfiles_list))
 
-            # print(filtered_sorted_list)
             for pdb_file in filtered_sorted_pdbfiles_list:
-                # print(pdb_file)
+
                 pdb_file_path = os.path.join(dir_path, pdb_file)
+
                 mol = Chem.MolFromPDBFile(pdb_file_path, removeHs=False, sanitize=False)
-                
+
                 if mol is not None:
                     try:
                         Chem.SanitizeMol(mol)
@@ -73,18 +115,19 @@ def create_full_dfs(molID_PKI_df, output_file):
                     mol_descriptors = rdMolDescriptors.CalcWHIM(mol)
                 elif pv.DESCRIPTOR == Descriptor.GETAWAY:
                     mol_descriptors = rdMolDescriptors.CalcGETAWAY(mol)
+                    # print(len(mol_descriptors))
 
                 # index_to_insert = int(pdb_file[:3]) + int((float(dir_path.name.rstrip('ns')) / 10) * (len(sorted_folders) - 1) * len(all_molecules_list))
                 molecule_number = int(pdb_file.split('_')[0])
                 pki_value = molID_PKI_df.loc[molID_PKI_df['mol_id'] == molecule_number, 'PKI'].values[0]
-
                 conformation_value = float(dir_path.name.rstrip('ns'))
                 if conformation_value.is_integer():
                     conformation_value = int(conformation_value)
                 
                 # Collect the row data
 
-                frame_rows.append([molecule_number, pki_value, conformation_value] + mol_descriptors)
+                if molecule_number not in leave_out_molecules:
+                    frame_rows.append([molecule_number, pki_value, conformation_value] + mol_descriptors)
 
             # Write this frame to CSV
             if frame_rows:
@@ -94,19 +137,29 @@ def create_full_dfs(molID_PKI_df, output_file):
                 first_write = False  # Only write header once
         else:
             print('not a path')
-
-    print("Bad molecules:", bad_mols)
-
-    # Convert rows list to DataFrame
+    # process_large_csv(output_file)
     print("Sorting full CSV...")
     full_df = pd.read_csv(output_file)
-
+    print('jaja')
     # Convert 'conformations (ns)' to float for correct sorting
-    full_df['conformations (ns)'] = full_df['conformations (ns)'].astype(float)
+    # full_df['conformations (ns)'] = full_df['conformations (ns)'].astype(float)
 
-    # Now sort the full dataframe by 'mol_id' and 'conformations (ns)'
-    full_df_sorted = full_df.sort_values(by=['mol_id', 'conformations (ns)']).reset_index(drop=True)
+    # Sort the DataFrame first by 'mol_id' and then by 'conformations (ns)' in ascending order
+    full_df_sorted = full_df.sort_values(by=['mol_id', 'conformations (ns)'], ascending=[True, True]).reset_index(drop=True)
 
+    # Drop constant columns (columns where all values are the same)
+    nunique = full_df_sorted.nunique()
+    constant_columns = nunique[nunique <= 1].index
+    full_df_sorted.drop(columns=constant_columns, inplace=True)
+    print(f"Dropped constant columns: {list(constant_columns)}")
+    # Identify and print columns with variance lower than 1%
+    # Exclude non-numeric columns before checking variance
+    numeric_df = full_df_sorted.select_dtypes(include=[np.number])
+    low_variance_cols = numeric_df.var()[numeric_df.var() < 0.01].index
+    print(f"Columns with variance lower than 1%: {list(low_variance_cols)}")
+    print(len(list(low_variance_cols)))
+    full_df_sorted_low_variance_dropped = full_df_sorted.drop(columns=low_variance_cols, inplace=False)
+    full_df_sorted_low_variance_dropped.to_csv(output_file.parent / 'initial_dataframe_lv.csv', index=False)
     # Write the sorted DataFrame back to the CSV file
     full_df_sorted.to_csv(output_file, index=False)  # Overwrite with sorted version
     return
@@ -164,7 +217,7 @@ def save_dataframes(dic_with_dfs,base_path):
         df.to_csv(final_path / f'{name}.csv', index=False)
 # %%
 #NOTE: this file does: get targets, count how many valid molecules and which,it creates the folder 'dataframes_WHIMJAK1' or equivellant
-def main():
+def main(leave_out_molecules):
     # Only contains molID and PKI value
     # NOTE: Is it necessary to get the targets already?
     df_targets = get_targets(pv.dataset_path_)  # df with columns: 'mol_id' and 'PKI value'. all molecules
@@ -175,7 +228,7 @@ def main():
     # Create the dataframes, which eventually will be placed in 'dataframes_JAK1_WHIM'
     # and also add the targets to the dataframes.
     pv.dataframes_master_.mkdir(parents=True, exist_ok=True)
-    df_sorted_by_configuration = create_full_dfs(df_targets, pv.initial_dataframe_)
+    df_sorted_by_configuration = create_full_dfs(df_targets, pv.initial_dataframe_, leave_out_molecules)
     # df_sorted_by_molid = df_sorted_by_configuration.sort_values(by=['mol_id', 'conformations (ns)']).reset_index(drop=True)
 
     # Save the dataframes

@@ -13,14 +13,15 @@ code_path_ = base_path_ / 'code'
 ML_MODEL: Union[Model_classic, Model_deep] = Model_classic.RF
 DESCRIPTOR: Descriptor = Descriptor.WHIM
 PROTEIN: DatasetProtein = DatasetProtein.JAK1
-correlation_threshold_ = 0.85
+
 components = 15
-variance = 0.98
+variance = 0.95
+correlation_threshold_ = 0.85
 MDfeatures = ["Bond","U-B","Proper-Dih.","Coul-SR:Other-Other","LJ-SR:Other-Other","Coul-14:Other-Other","LJ-14:Other-Other","Coul-SR:Other-SOL","LJ-SR:Other-SOL"]
 # rerun_MD_features = ["Coul-SR:Other-Other","LJ-SR:Other-Other","Coul-14:Other-Other","LJ-14:Other-Other","Coul-SR:Other-SOL","LJ-SR:Other-SOL"]
 
 # Function to update paths dynamically
-def update_paths():
+def update_paths(correlation_threshold_, variance):
     global dataset_path_, dataframes_master_, initial_dataframe_, \
             dfs_2D_path, dfs_descriptors_only_path_, dfs_reduced_path_, dfs_dPCA_path_ ,dfs_reduced_and_MD_path_, dfs_dPCA_MD_path_, dfs_MD_only_path_, \
             Modelresults_folder_, true_predicted , Inner_train_Val_losses, Outer_train_Val_losses, Modelresults_plots, \
@@ -71,7 +72,7 @@ def update_paths():
 
 
 # Call update_paths once to initialize the paths
-update_paths()
+update_paths(correlation_threshold_=correlation_threshold_, variance=variance)
 
 # Config update function for dynamically changing variables
 def update_config(model_: Union[Model_classic, Model_deep] = None,
@@ -88,9 +89,16 @@ def update_config(model_: Union[Model_classic, Model_deep] = None,
         PROTEIN = protein_
     
     print('update paths')
-
     # Recalculate dependent paths
-    update_paths()
+
+    if DESCRIPTOR == Descriptor.WHIM:
+        correlation_threshold_ = 0.8
+        variance = 0.95
+        update_paths(correlation_threshold_=correlation_threshold_, variance=variance)
+    if DESCRIPTOR == Descriptor.GETAWAY:
+        correlation_threshold_ = 0.7
+        variance = 0.85
+        update_paths(correlation_threshold_=correlation_threshold_, variance=variance)
 
 def get_paths(model_: Union[Model_classic, Model_deep]=None,
                   descriptor_: Descriptor=None,
