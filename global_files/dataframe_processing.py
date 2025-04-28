@@ -118,6 +118,77 @@ def change_MD_column_names(MD_output):
     return MD_output
 
 ###############################################################################
+
+def calculate_cv(df):
+    '''Calculates the Coefficient of Variation (CV) for each feature.'''
+    means = df.mean()
+    stds = df.std()
+    cv = (stds / means).abs()
+    return cv
+
+def remove_low_cv_and_corr_columns(df, cv_threshold=0.05, corr_threshold=0.99):
+    '''
+    First removes columns with low coefficient of variation (CV).
+    Then removes highly correlated features, keeping the one with the highest CV.
+    '''
+    # Step 1: Remove low CV columns
+    column_cv = calculate_cv(df)
+    low_cv_columns = column_cv[column_cv < cv_threshold].index.tolist()
+    df_cv_removed = df.drop(columns=low_cv_columns)
+    
+    # Print columns removed due to low CV
+    print(f'Removed columns due to low CV: {low_cv_columns}')
+
+    # Step 2: Calculate CV again after removing low CV features
+    column_cv_after_cv_removal = calculate_cv(df_cv_removed)
+
+    # Step 3: Remove highly correlated columns
+    corr_matrix = df_cv_removed.corr().abs()
+    highly_corr_columns = set()
+
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i):
+            if corr_matrix.iloc[i, j] > corr_threshold:
+                colname_1 = corr_matrix.columns[i]
+                colname_2 = corr_matrix.columns[j]
+                
+                # Keep the one with higher CV
+                if colname_1 not in highly_corr_columns and colname_2 not in highly_corr_columns:
+                    if column_cv_after_cv_removal[colname_1] > column_cv_after_cv_removal[colname_2]:
+                        highly_corr_columns.add(colname_2)  # remove colname_2
+                    else:
+                        highly_corr_columns.add(colname_1)  # remove colname_1
+
+    # Print columns removed due to high correlation
+    print(f'Removed columns due to high correlation: {highly_corr_columns}')
+
+    # Final cleaned DataFrame after both filtering steps
+    cleaned_df = df_cv_removed.drop(columns=highly_corr_columns)
+
+    # Combine the removed columns for final output
+    columns_removed_total = set(low_cv_columns).union(highly_corr_columns)
+
+    print(f'Removed {len(columns_removed_total)} columns in total: {columns_removed_total}')
+
+    return cleaned_df
+
+# Example usage for a dictionary of dataframes:
+def remove_low_cv_and_corr_columns_from_dict(dfs_dict, cv_threshold=0.05, corr_threshold=0.99):
+    '''Applies CV and correlation filtering to all dataframes in the dictionary.'''
+    cleaned_dfs = {}
+    
+    for name, df in dfs_dict.items():
+        cleaned_df = remove_low_cv_and_corr_columns(df, cv_threshold, corr_threshold)
+        cleaned_dfs[name] = cleaned_df
+
+    return cleaned_dfs
+
+# New function for a single DataFrame input
+def remove_low_cv_and_corr_columns_single_df(df, cv_threshold=0.05, corr_threshold=0.99):
+    '''Applies CV and correlation filtering to a single dataframe and returns the cleaned dataframe.'''
+    return remove_low_cv_and_corr_columns(df, cv_threshold, corr_threshold)
+
+###############################################################################
 def remove_constant_columns_from_dict_of_dfs(dfs_dictionary):
     '''xxx
     '''
@@ -137,6 +208,8 @@ def remove_constant_columns_from_df(df, name):
     
     if len(constant_columns) > 0:
         print(f"In '{name}', the following constant columns were removed: {', '.join(constant_columns)}")
+    else:
+        print('no constant columns')
     
     # Remove constant columns and keep only non-constant columns, excluding 'picoseconds' and 'conformations (ns)'
     non_constant_columns = df.loc[:, (df.nunique() > 1) | df.columns.isin(['picoseconds', 'conformations (ns)'])]

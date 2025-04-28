@@ -1,7 +1,7 @@
 
 from create_dataframes import _initial_dataframe, a_dataframes_descriptors_only, b_dataframes_reduced, c_dataframes_red_MD, \
     d_dataframes_MD_only, e_dataframes_DescPCA, f_dataframes_DescPCA_MD, _change_column_names_of_dataframes, b_dataframes_reduced_redbefore, \
-    e_dataframes_DescPCA_variance, f_dataframes_DescPCA_MD_variance
+    e_dataframes_DescPCA_variance, f_dataframes_DescPCA_MD_variance, _filter_initial_dataframe
 
 
 from global_files import public_variables as pv
@@ -16,15 +16,16 @@ def main(include):
     pv.update_paths(correlation_threshold_=threshold, variance=variance)
     # _change_column_names_of_dataframes.main()
     # _initial_dataframe.main() #this creates the df with all (0.01 stepsize) which is initial_dataframe
-    # dfs_in_dict = a_dataframes_descriptors_only.main(include=include, write_out=True) #we only want dataframe of 1ns 2ns 3ns
+    _filter_initial_dataframe.main()
+    dfs_in_dict = a_dataframes_descriptors_only.main(include=include, write_out=True) #we only want dataframe of 1ns 2ns 3ns
     b_dataframes_reduced_redbefore.main(threshold=threshold, include = include, write_out=True)
     c_dataframes_red_MD.main(savefolder_name=pv.dfs_reduced_and_MD_path_, include = include, threshold=threshold, to_keep=to_keep)
     
-    # e_dataframes_DescPCA_variance.main(savefolder_name= pv.dfs_dPCA_var_path_, variance=variance, include = include, write_out=True)
-    # f_dataframes_DescPCA_MD_variance.main(savefolder_name=pv.dfs_dPCA_var_MD_path_, include = include, variance=variance, to_keep=to_keep)
+    e_dataframes_DescPCA_variance.main(savefolder_name= pv.dfs_dPCA_var_path_, variance=variance, include = include, write_out=True)
+    f_dataframes_DescPCA_MD_variance.main(savefolder_name=pv.dfs_dPCA_var_MD_path_, include = include, variance=variance, to_keep=to_keep)
 
-    # if DESCRIPTOR != 'GETAWAY':
-    #     d_dataframes_MD_only.main(savefolder_name='MD only', include = include, to_keep=to_keep,write_out=True)
+    if DESCRIPTOR != 'GETAWAY':
+        d_dataframes_MD_only.main(savefolder_name='MD only', include = include, to_keep=to_keep,write_out=True)
 
 if __name__ == "__main__":
     # Update public variables
