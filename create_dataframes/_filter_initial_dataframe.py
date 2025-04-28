@@ -29,7 +29,7 @@ def main():
     # Sort the DataFrame first by 'mol_id' and then by 'conformations (ns)' in ascending order
     full_df_sorted = full_df.sort_values(by=['mol_id', 'conformations (ns)'], ascending=[True, True]).reset_index(drop=True)
     path = pv.dataframes_master_ / Path('initial_dataframe_not_filtered.csv')
-    full_df_sorted.to_csv(pv.initial_dataframe_, index=False)
+    full_df_sorted.to_csv(path, index=False)
     # Drop constant columns (columns where all values are the same)
     nunique = full_df_sorted.nunique()
     constant_columns = nunique[nunique <= 1].index
