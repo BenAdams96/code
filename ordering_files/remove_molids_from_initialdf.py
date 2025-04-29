@@ -32,19 +32,20 @@ def main(path, mol_ids_to_remove, chunk_size=10000):
 
 if __name__ == "__main__":
     # Example list of mol_ids to remove
-    mol_ids_to_remove = [46, 97, 168, 275, 305, 159, 394, 194, 491, 204, 566]
+    mol_ids_to_remove = [46, 97, 168, 275, 305, 159, 394, 194, 491, 204, 566] #for clk4
+    mol_ids_to_remove = [283,341,368,560,575,730] #for gsk3
     
     # Update the protein configuration (assuming pv and DatasetProtein are defined correctly elsewhere)
-    pv.update_config(protein_=DatasetProtein.CLK4)
+    pv.update_config(protein_=DatasetProtein.GSK3)
     
     # File path
-    path = Path('/home/ben/Download/Afstuderen0/Afstuderen/dataframes/dataframes_CLK4_GETAWAY/initial_dataframe.csv')
+    path = Path('/home/ben/Download/Afstuderen0/Afstuderen/dataframes/dataframes_GSK3_WHIM/initial_dataframe.csv')
     
     # Apply the filtering function
     df_filtered = main(path, mol_ids_to_remove)
     
     # Save the filtered dataframe to a new file
-    df_filtered.to_csv('/home/ben/Download/Afstuderen0/Afstuderen/dataframes/dataframes_CLK4_GETAWAY/initial_dataframe2.csv', index=False)
+    df_filtered.to_csv('/home/ben/Download/Afstuderen0/Afstuderen/dataframes/dataframes_GSK3_WHIM/initial_dataframe2.csv', index=False)
 
 
 
