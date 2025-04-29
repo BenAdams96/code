@@ -16,6 +16,7 @@ from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
 from global_files import dataframe_processing
 from extract_ligand_conformations import trj_to_pdbfiles
+from plotting import A_visualize_correlation_matrices_df
 
 # %%
 #NOTE: this file does: get targets, count how many valid molecules and which,it creates the folder 'dataframes_WHIMJAK1' or equivellant
@@ -25,7 +26,7 @@ def main():
 
     # Convert 'conformations (ns)' to float for correct sorting
     full_df['conformations (ns)'] = full_df['conformations (ns)'].astype(float)
-
+    A_visualize_correlation_matrices_df.compute_and_visualize_correlation_matrices_df(full_df, pv.dataframes_master_, idx='full', title='full')
     # Sort the DataFrame first by 'mol_id' and then by 'conformations (ns)' in ascending order
     full_df_sorted = full_df.sort_values(by=['mol_id', 'conformations (ns)'], ascending=[True, True]).reset_index(drop=True)
     path = pv.dataframes_master_ / Path('initial_dataframe_not_filtered.csv')
