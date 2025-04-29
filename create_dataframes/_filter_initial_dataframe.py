@@ -21,12 +21,14 @@ from plotting import A_visualize_correlation_matrices_df
 # %%
 #NOTE: this file does: get targets, count how many valid molecules and which,it creates the folder 'dataframes_WHIMJAK1' or equivellant
 def main():
-    
+    print('start reading initial df')
     full_df = pd.read_csv(pv.initial_dataframe_)
-
+    print('read in the initial df')
     # Convert 'conformations (ns)' to float for correct sorting
     full_df['conformations (ns)'] = full_df['conformations (ns)'].astype(float)
-    A_visualize_correlation_matrices_df.compute_and_visualize_correlation_matrices_df(full_df, pv.dataframes_master_, idx='full', title='full')
+    # A_visualize_correlation_matrices_df.compute_and_visualize_correlation_matrices_df(full_df, pv.dataframes_master_, idx='full', title='full')
+    print('visualized the correlation matrix')
+    
     # Sort the DataFrame first by 'mol_id' and then by 'conformations (ns)' in ascending order
     full_df_sorted = full_df.sort_values(by=['mol_id', 'conformations (ns)'], ascending=[True, True]).reset_index(drop=True)
     path = pv.dataframes_master_ / Path('initial_dataframe_not_filtered.csv')
@@ -62,6 +64,3 @@ if __name__ == "__main__":
     # Call main
     main()
 
-
-
-# %%

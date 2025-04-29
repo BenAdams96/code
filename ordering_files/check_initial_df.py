@@ -59,6 +59,10 @@ if __name__ == "__main__":
     path = Path('/home/ben/Download/Afstuderen0/Afstuderen/dataframes/dataframes_CLK4_GETAWAY/initial_dataframe.csv')
     pv.update_config(protein_= DatasetProtein.CLK4)
     main(path)
+
+    path = Path('/home/ben/Download/Afstuderen0/Afstuderen/dataframes/dataframes_GSK3_WHIM/initial_dataframe.csv')
+    pv.update_config(protein_= DatasetProtein.GSK3)
+    main(path)
     # pv.update_config(model_= Model_classic.RF, protein_=DatasetProtein.GSK3)
     # main()
     # pv.update_config(model_= Model_classic.RF, protein_=DatasetProtein.pparD)

@@ -92,12 +92,12 @@ def update_config(model_: Union[Model_classic, Model_deep] = None,
     
     # Recalculate dependent paths
     if DESCRIPTOR == Descriptor.WHIM:
-        print('WHIM')
+        print('WHIM update')
         correlation_threshold_ = 0.85
         variance = 0.95
         update_paths(correlation_threshold_=correlation_threshold_, variance=variance)
     elif DESCRIPTOR == Descriptor.GETAWAY:
-        print('GETAWAY')
+        print('GETAWAY update')
         correlation_threshold_ = 0.75
         variance = 0.85
         update_paths(correlation_threshold_=correlation_threshold_, variance=variance)

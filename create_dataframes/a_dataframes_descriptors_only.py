@@ -8,7 +8,7 @@ import rdkit
 from global_files import dataframe_processing, csv_to_dictionary, public_variables as pv
 from global_files.public_variables import ML_MODEL, PROTEIN, DESCRIPTOR
 from global_files.enums import Model_classic, Model_deep, Descriptor, DatasetProtein
-
+from plotting import A_visualize_correlation_matrices
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors3D
@@ -65,6 +65,8 @@ def main(include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20'], write_out = True):
     # dfs_in_dict = create_dfs_dic(initial_df, time_interval) #only single conformations
     dfs_in_dict = dataframe_processing.create_dfs_dict(pv.initial_dataframe_, include = include)
     if write_out:
+        st_df, correlation_matrix = dataframe_processing.correlation_matrix_single_df(initial_df)
+        A_visualize_correlation_matrices.visualize_matrix(correlation_matrix, pv.dfs_descriptors_only_path_, 'initial', title_suffix="")
         dataframe_processing.save_dict_with_dfs(dfs_in_dict, pv.dfs_descriptors_only_path_) #automatically save in descriptors_only_folder
     
     # for t in timeinterval_list:
