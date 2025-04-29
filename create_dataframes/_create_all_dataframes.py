@@ -14,18 +14,10 @@ def main(include):
     variance = 0.95
     threshold = 0.8
     pv.update_paths(correlation_threshold_=threshold, variance=variance)
-<<<<<<< HEAD
-    # leave_out_molecules = [283,341,368,560,575,730]
-    leave_out_molecules = []
-    # _change_column_names_of_dataframes.main()
-    # _initial_dataframe.main(leave_out_molecules) #this creates the df with all (0.01 stepsize) which is initial_dataframe
-    # dfs_in_dict = a_dataframes_descriptors_only.main(include=include, write_out=True) #we only want dataframe of 1ns 2ns 3ns
-=======
     # _change_column_names_of_dataframes.main()
     # _initial_dataframe.main() #this creates the df with all (0.01 stepsize) which is initial_dataframe
     # _filter_initial_dataframe.main()
     dfs_in_dict = a_dataframes_descriptors_only.main(include=include, write_out=True) #we only want dataframe of 1ns 2ns 3ns
->>>>>>> origin/master
     b_dataframes_reduced_redbefore.main(threshold=threshold, include = include, write_out=True)
     c_dataframes_red_MD.main(savefolder_name=pv.dfs_reduced_and_MD_path_, include = include, threshold=threshold, to_keep=to_keep, write_out = True)
     
@@ -39,11 +31,7 @@ if __name__ == "__main__":
     # Update public variables
     include = [0,1,2,3,4,5,6,7,8,9,10,'c10','c20','c30','c50'] #,'ta10c10' , 'CLt100_cl10_c10' #for timesteps, and for clustering
     
-<<<<<<< HEAD
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.CLK4)
-=======
     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
->>>>>>> origin/master
     main(include)
 
     # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.GETAWAY, protein_=DatasetProtein.pparD)
