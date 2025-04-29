@@ -76,6 +76,7 @@ def plot_avg_predicted_vs_real_pKi(df, name, save_path):
 
     # Save the plot
     plt.savefig(full_save_path / f'{name}_average_true_vs_predicted.png')
+    plt.close()
 
 
 def true_and_predicted_tocsv(df,all_true_pki_pdseries, all_predicted_pki_pdseries, dfs_path):
