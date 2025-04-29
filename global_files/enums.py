@@ -7,23 +7,37 @@ from typing import Union
 from itertools import product
 
 class Model_classic(Enum):
-    RF = 'RF', RandomForestRegressor, {'n_estimators': [100], 'max_depth': [5,10], 
-                     'min_samples_split': [2,5], 'min_samples_leaf': [2,5], 
-                     'max_features': ['sqrt']}
+    RF = 'RF', RandomForestRegressor, {'n_estimators': [100, 200], 'max_depth': [5, 10, 15], 
+                     'min_samples_split': [5, 10, 15], 'min_samples_leaf': [2, 5, 10], 
+                     'max_features': ['sqrt', 'log2']}
 
     XGB = 'XGB', XGBRegressor, {
-                                    'n_estimators': [100],             # Number of boosting rounds
-                                    'max_depth': [3, 5, 7],                 # Tree depth (controls complexity)
-                                    'learning_rate': [0.05, 0.1],           # Learning rate (smaller = more robust)
-                                    'subsample': [0.7, 0.9],                # % of rows used per boosting round
-                                    'colsample_bytree': [0.6, 0.8],         # % of columns used per tree
-                                    'gamma': [0.8],                         # Minimum loss reduction to split
-                                }
-
+                                'n_estimators': [100, 200],             # Number of boosting rounds
+                                'max_depth': [3, 5, 10],            # Tree depth (controls complexity)
+                                'learning_rate': [0.01, 0.05, 0.1],     # Learning rate (smaller = more robust)
+                                'subsample': [0.7, 0.9],                # % of rows used per boosting round
+                                'colsample_bytree': [0.6, 0.8],         # % of columns used per tree
+                                'gamma': [0.8],                         # Minimum loss reduction to split
+                                'alpha': [0, 0.1],                      # L1 regularization (sparsity)
+                                'lambda': [1, 1.5],                     # L2 regularization (weight shrinkage)
+                            }
+    # XGB = 'XGB', XGBRegressor, {
+    #                         'n_estimators': [200],             # Number of boosting rounds
+    #                         'max_depth': [10],            # Tree depth (controls complexity)
+    #                         'learning_rate': [0.1],     # Learning rate (smaller = more robust)
+    #                         'subsample': [0.9],                # % of rows used per boosting round
+    #                         'colsample_bytree': [0.8],         # % of columns used per tree
+    #                         'gamma': [0.8],                         # Minimum loss reduction to split
+    #                         'alpha': [0.1],                      # L1 regularization (sparsity)
+    #                         'lambda': [1.5],                     # L2 regularization (weight shrinkage)
+    #                         }
     SVM = 'SVM', SVR, {
-                        'C': [0.1,1,10],                    # Regularization parameter
-                        'kernel': ['linear', 'rbf', 'poly'],          # Kernel types: 'linear' and 'rbf'
-                    }
+                        'C': [0.1, 1,10],             # Controls the trade-off between smoothness and accuracy
+                        'kernel': ['linear','rbf','poly'],
+                        'degree': [2,3],                  # Only relevant for 'poly'; keeps it conservative
+                        'gamma': ['scale', 'auto'],       # Controls the influence of a single training example (relevant for 'rbf' and 'poly')
+                        'epsilon': [0.1, 0.2],            # Epsilon in the epsilon-SVR model; margin of tolerance
+                        }
 
     model: Union[RandomForestRegressor, XGBRegressor, SVR]
     hyperparameter_grid: dict

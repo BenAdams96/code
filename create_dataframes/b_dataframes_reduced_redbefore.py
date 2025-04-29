@@ -123,9 +123,9 @@ def main(threshold = pv.correlation_threshold_, include = [0,1,2,3,4,5,6,7,8,9,1
     '''xxx what is write out?
     '''
     if write_out:
-        dfs_reduced_path = pv.dataframes_master_ / f'reduced_t{threshold}'  # e.g., 'dataframes_JAK1_WHIM
+        dfs_reduced_path = pv.dfs_reduced_path_  # e.g., 'dataframes_JAK1_WHIM
         dfs_reduced_path.mkdir(parents=True, exist_ok=True)
-
+    print(threshold)
     initial_df = pd.read_csv(pv.initial_dataframe_)
     #first do correlation treshold
     initial_df_cleaned = dataframe_processing.remove_constant_columns_from_df(initial_df, 'initial_df')

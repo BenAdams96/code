@@ -74,7 +74,7 @@ def create_full_dfs(molID_PKI_df, output_file, leave_out_molecules):
     sorted_ns_folders = get_sorted_folders(pv.ligand_conformations_path_)  # Sorted from 0ns to 10ns
     print(len(sorted_ns_folders))
     # print(sorted_ns_folders)
-    filtered_paths = [path for path in sorted_ns_folders if round(float(path.name.replace('ns', '')) * 100) % 1 == 0] #only use stepsize of 0.1 instead of 0.01 (if so change 10 to 100)
+    filtered_paths = [path for path in sorted_ns_folders if round(float(path.name.replace('ns', '')) * 100) % 10 == 0] #only use stepsize of 0.1 instead of 0.01 (if so change 10 to 100)
     
     print(len(filtered_paths))
     # if os.path.exists(output_file):
@@ -103,8 +103,7 @@ def create_full_dfs(molID_PKI_df, output_file, leave_out_molecules):
                         Chem.SanitizeMol(mol)
                     except ValueError as e:
                         print(f"Sanitization error: {e}")
-                        bad_mols.append(pdb_file_path)
-                        
+                        bad_mols.append(pdb_file_path) 
                 else:
                     print("Invalid molecule:")
                     print(pdb_file)
@@ -137,31 +136,34 @@ def create_full_dfs(molID_PKI_df, output_file, leave_out_molecules):
                 first_write = False  # Only write header once
         else:
             print('not a path')
-    # process_large_csv(output_file)
+
+    # print("Bad molecules:", bad_mols)
+
+        # Convert rows list to DataFrame
     print("Sorting full CSV...")
-    full_df = pd.read_csv(output_file)
-    print('jaja')
-    # Convert 'conformations (ns)' to float for correct sorting
+    # full_df = pd.read_csv(output_file)
+
+    # # Convert 'conformations (ns)' to float for correct sorting
     # full_df['conformations (ns)'] = full_df['conformations (ns)'].astype(float)
 
-    # Sort the DataFrame first by 'mol_id' and then by 'conformations (ns)' in ascending order
-    full_df_sorted = full_df.sort_values(by=['mol_id', 'conformations (ns)'], ascending=[True, True]).reset_index(drop=True)
+    # # Sort the DataFrame first by 'mol_id' and then by 'conformations (ns)' in ascending order
+    # full_df_sorted = full_df.sort_values(by=['mol_id', 'conformations (ns)'], ascending=[True, True]).reset_index(drop=True)
 
-    # Drop constant columns (columns where all values are the same)
-    nunique = full_df_sorted.nunique()
-    constant_columns = nunique[nunique <= 1].index
-    full_df_sorted.drop(columns=constant_columns, inplace=True)
-    print(f"Dropped constant columns: {list(constant_columns)}")
-    # Identify and print columns with variance lower than 1%
-    # Exclude non-numeric columns before checking variance
-    numeric_df = full_df_sorted.select_dtypes(include=[np.number])
-    low_variance_cols = numeric_df.var()[numeric_df.var() < 0.01].index
-    print(f"Columns with variance lower than 1%: {list(low_variance_cols)}")
-    print(len(list(low_variance_cols)))
-    full_df_sorted_low_variance_dropped = full_df_sorted.drop(columns=low_variance_cols, inplace=False)
-    full_df_sorted_low_variance_dropped.to_csv(output_file.parent / 'initial_dataframe_lv.csv', index=False)
+    # # Drop constant columns (columns where all values are the same)
+    # nunique = full_df_sorted.nunique()
+    # constant_columns = nunique[nunique <= 1].index
+    # full_df_sorted.drop(columns=constant_columns, inplace=True)
+    # print(f"Dropped constant columns: {list(constant_columns)}")
+    # # Identify and print columns with variance lower than 1%
+    # # Exclude non-numeric columns before checking variance
+    # numeric_df = full_df_sorted.select_dtypes(include=[np.number])
+    # low_variance_cols = numeric_df.var()[numeric_df.var() < 0.01].index
+    # print(f"Columns with variance lower than 1%: {list(low_variance_cols)}")
+    # print(len(list(low_variance_cols)))
+    # full_df_sorted_low_variance_dropped = full_df_sorted.drop(columns=low_variance_cols, inplace=False)
+    # full_df_sorted_low_variance_dropped.to_csv(output_file.parent / 'initial_dataframe_lv.csv', index=False)
     # Write the sorted DataFrame back to the CSV file
-    full_df_sorted.to_csv(output_file, index=False)  # Overwrite with sorted version
+    # full_df_sorted.to_csv(output_file, index=False)  # Overwrite with sorted version
     return
 
 def get_sorted_folders(base_path):

@@ -404,6 +404,7 @@ def boxplots_compare_groups(ax, path, csv_filename, modelresults_dict):
         pv.dfs_reduced_and_MD_path_.name: 'lightcoral',
         pv.dfs_MD_only_path_.name: 'lightgray',  # New color for "MD only"
         pv.dfs_dPCA_MD_path_.name: 'darkviolet',
+        pv.dfs_dPCA_var_MD_path_.name: 'salmon',
         "PCA": "salmon",
         "2D": 'goldenrod',
         'descriptors only scaled mw': 'salmon',
@@ -437,6 +438,7 @@ def boxplots_compare_groups(ax, path, csv_filename, modelresults_dict):
         pv.dfs_reduced_and_MD_path_.name: 'Reduced RDkit 3D features + MD features',
         pv.dfs_MD_only_path_.name: 'MD features only',  # Added label for "MD only"
         pv.dfs_dPCA_MD_path_.name: 'desc PCA + MD',
+        pv.dfs_dPCA_var_MD_path_.name: 'PCA + MD',
         # pv.dfs_reduced_PCA_path_.name: 'PCA desc',
         # pv.dfs_reduced_MD_PCA_path_.name: f'PCA MD',
         # pv.dfs_reduced_and_MD_combined_PCA_path_.name: 'PCA desc + PCA MD',
@@ -512,7 +514,7 @@ def boxplots_compare_groups(ax, path, csv_filename, modelresults_dict):
         min_value = -0.6
         max_value = 0.7
     if pv.PROTEIN.name == 'pparD':
-        min_value = -0.5
+        min_value = 0
         max_value = 0.8
     if pv.PROTEIN.name == 'CLK4':
         min_value = -0.5
@@ -542,20 +544,19 @@ def boxplots_compare_groups(ax, path, csv_filename, modelresults_dict):
     handles = [plt.Line2D([0], [0], color=color, lw=4) for color in filtered_colors.values()]
 
     # Save the plot (if needed)
-    plot_file_path = save_plot_folder / f'{pv.ML_MODEL}_{csv_filename}_{len(modelresults_dict)}.png'
-    plt.savefig(plot_file_path)
+    plot_file_path = save_plot_folder / f'all_{csv_filename}_{len(modelresults_dict)}.png'
+    # plt.savefig(plot_file_path)
     return handles, filtered_labels, positions, xtick_labels
  ####################################################################################################################
 
 
 def create_subplots():
     models = [Model_classic.RF, Model_classic.XGB, Model_classic.SVM] #, Model_classic.XGB, Model_classic.SVM
-    dataset_proteins = [DatasetProtein.CLK4] #, DatasetProtein.GSK3, DatasetProtein.pparD
+    dataset_proteins = [DatasetProtein.pparD] #, DatasetProtein.GSK3, DatasetProtein.pparD
 
-    
     include_files = ['0ns','1ns','2ns','3ns','4ns','5ns','6ns','7ns','8ns','9ns','10ns','conformations_10','conformations_20','conformations_50']
-    include_files = ['0ns','1ns','c10']
-    fig, axes = plt.subplots(len(dataset_proteins), len(models), figsize=(12, 12))  # Swapped order
+    include_files = ['2D','0ns','1ns','c10']
+    fig, axes = plt.subplots(len(dataset_proteins), len(models), figsize=(14,7))  # Swapped order
     # Convert to 2D array if there is only one row or column
     if len(dataset_proteins) == 1:
         axes = np.array([axes])  # Wrap in another list to make it 2D
@@ -570,20 +571,20 @@ def create_subplots():
         for i, model in enumerate(models):  # Inner loop is models
             print(model)
             all_modelresults_dict = {}
-            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein, hyperparameter_set='big')
-
+            pv.update_config(model_=model, descriptor_=Descriptor.WHIM, protein_=protein)
+            print(pv.DESCRIPTOR)
+            
             # Collect paths
             dfs_paths = [
-                (pv.dfs_2D_path, ['2D']),
+                (pv.dfs_2D_path, include_files),
                 (pv.dfs_descriptors_only_path_, include_files),
-                (pv.dfs_reduced_path_, include_files),
-
-                (pv.dfs_reduced_and_MD_path_, include_files),
-
+                # (pv.dfs_reduced_path_, include_files),
                 (pv.dfs_MD_only_path_, include_files),
+                (pv.dfs_reduced_and_MD_path_, include_files),
+                (pv.dfs_dPCA_var_MD_path_, include_files),
+                
 
-                (pv.dfs_dPCA_MD_path_, include_files),
-
+                
                 # (pv.dataframes_master_ / 'MD_old only', include_files),
                 # (pv.dataframes_master_ / 'MD_new only', include_files),
                 # # (pv.dataframes_master_ / 'red MD_old', include_files),
@@ -642,7 +643,7 @@ def create_subplots():
                 ax.set_xticklabels(xtick_labels, rotation=45, ha='right')
             else:
                 ax.set_xticks([])  # Remove x-ticks for other rows
-            # ax.set_title(f"{protein.name} - {model.name}", fontsize=12, fontweight='bold')
+        # ax.set_title(f"{protein.name} - {model.name}", fontsize=12, fontweight='bold')
             # ax.set_title("")  
     
     # plt.subplots_adjust(left=0.5)
@@ -657,7 +658,7 @@ def create_subplots():
 
     plt.tight_layout(rect=[0.02, 0, 1, 1])  # Increase left margin to 0.1
 
-    plt.savefig(pv.dataframes_master_.parent / 'subplot_good_all.png')  # Save with .png extension
+    plt.savefig(pv.dataframes_master_ / 'boxplots_compare_groups' / f'all_{csvfile_name}_{len(modelresults_dict)}.png')  # Save with .png extension
     plt.close()
 
 def main():

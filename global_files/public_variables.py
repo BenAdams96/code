@@ -87,18 +87,21 @@ def update_config(model_: Union[Model_classic, Model_deep] = None,
         DESCRIPTOR = descriptor_
     if protein_:
         PROTEIN = protein_
-    
-    print('update paths')
-    # Recalculate dependent paths
 
+    print('update paths')
+    
+    # Recalculate dependent paths
     if DESCRIPTOR == Descriptor.WHIM:
+        print('WHIM')
         correlation_threshold_ = 0.8
         variance = 0.95
         update_paths(correlation_threshold_=correlation_threshold_, variance=variance)
-    if DESCRIPTOR == Descriptor.GETAWAY:
+    elif DESCRIPTOR == Descriptor.GETAWAY:
+        print('GETAWAY')
         correlation_threshold_ = 0.7
         variance = 0.85
         update_paths(correlation_threshold_=correlation_threshold_, variance=variance)
+    
 
 def get_paths(model_: Union[Model_classic, Model_deep]=None,
                   descriptor_: Descriptor=None,

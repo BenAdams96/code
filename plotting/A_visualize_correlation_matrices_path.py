@@ -115,10 +115,14 @@ if __name__ == "__main__":
     pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
     # main(dfs_path = pv.dfs_descriptors_only_path_)
     # main(dfs_path = pv.dfs_reduced_path_)
+<<<<<<< HEAD
     path = Path('/home/ben/Download/Afstuderen0/Afstuderen/dataframes/dataframes_GSK3_WHIM/initial_dataframe_lv.csv')
     main(path)
 
     path = Path('/home/ben/Download/Afstuderen0/Afstuderen/dataframes/dataframes_GSK3_GETAWAY/initial_dataframe_lv.csv')
+=======
+    path = Path('/home/ben/Afstuderen_project/Afstuderen/dataframes/dataframes_pparD_GETAWAY/initial_dataframe_lv.csv')
+>>>>>>> origin/master
     main(path)
     # main(dfs_path = pv.dfs_MD_only_path_)
 

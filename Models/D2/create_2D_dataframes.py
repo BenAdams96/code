@@ -59,7 +59,7 @@ def main(dataset_path):
     all_molecules_list, valid_mols, invalid_mols = global_functions.get_molecules_lists(pv.MDsimulations_path_)
     
     smiles_list = [(f"{mol_id:03d}", smiles) for mol_id, smiles in zip(df_2d['mol_id'], df_2d['smiles'])]
-    targets_df = -np.log10(df['exp_mean [nM]'] * 1e-9)
+    targets_df = -np.log10(df_2d['exp_mean [nM]'] * 1e-9)
     df_2d['mol_id'] = df_2d['mol_id'].apply(lambda x: f"{x:03d}")
     targets_df_valid = targets_df[df_2d['mol_id'].isin(valid_mols)]
     
@@ -70,7 +70,7 @@ def main(dataset_path):
     fp_df.to_csv(dfs_2D_path / f'2D_ECFP_{pv.PROTEIN}.csv', index=False)
 
 if __name__ == "__main__":
-    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.JAK1)
+    pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.pparD)
     main(pv.dataset_path_)
 
     # pv.update_config(model_=Model_classic.RF, descriptor_=Descriptor.WHIM, protein_=DatasetProtein.GSK3)
